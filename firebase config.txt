@@ -1,0 +1,13 @@
+// Replace with your Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyA8O6Fh10MNQrdW6cBZnUibVFRB2q5cD1Q",
+  authDomain: "if-i-were-c624c.firebaseapp.com",
+  databaseURL: "https://if-i-were-c624c-default-rtdb.firebaseio.com",
+  projectId: "if-i-were-c624c",
+  storageBucket: "if-i-were-c624c.appspot.com",
+  messagingSenderId: "21442086633",
+  appId: "1:21442086633:web:e49f99337b3caaeaecd278"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
