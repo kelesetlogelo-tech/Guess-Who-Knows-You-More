@@ -12,7 +12,7 @@ class MultiplayerIfIWereGame {
   initFirebase() {
     try {
       this.db = firebase.database();
-      console.log("Firebase initialized successfully");
+      console.log("Firebase database ready");
     } catch (error) {
       console.error("Firebase init error:", error);
     }
@@ -22,7 +22,7 @@ class MultiplayerIfIWereGame {
     const roomId = "room-" + Math.floor(Math.random() * 10000);
     const roomRef = this.db.ref("rooms/" + roomId);
 
-    // Initialize room state
+    // Initialize room with host as first player
     roomRef.set({
       createdAt: Date.now(),
       players: {
@@ -61,14 +61,8 @@ class MultiplayerIfIWereGame {
       this.players = players;
       console.log("Updated players in room:", players);
 
-      // Simple UI update
-      const container = document.getElementById("game-container");
-      let playersList = document.getElementById("players-list");
-      if (!playersList) {
-        playersList = document.createElement("div");
-        playersList.id = "players-list";
-        container.appendChild(playersList);
-      }
+      // Update players list in UI
+      const playersList = document.getElementById("players-list");
       playersList.innerHTML = "<h3>Players in Room:</h3><ul>" +
         Object.values(players).map(p => `<li>${p.id}</li>`).join("") +
         "</ul>";
