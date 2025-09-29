@@ -1,12 +1,11 @@
 // Replace with your Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyA8O6Fh10MNQrdW6cBZnUibVFRB2q5cD1Q",
-  authDomain: "if-i-were-c624c.firebaseapp.com",
-  databaseURL: "https://if-i-were-c624c-default-rtdb.firebaseio.com",
-  projectId: "if-i-were-c624c",
-  storageBucket: "if-i-were-c624c.appspot.com",
-  messagingSenderId: "21442086633",
-  appId: "1:21442086633:web:e49f99337b3caaeaecd278"
+  apiKey: "AIzaSyCtx_K76mH3agerccTXMc08W8sqKXUI_pA",
+  authDomain: "wishing-well-2025.firebaseapp.com",
+  projectId: "wishing-well-2025",
+  storageBucket: "wishing-well-2025.firebasestorage.app",
+  messagingSenderId: "643053862807",
+  appId: "1:643053862807:web:54ddb442035fda90ce8ed2"
 };
 
 // Initialize Firebase
