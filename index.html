@@ -2,44 +2,20 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>If I Were Game</title>
-  <link rel="stylesheet" href="style.css" />
-    <!-- Firebase compat scripts -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-  <script src="firebase-config.js"></script>
-  <script src="script.js"></script>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>If I Were...</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="container">
-    <h1>If I Were Game</h1>
-    <div id="landing">
-      <h2>Host a Game</h2>
-      <input type="text" id="hostName" placeholder="Enter your name" />
-      <input type="number" id="numPlayers" placeholder="Number of players (max 8)" min="2" max="8" />
-      <button id="createRoom">Create Room</button>
-      
-      <h2>Join a Game</h2>
-      <input type="text" id="playerName" placeholder="Enter your name" />
-      <input type="text" id="roomCode" placeholder="Enter room code" />
-      <button id="joinRoom">Join Room</button>
-    </div>
+  <h1>If I Were...</h1>
+  <input type="text" id="playerName" placeholder="Enter your name" />
+  <input type="text" id="roomCode" placeholder="Enter room code" />
+  <input type="number" id="numPlayers" placeholder="Number of players" />
 
-    <div id="waitingRoom" class="hidden">
-      <h2>Waiting Room</h2>
-      <p>Room Code: <span id="waitingRoomCode"></span></p>
-      <ul id="playerList"></ul>
-      <button id="beginGame" class="hidden">Begin Game</button>
-    </div>
-
-    <div id="gameArea" class="hidden">
-      <h2>Game On!</h2>
-      <div id="questionCard"></div>
-    </div>
-  </div>
-
-  <script src="script.js"></script>
+  <button id="createRoomBtn">Create Room</button>
+  <button id="joinRoomBtn">Join Room</button>
+  <button id="startGameBtn" style="display:none;">Start Game</button>
+  <div id="game"></div>
+  <script type="module" src="script.js"></script>
 </body>
 </html>
