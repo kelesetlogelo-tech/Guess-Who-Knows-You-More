@@ -12,15 +12,44 @@
 </head>
 
 <body>
-  <h1>If I Were Game</h1>
+  <div id="landing-screen" class="screen">
+    <h1>If I Were Game</h1>
+    
+    <!-- Host Section -->
+    <div id="host-section">
+      <h2>Host a Game</h2>
+      <input id="host-name" type="text" placeholder="Enter your name" />
+      <input id="player-count" type="number" min="2" max="8" placeholder="Number of players (2-8)" />
+      <button id="create-room-btn">Create Room</button>
+    </div>
 
-  <div id="game-container">
-    <button id="create-room-button">Create Room</button>
-    <button id="join-room-button">Join Room</button>
-    <div id="players-list"></div>
+    <hr />
+
+    <!-- Player Section -->
+    <div id="player-section">
+      <h2>Join a Game</h2>
+      <input id="player-name" type="text" placeholder="Enter your name" />
+      <input id="room-code" type="text" placeholder="Enter room code" />
+      <button id="join-room-btn">Join Room</button>
+    </div>
+  </div>
+
+  <!-- Waiting Room -->
+  <div id="waiting-room" class="screen hidden">
+    <h2>Waiting Room</h2>
+    <p id="room-info"></p>
+    <ul id="player-list"></ul>
+    <button id="begin-game-btn" class="hidden">Begin</button>
+  </div>
+
+  <!-- Game Phase -->
+  <div id="game-screen" class="screen hidden">
+    <h2>Game Phase</h2>
+    <div id="game-area"></div>
   </div>
 
   <script src="firebase-config.js"></script>
   <script src="script.js"></script>
 </body>
+
 </html>
