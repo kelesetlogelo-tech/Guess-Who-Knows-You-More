@@ -1,48 +1,119 @@
+/* Global Styles */
 body {
   margin: 0;
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(135deg, #6a11cb, #2575fc); /* blue/purple gradient */
+  color: white;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Screen container */
+.screen {
+  text-align: center;
+  padding: 20px;
+  width: 100%;
+  max-width: 600px;
+}
+
+/* Hide elements */
+.hidden {
+  display: none;
+}
+
+/* Headings */
+h1, h2 {
+  font-weight: 600;
+  margin-bottom: 15px;
+}
+
+/* Inputs */
+input {
+  width: 80%;
+  padding: 12px;
+  margin: 8px 0;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+/* Buttons */
+button {
+  background-color: #80cbc4; /* pastel teal */
+  color: black;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 20px;
+  margin: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+button:hover {
+  background-color: #4db6ac;
+  transform: translateY(-2px);
+}
+
+/* Waiting Room */
+#player-list {
+  list-style: none;
   padding: 0;
-  font-family: Arial, sans-serif;
-  background: #f2f2f2;
-  color: #333;
+  margin-top: 15px;
+}
+
+#player-list li {
+  background: rgba(255,255,255,0.2);
+  padding: 10px;
+  margin: 5px auto;
+  border-radius: 6px;
+  width: 80%;
+}
+
+/* Game Q&A Phase */
+#game-area {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-height: 100vh;
+  gap: 20px;
 }
 
-h1 {
-  margin-top: 40px;
-  font-size: 2em;
-  color: #444;
-}
-
-#game-container {
-  margin-top: 20px;
+/* Question Card */
+.question-card {
+  background: white;
+  color: black; /* make text readable */
+  border-radius: 12px;
   padding: 20px;
   width: 90%;
-  max-width: 600px;
-  background: white;
-  border: 2px solid #ccc;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  max-width: 500px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  text-align: center;
 }
 
-button {
-  background-color: #4CAF50;
+.question-card h3 {
+  margin-bottom: 15px;
+  font-size: 20px;
+}
+
+.option-btn {
+  display: block;
+  width: 100%;
+  background-color: #80cbc4;
+  margin: 8px 0;
+  padding: 12px;
+  border-radius: 8px;
   border: none;
-  color: white;
-  padding: 12px 24px;
-  margin: 8px;
-  font-size: 1em;
-  border-radius: 4px;
+  font-size: 16px;
+  color: black;
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
 
-button:hover { background-color: #45a049; }
-button:active { background-color: #3e8e41; }
+.option-btn:hover {
+  background-color: #4db6ac;
+}
 
-#join-room-button { background-color: #2196F3; }
-#join-room-button:hover { background-color: #1976d2; }
-#join-room-button:active { background-color: #1565c0; }
 
