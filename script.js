@@ -1,84 +1,134 @@
 class MultiplayerIfIWereGame {
   constructor() {
     console.log("Game initialized");
+
     this.db = null;
-    this.currentRoomId = null;
-    this.playerId = "player-" + Math.floor(Math.random() * 10000);
-    this.players = {};
+    this.roomId = null;
+    this.host = false;
+    this.expectedPlayers = 0;
 
     this.initFirebase();
+    this.attachEventListeners();
   }
 
   initFirebase() {
     try {
       this.db = firebase.database();
-      console.log("Firebase database ready");
-    } catch (error) {
-      console.error("Firebase init error:", error);
+      console.log("Firebase ready");
+    } catch (err) {
+      console.error("Firebase init error:", err);
     }
   }
 
-  createRoom() {
-    const roomId = "room-" + Math.floor(Math.random() * 10000);
-    const roomRef = this.db.ref("rooms/" + roomId);
+  attachEventListeners() {
+    document.getElementById("create-room-btn").addEventListener("click", () => this.createRoom());
+    document.getElementById("join-room-btn").addEventListener("click", () => this.joinRoom());
+    document.getElementById("begin-game-btn").addEventListener("click", () => this.beginGame());
+  }
 
-    // Initialize room with host as first player
+  generateRoomCode() {
+    return Math.random().toString(36).substring(2, 7).toUpperCase();
+  }
+
+  createRoom() {
+    const hostName = document.getElementById("host-name").value.trim();
+    const playerCount = parseInt(document.getElementById("player-count").value);
+
+    if (!hostName || isNaN(playerCount) || playerCount < 2 || playerCount > 8) {
+      alert("Enter host name and number of players (2–8)");
+      return;
+    }
+
+    this.roomId = this.generateRoomCode();
+    this.host = true;
+    this.expectedPlayers = playerCount;
+
+    const roomRef = this.db.ref("rooms/" + this.roomId);
     roomRef.set({
-      createdAt: Date.now(),
-      players: {
-        [this.playerId]: { id: this.playerId, joinedAt: Date.now() }
-      }
+      host: hostName,
+      expectedPlayers: playerCount,
+      players: { [hostName]: true },
+      status: "waiting"
     });
 
-    this.currentRoomId = roomId;
-    this.listenToRoom(roomId);
-
-    console.log("Room created:", roomId);
-    alert("Room created! Share this Room ID: " + roomId);
+    this.showWaitingRoom(hostName);
+    this.listenForPlayers();
   }
 
-  joinRoom(roomId) {
-    const roomRef = this.db.ref("rooms/" + roomId + "/players/" + this.playerId);
+  joinRoom() {
+    const playerName = document.getElementById("player-name").value.trim();
+    const roomCode = document.getElementById("room-code").value.trim().toUpperCase();
 
-    roomRef.set({ id: this.playerId, joinedAt: Date.now() })
-      .then(() => {
-        this.currentRoomId = roomId;
-        this.listenToRoom(roomId);
-        console.log("Joined room:", roomId);
-        alert("Successfully joined room " + roomId);
-      })
-      .catch(err => {
-        console.error("Error joining room:", err);
-        alert("Could not join room. Check the ID and try again.");
-      });
+    if (!playerName || !roomCode) {
+      alert("Enter your name and room code");
+      return;
+    }
+
+    this.roomId = roomCode;
+    const roomRef = this.db.ref("rooms/" + roomCode);
+
+    roomRef.once("value").then(snapshot => {
+      if (!snapshot.exists()) {
+        alert("Room does not exist");
+        return;
+      }
+
+      const roomData = snapshot.val();
+      if (Object.keys(roomData.players).length >= roomData.expectedPlayers) {
+        alert("Room is full");
+        return;
+      }
+
+      roomRef.child("players").update({ [playerName]: true });
+      this.showWaitingRoom(playerName);
+      this.listenForPlayers();
+    });
   }
 
-  listenToRoom(roomId) {
-    const roomRef = this.db.ref("rooms/" + roomId + "/players");
+  showWaitingRoom(playerName) {
+    document.getElementById("landing-screen").classList.add("hidden");
+    document.getElementById("waiting-room").classList.remove("hidden");
+    document.getElementById("room-info").innerText = `Room Code: ${this.roomId}`;
+  }
+
+  listenForPlayers() {
+    const roomRef = this.db.ref("rooms/" + this.roomId);
 
     roomRef.on("value", snapshot => {
-      const players = snapshot.val() || {};
-      this.players = players;
-      console.log("Updated players in room:", players);
+      if (!snapshot.exists()) return;
 
-      // Update players list in UI
-      const playersList = document.getElementById("players-list");
-      playersList.innerHTML = "<h3>Players in Room:</h3><ul>" +
-        Object.values(players).map(p => `<li>${p.id}</li>`).join("") +
-        "</ul>";
+      const roomData = snapshot.val();
+      const players = Object.keys(roomData.players || {});
+      const playerList = document.getElementById("player-list");
+      playerList.innerHTML = "";
+      players.forEach(p => {
+        const li = document.createElement("li");
+        li.textContent = p;
+        playerList.appendChild(li);
+      });
+
+      if (this.host && players.length === roomData.expectedPlayers) {
+        document.getElementById("begin-game-btn").classList.remove("hidden");
+      }
+
+      if (roomData.status === "started") {
+        this.startGame();
+      }
     });
+  }
+
+  beginGame() {
+    this.db.ref("rooms/" + this.roomId).update({ status: "started" });
+  }
+
+  startGame() {
+    document.getElementById("waiting-room").classList.add("hidden");
+    document.getElementById("game-screen").classList.remove("hidden");
+    document.getElementById("game-area").innerHTML = "<p>Game has begun!</p>";
   }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  const game = new MultiplayerIfIWereGame();
-
-  document.getElementById("create-room-button")
-    .addEventListener("click", () => game.createRoom());
-
-  document.getElementById("join-room-button")
-    .addEventListener("click", () => {
-      const roomId = prompt("Enter Room ID to join:");
-      if (roomId) game.joinRoom(roomId);
-    });
+  new MultiplayerIfIWereGame();
 });
+
