@@ -2,25 +2,49 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>If I Were...</title>
-  <link rel="stylesheet" href="styles.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>If I Were Game</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>If I Were...</h1>
-  <input type="text" id="playerName" placeholder="Enter your name" />
-  <input type="text" id="roomCode" placeholder="Enter room code" />
-  <input type="number" id="numPlayers" placeholder="Number of players" />
+  <div class="container">
+    <h1>If I Were Game</h1>
 
-  <button id="createRoomBtn">Create Room</button>
-  <button id="joinRoomBtn">Join Room</button>
-  <button id="startGameBtn" style="display:none;">Start Game</button>
-  <div id="game"></div>
+    <!-- Host Section -->
+    <div id="hostSection">
+      <h2>Host a Game</h2>
+      <input type="text" id="hostName" placeholder="Your Name" />
+      <input type="number" id="numPlayers" placeholder="Number of Players (2-8)" min="2" max="8" />
+      <button id="createRoom">Create Room</button>
+    </div>
+
+    <!-- Join Section -->
+    <div id="joinSection">
+      <h2>Join a Game</h2>
+      <input type="text" id="playerName" placeholder="Your Name" />
+      <input type="text" id="roomCodeInput" placeholder="Enter Room Code" />
+      <button id="joinRoom">Join Room</button>
+    </div>
+
+    <!-- Waiting Room -->
+    <div id="waitingRoom" class="hidden">
+      <h2>Waiting Room</h2>
+      <p>Room Code: <span id="roomCodeDisplay"></span></p>
+      <ul id="playerList"></ul>
+      <button id="beginGame" class="hidden">Begin</button>
+    </div>
+
+    <!-- Game Area -->
+    <div id="gameArea" class="hidden">
+      <h2>Game Started!</h2>
+      <div id="questionCard"></div>
+    </div>
+  </div>
+
   <!-- Firebase compat scripts -->
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-<script src="firebase-config.js"></script>
-<script src="script.js"></script>
-
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
