@@ -3,124 +3,137 @@ console.log("Game initialized");
 class MultiplayerIfIWereGame {
   constructor() {
     this.roomCode = null;
-    this.isHost = false;
-    this.hostName = "";
-    this.numPlayers = 0;
-    this.roomRef = null;
+    this.host = false;
+    this.expectedPlayers = 0;
+    this.playerName = "";
+    this.players = [];
 
-    this.init();
+    this.db = window.db;
   }
 
-  init() {
-    document.getElementById("createRoom").addEventListener("click", () => this.createRoom());
-    document.getElementById("joinRoom").addEventListener("click", () => this.joinRoom());
-    document.getElementById("beginGame").addEventListener("click", () => this.startGame());
-  }
-
+  // Generate unique room code
   generateRoomCode() {
     return Math.random().toString(36).substring(2, 7).toUpperCase();
   }
 
-  createRoom() {
-    this.isHost = true;
-    this.hostName = document.getElementById("hostName").value.trim();
-    this.numPlayers = parseInt(document.getElementById("numPlayers").value.trim(), 10);
-
-    if (!this.hostName || isNaN(this.numPlayers) || this.numPlayers < 2 || this.numPlayers > 8) {
-      alert("Enter host name and valid number of players (2-8).");
-      return;
-    }
-
+  // Create room
+  createRoom(hostName, expectedPlayers) {
     this.roomCode = this.generateRoomCode();
-    this.roomRef = window.db.ref("rooms/" + this.roomCode);
+    this.host = true;
+    this.playerName = hostName;
+    this.expectedPlayers = expectedPlayers;
 
-    this.roomRef.set({
-      host: this.hostName,
-      expectedPlayers: this.numPlayers,
+    this.db.ref("rooms/" + this.roomCode).set({
+      host: hostName,
+      expectedPlayers: expectedPlayers,
       players: {
-        [this.hostName]: { joined: true }
+        [hostName]: true
       },
-      status: "waiting"
+      gameStarted: false
     });
 
-    document.getElementById("roomCodeDisplay").innerText = this.roomCode;
     this.showWaitingRoom();
     this.listenForPlayers();
   }
 
-  joinRoom() {
-    const playerName = document.getElementById("playerName").value.trim();
-    const code = document.getElementById("roomCodeInput").value.trim().toUpperCase();
+  // Join room
+  joinRoom(playerName, roomCode) {
+    this.roomCode = roomCode;
+    this.playerName = playerName;
 
-    if (!playerName || !code) {
-      alert("Enter your name and room code.");
-      return;
-    }
+    const playerRef = this.db.ref(`rooms/${roomCode}/players/${playerName}`);
+    playerRef.set(true);
 
-    this.roomCode = code;
-    this.roomRef = window.db.ref("rooms/" + this.roomCode);
-
-    this.roomRef.child("players/" + playerName).set({ joined: true });
-
-    document.getElementById("roomCodeDisplay").innerText = this.roomCode;
     this.showWaitingRoom();
     this.listenForPlayers();
   }
 
+  // Listen for players
   listenForPlayers() {
-    this.roomRef.on("value", snapshot => {
-      const roomData = snapshot.val();
-      if (!roomData) return;
+    this.db.ref(`rooms/${this.roomCode}/players`).on("value", snapshot => {
+      const players = snapshot.val() || {};
+      this.players = Object.keys(players);
 
-      const playerList = document.getElementById("playerList");
-      playerList.innerHTML = "";
+      this.updatePlayerList();
 
-      if (roomData.players) {
-        Object.keys(roomData.players).forEach(name => {
-          const li = document.createElement("li");
-          li.textContent = name;
-          playerList.appendChild(li);
-        });
+      // Host logic
+      if (this.host) {
+        if (this.players.length >= this.expectedPlayers) {
+          document.getElementById("beginBtn").classList.remove("hidden");
+        }
       }
+    });
 
-      if (this.isHost &&
-          roomData.players &&
-          Object.keys(roomData.players).length >= roomData.expectedPlayers &&
-          roomData.status === "waiting") {
-        document.getElementById("beginGame").classList.remove("hidden");
-      }
-
-      if (roomData.status === "started") {
+    this.db.ref(`rooms/${this.roomCode}/gameStarted`).on("value", snapshot => {
+      if (snapshot.val()) {
         this.startGame();
       }
     });
   }
 
-  showWaitingRoom() {
-    document.getElementById("hostSection").classList.add("hidden");
-    document.getElementById("joinSection").classList.add("hidden");
-    document.getElementById("waitingRoom").classList.remove("hidden");
+  // Update waiting room UI
+  updatePlayerList() {
+    const listEl = document.getElementById("playerList");
+    listEl.innerHTML = "";
+    this.players.forEach(p => {
+      const li = document.createElement("li");
+      li.textContent = p;
+      listEl.appendChild(li);
+    });
   }
 
+  // Start the game
   startGame() {
-    if (this.isHost) {
-      this.roomRef.update({ status: "started" });
-    }
-
     document.getElementById("waitingRoom").classList.add("hidden");
-    document.getElementById("gameArea").classList.remove("hidden");
-
-    // Example dummy question card
+    document.getElementById("gamePhase").classList.remove("hidden");
     document.getElementById("questionCard").innerHTML = `
-      <h3>If I were an animal, I would be...</h3>
-      <ul>
-        <li>🐱 Cat</li>
-        <li>🐶 Dog</li>
-        <li>🦁 Lion</li>
-        <li>🦉 Owl</li>
-      </ul>
+      <h3>First Question</h3>
+      <p>Who is most likely to say "If I were a superhero, I would... ?"</p>
     `;
+  }
+
+  // Host clicks Begin
+  beginGame() {
+    this.db.ref(`rooms/${this.roomCode}`).update({ gameStarted: true });
+  }
+
+  // Show waiting room
+  showWaitingRoom() {
+    document.getElementById("landing").classList.add("hidden");
+    document.getElementById("waitingRoom").classList.remove("hidden");
+    document.getElementById("roomCodeDisplay").textContent = this.roomCode;
   }
 }
 
-new MultiplayerIfIWereGame();
+// Initialize
+document.addEventListener("DOMContentLoaded", () => {
+  const game = new MultiplayerIfIWereGame();
+
+  document.getElementById("createRoomBtn").addEventListener("click", () => {
+    const hostName = document.getElementById("hostName").value.trim();
+    const expectedPlayers = parseInt(document.getElementById("playerCount").value.trim());
+
+    if (hostName && expectedPlayers > 1 && expectedPlayers <= 8) {
+      game.createRoom(hostName, expectedPlayers);
+    } else {
+      alert("Enter host name and valid number of players (2-8).");
+    }
+  });
+
+  document.getElementById("joinRoomBtn").addEventListener("click", () => {
+    const playerName = document.getElementById("playerName").value.trim();
+    const roomCode = document.getElementById("roomCodeInput").value.trim().toUpperCase();
+
+    if (playerName && roomCode) {
+      game.joinRoom(playerName, roomCode);
+    } else {
+      alert("Enter your name and room code.");
+    }
+  });
+
+  document.getElementById("beginBtn").addEventListener("click", () => {
+    if (game.host) {
+      game.beginGame();
+    }
+  });
+});
