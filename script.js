@@ -262,32 +262,109 @@ class MultiplayerIfIWereGame {
   }
 
   /* ===== Guessing prep & ready ===== */
-  showGuessPrepUI() {
-    // hide QA UI
-    const gamePhase = document.getElementById("gamePhase"); if (gamePhase) gamePhase.classList.add("hidden");
-    // show prep
-    const prep = document.getElementById("guessPrep"); if (prep) prep.classList.remove("hidden");
-    // wire ready button
-    const readyBtn = document.getElementById("readyToGuessBtn");
-    if (readyBtn) {
-      readyBtn.onclick = null;
-      readyBtn.addEventListener("click", () => this.markReadyToGuess());
-    }
-    // start listening for phase
-    if (this.db && this.roomCode) this.listenForGuessingPhase();
+  // robust showGuessPrepUI (replace existing method)
+showGuessPrepUI() {
+  console.log("showGuessPrepUI: showing prepare-to-guess screen");
+  // hide QA UI (only the QA card area, never hide entire app)
+  const gamePhase = document.getElementById("gamePhase");
+  if (gamePhase) gamePhase.classList.add("hidden");
+
+  // show prep
+  const prep = document.getElementById("guessPrep");
+  if (prep) {
+    prep.classList.remove("hidden");
+  } else {
+    console.warn("showGuessPrepUI: #guessPrep not found in DOM");
+    // create a small fallback prep UI so the user isn't left with a blank page
+    const container = document.body;
+    const fallback = document.createElement("div");
+    fallback.id = "guessPrepFallback";
+    fallback.innerHTML = `<div style="padding:20px"><h2>Prepare to Guess</h2><p>If you see this message it means the Prepare UI was missing. Click Ready to continue.</p><button id="readyToGuessBtnFallback">Ready to Guess</button></div>`;
+    container.appendChild(fallback);
+    document.getElementById("readyToGuessBtnFallback").addEventListener("click", () => {
+      // call existing markReadyToGuess (still uses DB)
+      if (typeof this.markReadyToGuess === "function") this.markReadyToGuess();
+    });
   }
 
-  markReadyToGuess() {
-    if (!this.db || !this.roomCode) { console.warn("markReadyToGuess missing db/roomCode"); return; }
-    const playerId = this.myPlayerKey || this.playerName || `player_${Date.now()}`;
-    this.db.ref(`rooms/${this.roomCode}/guessReady/${playerId}`).set(true)
-      .then(() => {
-        console.log("Marked readyToGuess", playerId);
-        const prep = document.getElementById("guessPrep"); if (prep) prep.classList.add("hidden");
-        const guessWaiting = document.getElementById("guessWaitingRoom"); if (guessWaiting) guessWaiting.classList.remove("hidden");
-        if (this.isHost) setTimeout(() => this.initGuessingPhaseIfReady(), 400);
-      }).catch(err => { console.error("markReadyToGuess fail", err); alert("Could not mark ready — see console."); });
+  // wire ready button (if present)
+  const readyBtn = document.getElementById("readyToGuessBtn");
+  if (readyBtn) {
+    readyBtn.onclick = null;
+    readyBtn.addEventListener("click", () => this.markReadyToGuess());
   }
+
+  // ensure we are listening for guessing-phase changes and ready list
+  if (this.db && this.roomCode) {
+    this.listenForGuessingPhase();
+
+    // Also attach a live listener for guessReady to update waiting statuses while users prepare
+    const readyRef = this.db.ref(`rooms/${this.roomCode}/guessReady`);
+    readyRef.on('value', (snap) => {
+      const obj = snap.val() || {};
+      console.log("guessReady updated:", Object.keys(obj).length, obj);
+      // update a UI element if present
+      const readyListEl = document.getElementById("guessPlayerStatusList");
+      if (readyListEl) {
+        // mark players who flagged ready with (ready)
+        this.db.ref(`rooms/${this.roomCode}/players`).once('value').then(ps => {
+          const players = ps.val() || {};
+          readyListEl.innerHTML = "";
+          Object.keys(players).forEach(pid => {
+            const li = document.createElement('li');
+            const name = players[pid].name || pid;
+            const status = obj && obj[pid] ? 'ready' : 'not ready';
+            li.textContent = `${name} — ${status}`;
+            readyListEl.appendChild(li);
+          });
+        }).catch(e => console.warn("update ready list failed", e));
+      }
+    });
+  }
+}
+
+  // robust markReadyToGuess (replace existing)
+markReadyToGuess() {
+  console.log("markReadyToGuess invoked");
+  if (!this.db || !this.roomCode) {
+    console.warn("markReadyToGuess: db or roomCode missing");
+    return;
+  }
+  const playerId = this.myPlayerKey || this.playerName || `player_${Date.now()}`;
+  this.db.ref(`rooms/${this.roomCode}/guessReady/${playerId}`).set(true)
+    .then(() => {
+      console.log("Marked readyToGuess for", playerId);
+      // hide prep UI if present
+      const prep = document.getElementById("guessPrep");
+      if (prep) prep.classList.add("hidden");
+      // also hide fallback if present
+      const fallback = document.getElementById("guessPrepFallback");
+      if (fallback) fallback.remove();
+
+      // show guessing waiting room - create fallback if missing
+      let guessWaiting = document.getElementById("guessWaitingRoom");
+      if (!guessWaiting) {
+        console.warn("markReadyToGuess: #guessWaitingRoom missing — creating fallback");
+        guessWaiting = document.createElement("div");
+        guessWaiting.id = "guessWaitingRoom";
+        guessWaiting.innerHTML = `<h2>Waiting for others to be ready...</h2><ul id="guessPlayerStatusList"></ul>`;
+        document.body.appendChild(guessWaiting);
+      }
+      guessWaiting.classList.remove("hidden");
+
+      // ensure statuses are rendered
+      if (typeof this.renderGuessingStatuses === "function") this.renderGuessingStatuses();
+
+      // last step: host will init guessing phase when everyone ready
+      if (this.isHost) {
+        setTimeout(() => this.initGuessingPhaseIfReady(), 400);
+      }
+    })
+    .catch(err => {
+      console.error("Failed to mark readyToGuess:", err);
+      alert("Could not mark Ready — check console.");
+    });
+}
 
   // Host init: check guessReady and set guessingOrder & phase
   initGuessingPhaseIfReady() {
@@ -322,19 +399,57 @@ class MultiplayerIfIWereGame {
     });
   }
 
-  applyGuessingState() {
-    const activeKey = (this.guessingOrder && this.guessingOrder[this.currentGuesserIndex]) || null;
-    const isMyTurn = (this.myPlayerKey === activeKey);
-    console.log('applyGuessingState activeKey', activeKey, 'isMyTurn', isMyTurn);
-    document.getElementById('guessWaitingRoom')?.classList.toggle('hidden', false);
-    document.getElementById('guessPhase')?.classList.toggle('hidden', !isMyTurn);
-    const rcd = document.getElementById('roomCodeDisplay_guess'); if (rcd) rcd.textContent = this.roomCode;
-    this.renderGuessingStatuses();
-    const activeLabel = document.getElementById('activeGuesserLabel');
-    if (activeLabel) {
-      if (isMyTurn) activeLabel.textContent = 'You are guessing now — guess every other player';
-      else { const nm = this.getPlayerNameByKey(activeKey) || 'A player'; activeLabel.textContent = `${nm} is guessing — please wait`; }
+  // safer applyGuessingState (replace existing)
+applyGuessingState() {
+  console.log("applyGuessingState running");
+  const activeKey = (this.guessingOrder && this.guessingOrder[this.currentGuesserIndex]) || null;
+  const isMyTurn = (this.myPlayerKey === activeKey);
+  console.log('applyGuessingState activeKey', activeKey, 'isMyTurn', isMyTurn);
+
+  // don't hide entire app — only toggle the guessing-specific regions
+  const guessWaitingRoom = document.getElementById('guessWaitingRoom');
+  const guessPhaseEl = document.getElementById('guessPhase');
+  if (guessWaitingRoom) guessWaitingRoom.classList.toggle('hidden', false);
+  if (guessPhaseEl) guessPhaseEl.classList.toggle('hidden', !isMyTurn);
+
+  const rcd = document.getElementById('roomCodeDisplay_guess');
+  if (rcd) rcd.textContent = this.roomCode;
+
+  // render statuses; if missing, create fallback list
+  if (!document.getElementById('guessPlayerStatusList')) {
+    const el = document.getElementById('guessWaitingRoom');
+    if (el) {
+      const ul = document.createElement('ul'); ul.id = 'guessPlayerStatusList'; el.appendChild(ul);
     }
+  }
+  this.renderGuessingStatuses();
+
+  const activeLabel = document.getElementById('activeGuesserLabel');
+  if (activeLabel) {
+    if (isMyTurn) activeLabel.textContent = 'You are guessing now — guess every other player';
+    else {
+      const nm = this.getPlayerNameByKey(activeKey) || 'A player';
+      activeLabel.textContent = `${nm} is guessing — please wait`;
+    }
+  }
+
+  // attach watchers defensively
+  if (this.db && this.roomCode) {
+    const idxRef = this.db.ref(`rooms/${this.roomCode}/currentGuesserIndex`);
+    idxRef.off(); // avoid duplicate handlers
+    idxRef.on('value', snap => {
+      const idx = snap.val(); if (typeof idx === 'number') { this.currentGuesserIndex = idx; this.applyGuessingState(); }
+    });
+
+    const compRef = this.db.ref(`rooms/${this.roomCode}/guessCompletions`);
+    compRef.off();
+    compRef.on('value', () => { this.renderGuessingStatuses(); this.checkAllGuessingComplete(); });
+  }
+
+  if (isMyTurn) {
+    this.startGuessingForMe();
+  }
+}
 
     // watch index and completions
     this.db.ref(`rooms/${this.roomCode}/currentGuesserIndex`).on('value', snap => {
