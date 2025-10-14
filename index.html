@@ -1,50 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>If I Were Game</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="container">
-    <h1>If I Were Game</h1>
-
-    <!-- Host Section -->
-    <div id="hostSection">
-      <h2>Host a Game</h2>
-      <input type="text" id="hostName" placeholder="Your Name" />
-      <input type="number" id="numPlayers" placeholder="Number of Players (2-8)" min="2" max="8" />
-      <button id="createRoom">Create Room</button>
+    <!-- landing / waiting / game UI (same ids used by script.js) -->
+    <div id="landing">
+      <h1>If I Were Game</h1>
+      <input id="hostName" placeholder="Host name" />
+      <input id="playerCount" type="number" min="2" max="8" placeholder="Players (2-8)" />
+      <button id="createRoomBtn">Create Room</button>
+      <hr/>
+      <input id="playerName" placeholder="Your name" />
+      <input id="roomCodeInput" placeholder="Room code" />
+      <button id="joinRoomBtn">Join Room</button>
     </div>
 
-    <!-- Join Section -->
-    <div id="joinSection">
-      <h2>Join a Game</h2>
-      <input type="text" id="playerName" placeholder="Your Name" />
-      <input type="text" id="roomCodeInput" placeholder="Enter Room Code" />
-      <button id="joinRoom">Join Room</button>
-    </div>
-
-    <!-- Waiting Room -->
     <div id="waitingRoom" class="hidden">
       <h2>Waiting Room</h2>
-      <p>Room Code: <span id="roomCodeDisplay"></span></p>
+      <p>Code: <strong id="roomCodeDisplay"></strong></p>
       <ul id="playerList"></ul>
-      <button id="beginGame" class="hidden">Begin</button>
+      <p id="playersCount"></p>
+      <button id="beginBtn" class="hidden">Begin</button>
     </div>
 
-    <!-- Game Area -->
-  <div id="gamePhase" class="hidden">
-      <h2>Game On!</h2>
+    <div id="gamePhase" class="hidden">
       <div id="questionCard" class="card"></div>
     </div>
   </div>
 
-  <!-- Firebase -->
+  <!-- ========= IMPORTANT: Firebase scripts must load BEFORE firebase-config.js ========= -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+  <!-- Your firebase-config.js must initialize Firebase and set window.db = firebase.database() -->
   <script src="firebase-config.js"></script>
+
+  <!-- Lastly, your app logic that depends on window.db -->
   <script src="script.js"></script>
 </body>
 </html>
+
