@@ -283,28 +283,32 @@ class MultiplayerIfIWereGame {
 
   renderNextQuestion() {
     if (this.qaIndex >= this.qaTotal) {
-      // write completion to DB
-      try {
-        const pid = this.myPlayerKey || this.playerName || `p_${Date.now()}`;
-        if (this.db && this.roomCode) {
-          this.db.ref(`rooms/${this.roomCode}/qaCompletions/${pid}`).set(true);
-        }
-      } catch (e) {}
-      // Show a completion tile then call initGuessingPhaseIfReady() for host to initialize guessing
-      this.qaStageInner.innerHTML = `<div class="qa-tile enter"><div class="qa-card"><h3>All done!</h3><p>You completed all questions.</p></div></div>`;
-      // small delay then attempt to init guessing
-      setTimeout(() => {
-        if (this.isHost && this.db && this.roomCode) {
-          // host attempts to init guessing phase
-          this.initGuessingPhaseIfReady();
-        }
-        // all clients should start listening for guessing phase now
-        if (this.db && this.roomCode) {
-          this.listenForGuessingPhase();
-        }
-      }, 600);
-      return;
+  // write completion to DB
+  try {
+    const pid = this.myPlayerKey || this.playerName || `p_${Date.now()}`;
+    if (this.db && this.roomCode) {
+      this.db.ref(`rooms/${this.roomCode}/qaCompletions/${pid}`).set(true);
     }
+  } catch (e) {
+    console.warn("Failed to write QA completion:", e);
+  }
+
+  // Show the Guessing Preparation UI (instance method — this is inside class so 'this' is correct)
+  this.showGuessPrepUI();
+
+  // small delay then attempt to init guessing if host; also ensure we listen for phase
+  setTimeout(() => {
+    if (this.isHost && this.db && this.roomCode) {
+      this.initGuessingPhaseIfReady();
+    }
+    if (this.db && this.roomCode) {
+      // ensure all clients are listening for phase changes
+      this.listenForGuessingPhase();
+    }
+  }, 600);
+
+  return;
+}
 
     const q = QUESTIONS[this.qaIndex];
     const tile = document.createElement("div");
