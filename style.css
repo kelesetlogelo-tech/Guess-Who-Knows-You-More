@@ -124,3 +124,31 @@ button:hover {
 .option-btn:active { transform: translateY(1px); }
 .option-btn[disabled] { opacity: 0.6; cursor: default; transform: none; }
 }
+
+/* Guess result badges */
+.guess-result {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  font-weight: bold;
+  margin-left: 10px;
+}
+
+.guess-correct {
+  background: #d4f8e6;
+  color: #0a7a3a;
+  border: 2px solid #8fe0b3;
+}
+
+.guess-wrong {
+  background: #fdecea;
+  color: #b52121;
+  border: 2px solid #f3a0a0;
+}
+
+/* Reuse tile animations from QA; ensure #guessCard uses same .qa-stage wrapper */
+#guessCard .qa-stage { min-height: 220px; }
+
