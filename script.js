@@ -1,8 +1,4 @@
-// Purpose: attach UI handlers only after DOM is ready and guard against missing elements / missing Firebase.
-
-console.log("script.js loaded");
-
-// ---------- Q&A bank (add at top of script.js, before the class) ----------
+// small QA bank (10)
 const QUESTIONS = [
   { text: "If I were a sound effect, I'd be ....", options: ["The frantic hoot of a Siyaya (taxi)","Evil laugh!","A mix of Kwaito & Amapiano basslines from a shebeen","Ta-da!","Dramatic gasp","The hiss of a shaken carbonated drink"] },
   { text: "If I were a weather-forecast, I'd be ....", options: ["Partly dramatic with a chance of chaos","Sudden tornado of opinions","100% chill","Heatwave in Limpopo","The calm before the storm: I'm a quiet observer until I have had too much coffee!","Severe weather alert for a sudden unexplainable urge to reorganize my entire livingspace"] },
@@ -16,24 +12,35 @@ const QUESTIONS = [
   { text: "If I were a type of chair, I'd be ....", options: ["That sofa at Phala Phala","A creaky antique that screams when you sit","One of those folding chairs that attack your fingers","The overstuffed armchair covered in snack crumbs","The velvet fainting couch - I'm a little dramatic... a lot extra actually!"] }
 ];
 
-// very small helper to escape question text (prevent accidental HTML injection)
+// tiny HTML escape helper
 function escapeHtml(str) {
   return (str + '').replace(/[&<>"']/g, function(m) {
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
   });
 }
 
+console.log("script.js loaded");
+
 class MultiplayerIfIWereGame {
   constructor() {
+    // firebase DB (should be set by firebase-config.js as window.db)
     this.db = window.db || null;
+
+    // room/player state
     this.roomCode = null;
     this.roomRef = null;
     this.playersRef = null;
+    this.myPlayerKey = null; // push key for this player
     this.isHost = false;
-    this.expectedPlayers = 0;
     this.playerName = "";
+    this.expectedPlayers = 0;
 
-    // Don't attach UI until DOM is ready
+    // QA state
+    this.qaIndex = 0;
+    this.qaTotal = QUESTIONS.length;
+    this.qaStageInner = null;
+
+    // attach UI after DOM ready
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", () => this.hookUI());
     } else {
@@ -43,7 +50,7 @@ class MultiplayerIfIWereGame {
     console.log("MultiplayerIfIWereGame constructed — db present?", !!this.db);
   }
 
-  // Safe element getter with multiple id fallbacks
+  // helper to try multiple ids
   $$(ids) {
     for (const id of ids) {
       const el = document.getElementById(id);
@@ -53,41 +60,40 @@ class MultiplayerIfIWereGame {
   }
 
   hookUI() {
-    console.log("hookUI: DOM ready — wiring UI");
+    console.log("hookUI: wiring UI");
 
-    // Try multiple common IDs so this file is resilient to small id differences
-    const createBtn = this.$$(["createRoomBtn", "createRoom", "create-room-button"]);
-    const joinBtn   = this.$$(["joinRoomBtn", "joinRoom", "join-room-button"]);
-    const beginBtn  = this.$$(["beginBtn", "beginGame", "begin-game-btn"]);
+    const createBtn = this.$$(["createRoomBtn","createRoom","create-room-button"]);
+    const joinBtn   = this.$$(["joinRoomBtn","joinRoom","join-room-button"]);
+    const beginBtn  = this.$$(["beginBtn","beginGame","begin-game-btn"]);
 
-    if (!createBtn) console.error("Create button not found. Expected id: createRoomBtn/createRoom/create-room-button");
-    if (!joinBtn)   console.error("Join button not found. Expected id: joinRoomBtn/joinRoom/join-room-button");
-    if (!beginBtn)  console.warn("Begin button not found (host UI). Expected id: beginBtn/beginGame/begin-game-btn");
+    if (!createBtn) console.warn("Create button not found. Expected id createRoomBtn/createRoom");
+    if (!joinBtn) console.warn("Join button not found. Expected id joinRoomBtn/joinRoom");
+    if (!beginBtn) console.warn("Begin button may be missing (host only)");
 
-    // Attach listeners if elements exist
-    if (createBtn) createBtn.addEventListener("click", (e) => this.handleCreate(e));
-    if (joinBtn)   joinBtn.addEventListener("click", (e) => this.handleJoin(e));
-    if (beginBtn)  beginBtn.addEventListener("click", (e) => this.handleBegin(e));
+    if (createBtn) createBtn.addEventListener("click", () => this.handleCreateClick());
+    if (joinBtn)   joinBtn.addEventListener("click", () => this.handleJoinClick());
+    if (beginBtn)  beginBtn.addEventListener("click", () => this.handleBeginClick());
 
-    // Also log useful DOM references for debugging
-    console.log("hookUI complete. Found elements:", { createBtn: !!createBtn, joinBtn: !!joinBtn, beginBtn: !!beginBtn });
+    console.log("hookUI complete. Elements found:", {
+      createBtn: !!createBtn,
+      joinBtn: !!joinBtn,
+      beginBtn: !!beginBtn
+    });
   }
 
-  // Handler wrappers
-  handleCreate(e) {
+  handleCreateClick() {
     console.log("Create button clicked");
     if (!this.db) {
-      console.error("Firebase DB (window.db) not found. Make sure firebase-config.js runs before script.js and sets window.db = firebase.database()");
+      console.error("Firebase DB (window.db) not found.");
       alert("Firebase not initialized. See console.");
       return;
     }
 
-    const hostNameEl = this.$$(["hostName", "host-name", "host-name-input"]);
+    const hostNameEl = this.$$(["hostName","host-name","host-name-input"]);
     const playerCountEl = this.$$(["playerCount","playerCount","numPlayers","player-count-input"]);
 
     if (!hostNameEl || !playerCountEl) {
-      console.error("Host name or player count element missing. hostNameEl:", !!hostNameEl, "playerCountEl:", !!playerCountEl);
-      alert("Host input fields missing. Check HTML IDs.");
+      alert("Host inputs missing in the DOM. Check input element IDs.");
       return;
     }
 
@@ -95,14 +101,14 @@ class MultiplayerIfIWereGame {
     const count = parseInt(playerCountEl.value, 10);
 
     if (!hostName || isNaN(count) || count < 2 || count > 8) {
-      alert("Please enter a host name and a valid player count (2–8).");
+      alert("Enter host name and number of players (2–8).");
       return;
     }
 
     this.createRoom(hostName, count);
   }
 
-  handleJoin(e) {
+  handleJoinClick() {
     console.log("Join button clicked");
     if (!this.db) {
       console.error("Firebase DB (window.db) not found.");
@@ -111,46 +117,41 @@ class MultiplayerIfIWereGame {
     }
 
     const playerNameEl = this.$$(["playerName","player-name","player-name-input"]);
-    const roomCodeEl   = this.$$(["roomCodeInput","roomCode","room-code-input","joinCode"]);
+    const roomCodeEl = this.$$(["roomCodeInput","roomCode","room-code-input","joinCode"]);
 
     if (!playerNameEl || !roomCodeEl) {
-      console.error("Join inputs missing. playerNameEl:", !!playerNameEl, "roomCodeEl:", !!roomCodeEl);
-      alert("Join input fields missing. Check HTML IDs.");
+      alert("Join inputs missing in the DOM. Check input element IDs.");
       return;
     }
 
-    const name = (playerNameEl.value || "").trim();
-    const code = (roomCodeEl.value || "").trim().toUpperCase();
+    const playerName = (playerNameEl.value || "").trim();
+    const roomCode = (roomCodeEl.value || "").trim().toUpperCase();
 
-    if (!name || !code) {
-      alert("Please enter your name and the room code.");
+    if (!playerName || !roomCode) {
+      alert("Enter your name and room code.");
       return;
     }
 
-    this.joinRoom(name, code);
+    this.joinRoom(playerName, roomCode);
   }
 
-  handleBegin(e) {
-    console.log("Begin button clicked");
-    if (!this.isHost) {
-      console.warn("Begin clicked by non-host — ignoring");
+  handleBeginClick() {
+    console.log("Begin clicked");
+    if (!this.isHost || !this.roomRef) {
+      console.warn("Begin clicked but not host or no roomRef");
       return;
     }
-    if (!this.roomRef) {
-      console.error("Room ref missing; cannot begin");
-      return;
-    }
-
     this.roomRef.update({ gameStarted: true })
-      .then(() => console.log("Game started flag set in DB"))
+      .then(() => console.log("gameStarted flag set"))
       .catch(err => console.error("Failed to set gameStarted:", err));
   }
 
-  // Core flows
+  // generate code
   generateRoomCode() {
     return Math.random().toString(36).substring(2, 7).toUpperCase();
   }
 
+  // create room and push host into players (store myPlayerKey)
   createRoom(hostName, expectedPlayers) {
     this.isHost = true;
     this.playerName = hostName;
@@ -160,32 +161,26 @@ class MultiplayerIfIWereGame {
     this.roomRef = this.db.ref(`rooms/${this.roomCode}`);
     this.playersRef = this.roomRef.child("players");
 
-    const p = this.playersRef.push();
-      p.set({ name: hostName, joinedAt: Date.now(), isHost: true })
-      .then(() => {
-    this.myPlayerKey = p.key;
-   })
-      .catch(err => console.warn("Failed to add host player:", err));
-
+    // set metadata, then push host player entry
     this.roomRef.set({
       host: hostName,
       expectedPlayers: expectedPlayers,
       gameStarted: false
     }).then(() => {
-      return this.playersRef.push().set({ name: hostName, joinedAt: Date.now(), isHost: true });
-    }).then(() => {
-      console.log("Room created:", this.roomCode);
-      // show code in UI if spot exists
-      const roomCodeDisplay = this.$$(["roomCodeDisplay","roomCode","room-code-display"]);
-      if (roomCodeDisplay) roomCodeDisplay.textContent = this.roomCode;
-      this.showWaitingUI();
-      this.listenForPlayers();
+      const p = this.playersRef.push();
+      return p.set({ name: hostName, joinedAt: Date.now(), isHost: true }).then(() => {
+        this.myPlayerKey = p.key;
+        console.log("Host added with key:", this.myPlayerKey);
+        this.showWaitingUI();
+        this.listenForPlayers();
+      });
     }).catch(err => {
       console.error("createRoom error:", err);
-      alert("Failed to create room — check console.");
+      alert("Could not create room. See console.");
     });
   }
 
+  // join a room and push player record (store myPlayerKey)
   joinRoom(playerName, roomCode) {
     this.playerName = playerName;
     this.roomCode = roomCode;
@@ -193,55 +188,51 @@ class MultiplayerIfIWereGame {
     this.roomRef = this.db.ref(`rooms/${this.roomCode}`);
     this.playersRef = this.roomRef.child("players");
 
-    // ensure room exists
+    // validate existence, then push
     this.roomRef.once("value").then(snap => {
       if (!snap.exists()) {
-        alert("Room not found.");
+        alert("Room not found. Check the code.");
         throw new Error("Room not found: " + this.roomCode);
       }
-      return this.playersRef.push().set({ name: playerName, joinedAt: Date.now(), isHost: false });
-    }).then(() => {
-      console.log("Joined room:", this.roomCode);
-      // show the code
-      const roomCodeDisplay = this.$$(["roomCodeDisplay","roomCode","room-code-display"]);
-      if (roomCodeDisplay) roomCodeDisplay.textContent = this.roomCode;
-      this.showWaitingUI();
-      this.listenForPlayers();
+      const p = this.playersRef.push();
+      return p.set({ name: playerName, joinedAt: Date.now(), isHost: false }).then(() => {
+        this.myPlayerKey = p.key;
+        console.log("Joined room; myPlayerKey:", this.myPlayerKey);
+        this.showWaitingUI();
+        this.listenForPlayers();
+      });
     }).catch(err => {
       console.error("joinRoom error:", err);
     });
   }
 
+  // show waiting room UI
   showWaitingUI() {
-    // hide landing
     const landing = this.$$(["landing","landing-screen"]);
     const waiting = this.$$(["waitingRoom","waiting-room"]);
+    const roomCodeDisplay = this.$$(["roomCodeDisplay","roomCode","room-code-display"]);
+
     if (landing) landing.classList.add("hidden");
     if (waiting) waiting.classList.remove("hidden");
+    if (roomCodeDisplay) roomCodeDisplay.textContent = this.roomCode;
   }
 
+  // listen for players and start flag
   listenForPlayers() {
     if (!this.playersRef || !this.roomRef) {
-      console.error("listenForPlayers called without refs", this.playersRef, this.roomRef);
+      console.error("listenForPlayers called without refs:", this.playersRef, this.roomRef);
       return;
     }
 
-    console.log("Listening for players on room:", this.roomCode);
+    console.log("listenForPlayers on", `rooms/${this.roomCode}/players`);
 
-    this.playersRef.on("value", snap => {
-      const playersObj = snap.val() || {};
-      const players = Object.values(playersObj).map(p => p.name || "Unnamed");
+    // update players list
+    this.playersRef.on("value", snapshot => {
+      const obj = snapshot.val() || {};
+      const players = Object.values(obj).map(p => p.name || "Unnamed");
+      console.log("players:", players);
 
-      const p = this.playersRef.push();
-            p.set({ name: playerName, joinedAt: Date.now(), isHost: false })
-            .then(() => {
-      this.myPlayerKey = p.key;
-  })
-  .catch(err => console.warn("Failed to add player:", err));
-
-
-      // update UI
-      const listEl = this.$$(["playerList","player-list","playerListEl","playersList"]);
+      const listEl = this.$$(["playerList","playersList","players-list","playersCountEl"]);
       if (listEl) {
         listEl.innerHTML = "";
         players.forEach(n => {
@@ -251,149 +242,144 @@ class MultiplayerIfIWereGame {
         });
       }
 
-      // update players count if element present
+      // update count text if present
       const countEl = this.$$(["playersCount","players-count","playersCountEl"]);
       if (countEl) countEl.textContent = `${players.length} / ${this.expectedPlayers || "?"} joined`;
 
-      // If host and we've reached expected players, show begin
+      // If host and reached expected players, show Begin
       if (this.isHost && players.length >= this.expectedPlayers) {
         const beginBtn = this.$$(["beginBtn","beginGame","begin-game-btn"]);
         if (beginBtn) beginBtn.classList.remove("hidden");
       }
     });
 
-    // watch gameStarted
+    // listen for gameStarted flag
     this.roomRef.child("gameStarted").on("value", s => {
       if (s.val() === true) {
-        console.log("Game started flag seen — starting game locally");
+        console.log("gameStarted observed -> startGame");
         this.startGame();
       }
     });
   }
 
+  // startGame transitions to QA (uses startQA)
   startGame() {
-  // hide waiting, show game phase
-  const waiting = document.getElementById("waitingRoom");
-  const gamePhase = document.getElementById("gamePhase");
-  if (waiting) waiting.classList.add("hidden");
-  if (gamePhase) gamePhase.classList.remove("hidden");
-
-  // begin QA flow
-  this.startQA();
-
-  // initialize QA state
-  this.qaIndex = 0;
-  this.qaTotal = QUESTIONS.length;
-
-  // the 'questionCard' div in index.html becomes our stage
-  this.qaStageEl = document.getElementById("questionCard");
-  this.qaStageEl.innerHTML = '<div class="qa-stage" id="qaStageInner"></div>';
-  this.qaStageInner = document.getElementById("qaStageInner");
-
-  // render first question
-  this.renderNextQuestion();
-}
-
-renderNextQuestion() {
-  if (this.qaIndex >= this.qaTotal) {
-    this.onQAComplete();
-    return;
+    console.log("startGame invoked");
+    const waiting = this.$$(["waitingRoom","waiting-room"]);
+    const gamePhase = this.$$(["gamePhase","game-phase","gameArea"]);
+    if (waiting) waiting.classList.add("hidden");
+    if (gamePhase) gamePhase.classList.remove("hidden");
+    // begin QA
+    this.startQA();
   }
 
-  const q = QUESTIONS[this.qaIndex];
-
-  const tile = document.createElement("div");
-  tile.className = "qa-tile";
-  tile.dataset.qindex = this.qaIndex;
-
-  tile.innerHTML = `
-    <div class="qa-card">
-      <h3>${escapeHtml(q.text)}</h3>
-      <div class="qa-options">
-        ${q.options.map((opt, i) => `<button class="option-btn" data-opt="${i}">${escapeHtml(opt)}</button>`).join("")}
-      </div>
-    </div>
-  `;
-
-  this.qaStageInner.appendChild(tile);
-
-  // Force reflow so CSS transitions trigger
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    tile.classList.add("enter");
-  }));
-
-  // Attach click handlers
-  tile.querySelectorAll(".option-btn").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      const idx = parseInt(btn.dataset.opt, 10);
-      this.handleOptionSelected(tile, idx);
-    });
-  });
-}
-
-handleOptionSelected(tileEl, optionIndex) {
-  // disable buttons to prevent double clicks
-  tileEl.querySelectorAll(".option-btn").forEach(b => b.disabled = true);
-
-  const qIndex = parseInt(tileEl.dataset.qindex, 10);
-  const q = QUESTIONS[qIndex];
-  const selectedText = q.options[optionIndex];
-
-  // Save to Firebase answers path if available
-  try {
-    const playerId = this.myPlayerKey || this.playerName || `player_${Date.now()}`;
-    if (this.db && this.roomCode) {
-      const answerRef = this.db.ref(`rooms/${this.roomCode}/answers/${playerId}/${qIndex}`);
-      answerRef.set({ optionIndex, optionText: selectedText, ts: Date.now() })
-        .catch(err => console.warn("Failed to save answer:", err));
+  // ---------- Q&A methods ----------
+  startQA() {
+    this.qaIndex = 0;
+    this.qaTotal = QUESTIONS.length;
+    this.qaStageInner = document.getElementById("questionCard");
+    if (!this.qaStageInner) {
+      console.error("questionCard element not found");
+      return;
     }
-  } catch (err) {
-    console.warn("Saving answer error:", err);
-  }
-
-  // animate current tile out
-  tileEl.classList.remove("enter");
-  tileEl.classList.add("exit");
-
-  const onTransitionEnd = (ev) => {
-    if (ev.target !== tileEl) return;
-    tileEl.removeEventListener("transitionend", onTransitionEnd);
-    if (tileEl.parentNode) tileEl.parentNode.removeChild(tileEl);
-
-    // advance index and render next tile
-    this.qaIndex += 1;
+    this.qaStageInner.innerHTML = '<div class="qa-stage" id="qaStageInner"></div>';
+    this.qaStageInner = document.getElementById("qaStageInner");
     this.renderNextQuestion();
-  };
-  tileEl.addEventListener("transitionend", onTransitionEnd);
-}
-
-onQAComplete() {
-  // replace stage with completion message
-  this.qaStageInner.innerHTML = `
-    <div class="qa-tile enter">
-      <div class="qa-card">
-        <h3>All done!</h3>
-        <p>Thanks — you completed all ${this.qaTotal} questions.</p>
-      </div>
-    </div>
-  `;
-
-  // mark completion in Firebase if available
-  try {
-    const playerId = this.myPlayerKey || this.playerName || `player_${Date.now()}`;
-    if (this.db && this.roomCode) {
-      this.db.ref(`rooms/${this.roomCode}/completions/${playerId}`).set({ completedAt: Date.now() });
-    }
-  } catch (err) { /* ignore */ }
-    }
   }
+
+  renderNextQuestion() {
+    if (this.qaIndex >= this.qaTotal) {
+      this.onQAComplete();
+      return;
+    }
+
+    const q = QUESTIONS[this.qaIndex];
+    const tile = document.createElement("div");
+    tile.className = "qa-tile";
+    tile.dataset.qindex = this.qaIndex;
+    tile.innerHTML = `
+      <div class="qa-card">
+        <h3>${escapeHtml(q.text)}</h3>
+        <div class="qa-options">
+          ${q.options.map((opt, i) => `<button class="option-btn" data-opt="${i}">${escapeHtml(opt)}</button>`).join("")}
+        </div>
+      </div>
+    `;
+    this.qaStageInner.appendChild(tile);
+
+    // enter animation
+    requestAnimationFrame(() => requestAnimationFrame(() => tile.classList.add("enter")));
+
+    // attach handlers
+    tile.querySelectorAll(".option-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        this.handleOptionSelected(tile, parseInt(btn.dataset.opt, 10));
+      });
+    });
+  }
+
+  handleOptionSelected(tileEl, optionIndex) {
+    // disable options
+    tileEl.querySelectorAll(".option-btn").forEach(b => b.disabled = true);
+
+    const qIndex = parseInt(tileEl.dataset.qindex, 10);
+    const q = QUESTIONS[qIndex];
+    const selectedText = q.options[optionIndex];
+
+    // save answer to Firebase (if available)
+    try {
+      const playerId = this.myPlayerKey || this.playerName || `player_${Date.now()}`;
+      if (this.db && this.roomCode) {
+        const answerRef = this.db.ref(`rooms/${this.roomCode}/answers/${playerId}/${qIndex}`);
+        answerRef.set({ optionIndex, optionText: selectedText, ts: Date.now() })
+          .catch(err => console.warn("Failed saving answer:", err));
+      }
+    } catch (err) {
+      console.warn("Error saving answer:", err);
+    }
+
+    // animate out
+    tileEl.classList.remove("enter");
+    tileEl.classList.add("exit");
+
+    const onTransitionEnd = (ev) => {
+      if (ev.target !== tileEl) return;
+      tileEl.removeEventListener("transitionend", onTransitionEnd);
+      if (tileEl.parentNode) tileEl.parentNode.removeChild(tileEl);
+
+      // next question
+      this.qaIndex += 1;
+      this.renderNextQuestion();
+    };
+    tileEl.addEventListener("transitionend", onTransitionEnd);
+  }
+
+  onQAComplete() {
+    // show completion tile
+    this.qaStageInner.innerHTML = `
+      <div class="qa-tile enter">
+        <div class="qa-card">
+          <h3>All done!</h3>
+          <p>You completed all ${this.qaTotal} questions. Thanks!</p>
+        </div>
+      </div>
+    `;
+    // mark completion in firebase
+    try {
+      const playerId = this.myPlayerKey || this.playerName || `player_${Date.now()}`;
+      if (this.db && this.roomCode) {
+        this.db.ref(`rooms/${this.roomCode}/completions/${playerId}`).set({ completedAt: Date.now() });
+      }
+    } catch (err) { /* ignore */ }
+  }
+  // ---------- end Q&A methods ----------
 }
 
-// create instance once DOM loaded
+// instantiate once DOM is ready
 let gameInstance = null;
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("DOMContentLoaded: creating game instance");
-  if (!window.db) console.warn("window.db is falsy — firebase-config.js may not have run yet");
+  if (!window.db) console.warn("window.db falsy; check firebase-config.js");
   gameInstance = new MultiplayerIfIWereGame();
 });
+
 
