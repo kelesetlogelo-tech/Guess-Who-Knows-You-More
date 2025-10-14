@@ -627,10 +627,11 @@ checkAllGuessingComplete() {
       }
     })
     .catch(e => console.warn('checkAllGuessingComplete fail', e));
+  }
 }
 
 /* ===== instantiate ===== */
-gameInstance = null;
+let gameInstance = null;
 document.addEventListener("DOMContentLoaded", () => {
   if (!window.db) console.warn("window.db falsy; check firebase-config.js");
   gameInstance = new MultiplayerIfIWereGame();
