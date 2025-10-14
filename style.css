@@ -125,6 +125,14 @@ button:hover {
 .option-btn[disabled] { opacity: 0.6; cursor: default; transform: none; }
 }
 
+/* guessing prep */
+#guessPrep {
+  background: rgba(255,255,255,0.08);
+  padding: 1.25rem;
+  border-radius: 12px;
+  margin-top: 12px;
+}
+
 /* Guess result badges */
 .guess-result {
   display: inline-flex;
