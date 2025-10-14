@@ -377,6 +377,96 @@ class MultiplayerIfIWereGame {
     }).catch(err => console.error('initGuessingPhaseIfReady error', err));
   }
 
+  // ---------- Guessing prep & ready flow ----------
+
+// show the prepare-to-guess screen (called at end of QA for each client)
+showGuessPrepUI() {
+  // hide QA gamePhase if visible
+  const gamePhase = document.getElementById("gamePhase");
+  if (gamePhase) gamePhase.classList.add("hidden");
+
+  // show the prep screen
+  const prep = document.getElementById("guessPrep");
+  if (prep) prep.classList.remove("hidden");
+
+  // wire the Ready button (id: readyToGuessBtn)
+  const readyBtn = document.getElementById("readyToGuessBtn");
+  if (readyBtn) {
+    // remove previous to avoid double-binding
+    readyBtn.onclick = null;
+    readyBtn.addEventListener("click", () => this.markReadyToGuess());
+  }
+
+  // ensure we are listening for guessing-phase changes
+  if (this.db && this.roomCode) {
+    this.listenForGuessingPhase();
+  }
+}
+
+// called when the player clicks "Ready to Guess"
+markReadyToGuess() {
+  if (!this.db || !this.roomCode) {
+    console.warn("markReadyToGuess: db or roomCode missing");
+    return;
+  }
+
+  // compute our player id (prefer push key)
+  const playerId = this.myPlayerKey || this.playerName || `player_${Date.now()}`;
+  this.db.ref(`rooms/${this.roomCode}/guessReady/${playerId}`).set(true)
+    .then(() => {
+      console.log("Marked readyToGuess for", playerId);
+      // hide prep UI and show waiting for guessing screen
+      const prep = document.getElementById("guessPrep");
+      if (prep) prep.classList.add("hidden");
+      // show guessing waiting room (so we see statuses)
+      const guessWaiting = document.getElementById("guessWaitingRoom");
+      if (guessWaiting) guessWaiting.classList.remove("hidden");
+      // host will initialize guessing order when everyone is ready
+      if (this.isHost) {
+        // small delay to allow writes to propagate
+        setTimeout(() => this.initGuessingPhaseIfReady(), 400);
+      }
+    })
+    .catch(err => {
+      console.error("Failed to mark readyToGuess:", err);
+      alert("Could not mark Ready — check console.");
+    });
+}
+
+// Updated initGuessingPhaseIfReady: check guessReady, not only qaCompletions.
+// If host: build guessingOrder and set phase:'guessing' when all are ready.
+initGuessingPhaseIfReady() {
+  if (!this.db || !this.roomCode) return;
+  const roomRef = this.db.ref(`rooms/${this.roomCode}`);
+
+  // read expectedPlayers from room metadata (fallback to this.expectedPlayers)
+  roomRef.child('expectedPlayers').once('value').then(expSnap => {
+    const expected = expSnap.exists() ? expSnap.val() : (this.expectedPlayers || 0);
+    // count ready flags
+    roomRef.child('guessReady').once('value').then(readySnap => {
+      const readyObj = readySnap.val() || {};
+      const readyCount = Object.keys(readyObj).length;
+      console.log('initGuessingPhaseIfReady: readyCount', readyCount, 'expected', expected);
+      if (readyCount >= expected) {
+        // all players ready -> host creates guessing order and flips phase
+        roomRef.child('players').once('value').then(psnap => {
+          const playersObj = psnap.val() || {};
+          const order = Object.keys(playersObj || {}); // stable Firebase push-key order
+          roomRef.update({
+            guessingOrder: order,
+            currentGuesserIndex: 0,
+            phase: 'guessing'
+          }).then(() => {
+            console.log('Guessing phase initialized by host with order:', order);
+          }).catch(err => console.error('Failed to init guessing phase:', err));
+        });
+      } else {
+        console.log('Not all players ready yet for guessing.');
+      }
+    });
+  }).catch(err => console.error('initGuessingPhaseIfReady error:', err));
+}
+
   listenForGuessingPhase() {
     if (!this.db || !this.roomCode) return;
     const roomRef = this.db.ref(`rooms/${this.roomCode}`);
@@ -433,23 +523,23 @@ class MultiplayerIfIWereGame {
   }
 
   renderGuessingStatuses() {
-    const listEl = document.getElementById('guessPlayerStatusList');
-    if (!listEl) return;
-    listEl.innerHTML = '';
-    this.db.ref(`rooms/${this.roomCode}/players`).once('value').then(psnap => {
-      const players = psnap.val() || {};
-      this.db.ref(`rooms/${this.roomCode}/guessCompletions`).once('value').then(csnap => {
-        const comps = csnap.val() || {};
-        Object.keys(players).forEach(pid => {
-          const li = document.createElement('li');
-          const pname = players[pid].name || pid;
-          const status = comps && comps[pid] ? 'completed' : 'pending';
-          li.textContent = `${pname} — ${status}`;
-          listEl.appendChild(li);
-        });
+  const listEl = document.getElementById('guessPlayerStatusList');
+  if (!listEl || !this.db || !this.roomCode) return;
+  listEl.innerHTML = '';
+  this.db.ref(`rooms/${this.roomCode}/players`).once('value').then(psnap => {
+    const players = psnap.val() || {};
+    this.db.ref(`rooms/${this.roomCode}/guessCompletions`).once('value').then(csnap => {
+      const comps = csnap.val() || {};
+      Object.keys(players).forEach(pid => {
+        const li = document.createElement('li');
+        const name = players[pid].name || pid;
+        const status = comps && comps[pid] ? 'completed' : 'pending';
+        li.textContent = `${name} — ${status}`;
+        listEl.appendChild(li);
       });
     });
-  }
+  });
+}
 
   getPlayerNameByKey(key) {
     if (!key) return null;
@@ -579,6 +669,30 @@ class MultiplayerIfIWereGame {
     }).catch(e => console.warn('checkAllGuessingComplete fail', e));
   }
 }
+
+// --- At the point you detect this client completed QA: ---
+try {
+  const playerId = this.myPlayerKey || this.playerName || `player_${Date.now()}`;
+  if (this.db && this.roomCode) {
+    // mark QA completion (existing behavior)
+    this.db.ref(`rooms/${this.roomCode}/qaCompletions/${playerId}`).set(true).catch(()=>{});
+  }
+} catch(e) { /* ignore */ }
+
+// Show the prep screen instead of staying on "All done"
+this.showGuessPrepUI();
+
+// If host, also attempt to init guessing (in case all already ready)
+if (this.isHost) {
+  // try after a small timeout (allow DB writes to propagate)
+  setTimeout(() => this.initGuessingPhaseIfReady(), 500);
+}
+
+// Also ensure everyone listens for phase changes (in case not already listening)
+if (this.db && this.roomCode) {
+  this.listenForGuessingPhase();
+}
+
 
 /* ===== instantiate when DOM ready ===== */
 let gameInstance = null;
