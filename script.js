@@ -406,7 +406,7 @@ markReadyToGuess() {
   const isMyTurn = (this.myPlayerKey === activeKey);
   console.log('applyGuessingState activeKey', activeKey, 'isMyTurn', isMyTurn);
 
-  // don't hide entire app — only toggle the guessing-specific regions
+  // toggle only guessing-specific regions (don't hide entire app)
   const guessWaitingRoom = document.getElementById('guessWaitingRoom');
   const guessPhaseEl = document.getElementById('guessPhase');
   if (guessWaitingRoom) guessWaitingRoom.classList.toggle('hidden', false);
@@ -424,7 +424,8 @@ markReadyToGuess() {
       el.appendChild(ul);
     }
   }
-  // render current statuses
+
+  // render current statuses if function exists
   if (typeof this.renderGuessingStatuses === "function") this.renderGuessingStatuses();
 
   const activeLabel = document.getElementById('activeGuesserLabel');
@@ -443,26 +444,28 @@ markReadyToGuess() {
     idxRef.on('value', snap => {
       const idx = snap.val();
       if (typeof idx === 'number') {
-        this.currentGuesserIndex = idx;
-        // avoid infinite recursion: only re-apply when idx changed
-        // (simple approach: call applyGuessingState but it will be idempotent)
-        this.applyGuessingState();
+        // update and re-apply state (idempotent)
+        if (this.currentGuesserIndex !== idx) {
+          this.currentGuesserIndex = idx;
+          this.applyGuessingState();
+        }
       }
     });
 
     const compRef = this.db.ref(`rooms/${this.roomCode}/guessCompletions`);
     compRef.off();
     compRef.on('value', () => {
-      this.renderGuessingStatuses();
-      this.checkAllGuessingComplete();
+      if (typeof this.renderGuessingStatuses === "function") this.renderGuessingStatuses();
+      if (typeof this.checkAllGuessingComplete === "function") this.checkAllGuessingComplete();
     });
   }
 
   // start guessing flow if it's this client's turn
   if (isMyTurn) {
-    this.startGuessingForMe();
+    if (typeof this.startGuessingForMe === "function") this.startGuessingForMe();
   }
 }
+
   this.renderGuessingStatuses();
 
   const activeLabel = document.getElementById('activeGuesserLabel');
@@ -473,24 +476,6 @@ markReadyToGuess() {
       activeLabel.textContent = `${nm} is guessing — please wait`;
     }
   }
-
-  // attach watchers defensively
-  if (this.db && this.roomCode) {
-    const idxRef = this.db.ref(`rooms/${this.roomCode}/currentGuesserIndex`);
-    idxRef.off(); // avoid duplicate handlers
-    idxRef.on('value', snap => {
-      const idx = snap.val(); if (typeof idx === 'number') { this.currentGuesserIndex = idx; this.applyGuessingState(); }
-    });
-
-    const compRef = this.db.ref(`rooms/${this.roomCode}/guessCompletions`);
-    compRef.off();
-    compRef.on('value', () => { this.renderGuessingStatuses(); this.checkAllGuessingComplete(); });
-  }
-
-  if (isMyTurn) {
-    this.startGuessingForMe();
-  }
-}
 
   renderGuessingStatuses() {
     const listEl = document.getElementById('guessPlayerStatusList'); if (!listEl || !this.db || !this.roomCode) return;
