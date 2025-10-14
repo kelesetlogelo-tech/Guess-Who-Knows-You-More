@@ -423,6 +423,298 @@ let gameInstance = null;
 document.addEventListener("DOMContentLoaded", () => {
   if (!window.db) console.warn("window.db falsy; check firebase-config.js");
   gameInstance = new MultiplayerIfIWereGame();
-});
+
+/* ========== Guessing phase methods - paste inside MultiplayerIfIWereGame class ========== */
+
+/**
+ * Called when QA phase is finished for all players.
+ * Host/first client should initialize guessingOrder and set phase='guessing'
+ * Logic: anyone who sees phase === 'guessing' will begin listening.
+ */
+initGuessingPhaseIfReady() {
+  // Called after QA completions were written. Host can set guessing order when all QA done.
+  const roomRef = this.db.ref(`rooms/${this.roomCode}`);
+  roomRef.child('qaCompletions').once('value').then(snap => {
+    const obj = snap.val() || {};
+    const completedCount = Object.keys(obj).length;
+    console.log('QA completions count:', completedCount, 'expected:', this.expectedPlayers);
+    if (completedCount >= this.expectedPlayers) {
+      // build guessing order from players list, stable order: use players keys array
+      this.db.ref(`rooms/${this.roomCode}/players`).once('value').then(psnap => {
+        const playersObj = psnap.val() || {};
+        const order = Object.keys(playersObj || {});
+        // store order and set phase
+        roomRef.update({
+          guessingOrder: order,
+          currentGuesserIndex: 0,
+          phase: 'guessing'
+        }).then(() => console.log('Guessing phase initialized with order:', order))
+          .catch(err => console.error('Failed to init guessing phase:', err));
+      });
+    }
+  }).catch(err => console.error('initGuessingPhaseIfReady error:', err));
+}
+
+/**
+ * All clients should call this to start listening for phase changes
+ */
+listenForGuessingPhase() {
+  const roomRef = this.db.ref(`rooms/${this.roomCode}`);
+  roomRef.child('phase').on('value', snap => {
+    const phase = snap.val();
+    console.log('phase changed ->', phase);
+    if (phase === 'guessing') {
+      // load order and current index, and enter appropriate UI
+      roomRef.child('guessingOrder').once('value').then(oSnap => {
+        const order = oSnap.val() || [];
+        this.guessingOrder = order;
+        roomRef.child('currentGuesserIndex').once('value').then(idxSnap => {
+          this.currentGuesserIndex = idxSnap.val() || 0;
+          this.applyGuessingState(); // show UI or wait
+        });
+      });
+    }
+  });
+}
+
+/**
+ * Called after we got guessingOrder and currentGuesserIndex.
+ * If this client is the active guesser, show guess UI; else show waiting room with statuses.
+ */
+applyGuessingState() {
+  const activeKey = this.guessingOrder && this.guessingOrder[this.currentGuesserIndex];
+  const isMyTurn = (this.myPlayerKey === activeKey);
+  console.log('Active guesser key:', activeKey, 'isMyTurn?', isMyTurn);
+
+  // show/hide sections
+  document.getElementById('gamePhase')?.classList.add('hidden'); // hide QA gamePhase if present
+  document.getElementById('guessWaitingRoom')?.classList.remove('hidden');
+  document.getElementById('guessPhase')?.classList.toggle('hidden', !isMyTurn);
+
+  // show room code on waiting UI
+  const rcd = document.getElementById('roomCodeDisplay_guess'); if (rcd) rcd.textContent = this.roomCode;
+
+  // show statuses and who is active
+  this.renderGuessingStatuses();
+
+  // if it's my turn start guessing flow
+  if (isMyTurn) {
+    document.getElementById('activeGuesserLabel').textContent = `You are guessing now — make guesses for all players`;
+    this.startGuessingForMe();
+  } else {
+    // show who is active
+    const name = this.getPlayerNameByKey(activeKey) || 'Another player';
+    document.getElementById('activeGuesserLabel').textContent = `${name} is guessing now — please wait`;
+  }
+
+  // also listen for changes to currentGuesserIndex to react when host increments it
+  this.db.ref(`rooms/${this.roomCode}/currentGuesserIndex`).on('value', snap => {
+    const idx = snap.val();
+    if (typeof idx === 'number') {
+      this.currentGuesserIndex = idx;
+      // re-apply state so UI updates when turn moves
+      this.applyGuessingState();
+    }
+  });
+
+  // listen for completions to update waiting room statuses
+  this.db.ref(`rooms/${this.roomCode}/guessCompletions`).on('value', snap => {
+    this.renderGuessingStatuses();
+  });
+}
+
+/**
+ * Render the Guessing Waiting Room statuses
+ */
+renderGuessingStatuses() {
+  const listEl = document.getElementById('guessPlayerStatusList');
+  if (!listEl) return;
+  listEl.innerHTML = '';
+
+  // read players then completions
+  this.db.ref(`rooms/${this.roomCode}/players`).once('value').then(psnap => {
+    const players = psnap.val() || {};
+    this.db.ref(`rooms/${this.roomCode}/guessCompletions`).once('value').then(csnap => {
+      const comps = csnap.val() || {};
+      // players is an object keyed by playerId
+      Object.keys(players).forEach(pid => {
+        const li = document.createElement('li');
+        const pname = players[pid].name || pid;
+        const status = comps && comps[pid] ? 'completed' : 'pending';
+        li.textContent = `${pname} — ${status}`;
+        if (comps && comps[pid]) {
+          li.style.opacity = '0.7';
+        }
+        listEl.appendChild(li);
+      });
+    });
+  });
+}
+
+/**
+ * Utility: get player display name by Firebase key
+ */
+getPlayerNameByKey(key) {
+  // we assume players were loaded earlier; if not, fetch once
+  // try to read cached players map
+  if (this.playersCache && this.playersCache[key]) return this.playersCache[key].name;
+  // else fetch
+  this.db.ref(`rooms/${this.roomCode}/players/${key}`).once('value').then(s => {
+    const v = s.val(); if (!this.playersCache) this.playersCache = {}; this.playersCache[key] = v;
+  });
+  return null;
+}
+
+/**
+ * Active guesser: start guessing for self. The flow:
+ *  - Build list of targets (all players except self)
+ *  - For each target, for qIndex 0..(QUESTIONS.length-1), present the tile and accept guess.
+ */
+startGuessingForMe() {
+  // build list of target player keys
+  this.db.ref(`rooms/${this.roomCode}/players`).once('value').then(psnap => {
+    const playersObj = psnap.val() || {};
+    const allKeys = Object.keys(playersObj);
+    // exclude self
+    const myKey = this.myPlayerKey;
+    this.guessTargets = allKeys.filter(k => k !== myKey);
+    this.currentTargetIdx = 0;
+    this.currentTargetQIndex = 0;
+    // show first guess tile
+    this.renderNextGuessTile();
+  }).catch(err => console.error('startGuessingForMe error:', err));
+}
+
+/**
+ * Render next guess tile for active guesser (for current target and question)
+ */
+renderNextGuessTile() {
+  const totalTargets = this.guessTargets.length;
+  if (this.currentTargetIdx >= totalTargets) {
+    // finished all targets -> mark completion
+    this.finishMyGuessingTurn();
+    return;
+  }
+
+  const targetKey = this.guessTargets[this.currentTargetIdx];
+  const qIndex = this.currentTargetQIndex;
+  const question = QUESTIONS[qIndex];
+
+  // fetch target's real answer to compare later (but do not show it)
+  this.db.ref(`rooms/${this.roomCode}/answers/${targetKey}/${qIndex}`).once('value')
+    .then(ansSnap => {
+      const realAnswer = ansSnap.val(); // { optionIndex, optionText, ts } or null
+      // build tile UI (reuse QA tile markup / animations)
+      const stage = document.getElementById('guessCard');
+      if (!stage) return;
+      stage.innerHTML = `<div class="qa-stage" id="guessQAStage"></div>`;
+      const stageInner = document.getElementById('guessQAStage');
+
+      const tile = document.createElement('div');
+      tile.className = 'qa-tile';
+      tile.dataset.qindex = qIndex;
+      tile.dataset.targetKey = targetKey;
+
+      const targetName = this.getPlayerNameByKey(targetKey) || 'Player';
+
+      tile.innerHTML = `
+        <div class="qa-card">
+          <h3>Guess for ${escapeHtml(targetName)} — question ${qIndex + 1}</h3>
+          <p>${escapeHtml(question.text)}</p>
+          <div class="qa-options">
+            ${question.options.map((opt, i) => `<button class="option-btn" data-opt="${i}">${escapeHtml(opt)}</button>`).join('')}
+          </div>
+          <div class="guess-feedback" style="margin-top:12px;"></div>
+        </div>
+      `;
+      stageInner.appendChild(tile);
+
+      requestAnimationFrame(() => requestAnimationFrame(() => tile.classList.add('enter')));
+
+      tile.querySelectorAll('.option-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const guessedIndex = parseInt(btn.dataset.opt, 10);
+          const correct = realAnswer && (realAnswer.optionIndex === guessedIndex);
+          // show immediate feedback (green check / red x)
+          const feedback = tile.querySelector('.guess-feedback');
+          feedback.innerHTML = correct
+            ? `<span class="guess-result guess-correct">✓</span> Correct`
+            : `<span class="guess-result guess-wrong">✕</span> Wrong`;
+          // save guess in DB
+          const guessRef = this.db.ref(`rooms/${this.roomCode}/guesses/${this.myPlayerKey}/${targetKey}/${qIndex}`);
+          guessRef.set({ guessedIndex, correct, ts: Date.now() })
+            .catch(e => console.warn('Failed to save guess:', e));
+
+          // adjust score: +1 / -1 for guesser
+          const scoreRef = this.db.ref(`rooms/${this.roomCode}/scores/${this.myPlayerKey}`);
+          scoreRef.transaction(curr => (curr || 0) + (correct ? 1 : -1));
+
+          // animate tile out after a short delay
+          setTimeout(() => {
+            tile.classList.remove('enter');
+            tile.classList.add('exit');
+            tile.addEventListener('transitionend', () => {
+              // advance to next question/target
+              this.advanceGuessIndices();
+              // clear stage and render next tile
+              stageInner.innerHTML = '';
+              this.renderNextGuessTile();
+            }, { once: true });
+          }, 700);
+        });
+      });
+    }).catch(err => {
+      console.error('Error fetching real answer:', err);
+      // still allow guessing (treat as unknown -> always wrong)
+      // implement similar UI but handle null realAnswer as always incorrect
+    });
+}
+
+/**
+ * Advance indices after successful selection
+ */
+advanceGuessIndices() {
+  this.currentTargetQIndex += 1;
+  if (this.currentTargetQIndex >= QUESTIONS.length) {
+    this.currentTargetQIndex = 0;
+    this.currentTargetIdx += 1;
+  }
+}
+
+/**
+ * Mark this guesser as complete and advance currentGuesserIndex (in DB) to next player.
+ */
+finishMyGuessingTurn() {
+  const myKey = this.myPlayerKey;
+  // set completion flag
+  this.db.ref(`rooms/${this.roomCode}/guessCompletions/${myKey}`).set(true);
+
+  // increment currentGuesserIndex atomically (transaction)
+  const roomRef = this.db.ref(`rooms/${this.roomCode}`);
+  roomRef.transaction(current => {
+    if (!current) return current;
+    const idx = (current.currentGuesserIndex || 0) + 1;
+    current.currentGuesserIndex = idx;
+    return current;
+  }).then(() => {
+    console.log('Requested increment of currentGuesserIndex');
+  }).catch(err => console.error('Failed to increment currentGuesserIndex:', err));
+}
+
+/**
+ * Utility: called by any client periodically or after changes to show waiting status
+ * When all players have guessCompletions true, set phase='done' (game over)
+ */
+checkAllGuessingComplete() {
+  this.db.ref(`rooms/${this.roomCode}/guessCompletions`).once('value').then(snap => {
+    const comps = snap.val() || {};
+    const count = Object.keys(comps).length;
+    if (count >= this.expectedPlayers) {
+      // finalize phase
+      this.db.ref(`rooms/${this.roomCode}`).update({ phase: 'done' });
+    }
+  });
+}
+
 
 
