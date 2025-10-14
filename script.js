@@ -263,78 +263,114 @@ class MultiplayerIfIWereGame {
 
   /* ===== Guessing prep & ready ===== */
 // robust showGuessPrepUI (improved — host listens for guessReady and starts guessing when readyCount >= expected)
-showGuessPrepUI() {
-  console.log("showGuessPrepUI: showing prepare-to-guess screen");
-  // hide QA UI (only the QA card area, never hide entire app)
+/* ===== Show waiting room after Q&A and host-only Begin button ===== */
+showWaitingAfterQA() {
+  console.log("showWaitingAfterQA: showing waiting room and live statuses");
+
+  // hide QA UI only
   const gamePhase = document.getElementById("gamePhase");
   if (gamePhase) gamePhase.classList.add("hidden");
 
-  // show prep
-  const prep = document.getElementById("guessPrep");
-  if (prep) {
-    prep.classList.remove("hidden");
-  } else {
-    console.warn("showGuessPrepUI: #guessPrep not found in DOM");
-    // create a small fallback prep UI so the user isn't left with a blank page
-    const container = document.body;
-    const fallback = document.createElement("div");
-    fallback.id = "guessPrepFallback";
-    fallback.innerHTML = `<div style="padding:20px"><h2>Prepare to Guess</h2><p>If you see this message it means the Prepare UI was missing. Click Ready to continue.</p><button id="readyToGuessBtnFallback">Ready to Guess</button></div>`;
-    container.appendChild(fallback);
-    document.getElementById("readyToGuessBtnFallback").addEventListener("click", () => {
-      if (typeof this.markReadyToGuess === "function") this.markReadyToGuess();
-    });
+  // show the waiting room (visible to everyone)
+  const guessWaiting = document.getElementById("guessWaitingRoom");
+  if (guessWaiting) guessWaiting.classList.remove("hidden");
+  const roomCodeDisp = document.getElementById("roomCodeDisplay_guess");
+  if (roomCodeDisp) roomCodeDisp.textContent = this.roomCode || "";
+
+  // host controls
+  const hostControls = document.getElementById("hostControls");
+  if (hostControls) hostControls.classList.toggle("hidden", !this.isHost);
+
+  // wire host Begin button (host only)
+  if (this.isHost) {
+    const hostBtn = document.getElementById("hostBeginGuessBtn");
+    if (hostBtn) {
+      hostBtn.onclick = null;
+      hostBtn.addEventListener("click", () => this.hostBeginHandler());
+      // ensure hidden until all players completed (we'll reveal it below)
+      hostBtn.disabled = true;
+      hostBtn.classList.add("muted");
+    }
   }
 
-  // wire ready button (if present)
-  const readyBtn = document.getElementById("readyToGuessBtn");
-  if (readyBtn) {
-    readyBtn.onclick = null;
-    readyBtn.addEventListener("click", () => this.markReadyToGuess());
-  }
+  // ensure the statuses list exists
+  const statusList = document.getElementById("guessPlayerStatusList");
+  if (statusList) statusList.innerHTML = "";
 
-  // ensure we are listening for guessing-phase changes and ready list
+  // Ensure we are listening for QA completions updates
   if (this.db && this.roomCode) {
-    this.listenForGuessingPhase();
+    const qaRef = this.db.ref(`rooms/${this.roomCode}/qaCompletions`);
+    // remove duplicate handlers
+    qaRef.off('value');
 
-    // live listener for guessReady to update waiting statuses while users prepare
-    const readyRef = this.db.ref(`rooms/${this.roomCode}/guessReady`);
-    readyRef.off('value'); // avoid duplicate handlers
-    readyRef.on('value', (snap) => {
-      const obj = snap.val() || {};
-      console.log("guessReady updated:", Object.keys(obj).length, obj);
-      // update a UI element if present
-      const readyListEl = document.getElementById("guessPlayerStatusList");
-      if (readyListEl) {
-        // mark players who flagged ready with (ready)
-        this.db.ref(`rooms/${this.roomCode}/players`).once('value').then(ps => {
-          const players = ps.val() || {};
-          readyListEl.innerHTML = "";
-          Object.keys(players).forEach(pid => {
-            const li = document.createElement('li');
-            const name = players[pid].name || pid;
-            const status = obj && obj[pid] ? 'ready' : 'not ready';
-            li.textContent = `${name} — ${status}`;
-            readyListEl.appendChild(li);
+    // on every change, update statuses and for host enable Begin when ready
+    qaRef.on('value', (snap) => {
+      const doneObj = snap.val() || {};
+      console.log("qaCompletions updated:", Object.keys(doneObj).length, doneObj);
+
+      // Update status list (pull player names)
+      this.db.ref(`rooms/${this.roomCode}/players`).once('value').then(psnap => {
+        const players = psnap.val() || {};
+        const keys = Object.keys(players);
+        // render each player and mark completed/pending
+        if (statusList) statusList.innerHTML = "";
+        keys.forEach(k => {
+          const name = (players[k] && players[k].name) ? players[k].name : k;
+          const li = document.createElement('li');
+          const status = doneObj && doneObj[k] ? 'completed' : 'pending';
+          li.textContent = `${name} — ${status}`;
+          if (status === 'completed') li.classList.add('status-completed'); else li.classList.remove('status-completed');
+          if (statusList) statusList.appendChild(li);
+        });
+
+        // Enable host Begin button only when counts match expectedPlayers
+        if (this.isHost) {
+          const expectedRef = this.db.ref(`rooms/${this.roomCode}/expectedPlayers`);
+          expectedRef.once('value').then(expSnap => {
+            const expected = expSnap.exists() ? expSnap.val() : (this.expectedPlayers || 0);
+            const doneCount = Object.keys(doneObj).length;
+            console.log('Host check: doneCount', doneCount, 'expected', expected);
+            const hostBtn = document.getElementById("hostBeginGuessBtn");
+            if (hostBtn) {
+              if (doneCount >= expected && expected > 0) {
+                hostBtn.disabled = false;
+                hostBtn.classList.remove('muted');
+              } else {
+                hostBtn.disabled = true;
+                hostBtn.classList.add('muted');
+              }
+            }
           });
-        }).catch(e => console.warn("update ready list failed", e));
-      }
-
-      // If I'm the host, and ready count meets expectedPlayers, initialize guessing immediately.
-      if (this.isHost) {
-        // fetch expectedPlayers from room (fallback to this.expectedPlayers)
-        this.db.ref(`rooms/${this.roomCode}/expectedPlayers`).once('value').then(expSnap => {
-          const expected = (expSnap.exists() ? expSnap.val() : (this.expectedPlayers || 0));
-          const readyCount = Object.keys(obj).length;
-          console.log('Host-ready-watcher: readyCount', readyCount, 'expected', expected);
-          if (readyCount >= expected) {
-            // call the init function (it will do safety checks too)
-            this.initGuessingPhaseIfReady();
-          }
-        }).catch(e => console.warn('Host-ready-watcher failed to read expectedPlayers', e));
-      }
+        }
+      }).catch(e => console.warn("Failed to load players for status list", e));
     });
   }
+}
+
+/* ===== Host clicks Begin Guessing =====
+   Host should create guessingOrder and set phase:'guessing'
+*/
+hostBeginHandler() {
+  if (!this.isHost || !this.db || !this.roomCode) {
+    console.warn("hostBeginHandler: not allowed or missing refs");
+    return;
+  }
+  const roomRef = this.db.ref(`rooms/${this.roomCode}`);
+
+  // Read players and set order + reset currentGuesserIndex -> 0
+  roomRef.child('players').once('value').then(psnap => {
+    const playersObj = psnap.val() || {};
+    const order = Object.keys(playersObj);
+    return roomRef.update({
+      guessingOrder: order,
+      currentGuesserIndex: 0,
+      phase: 'guessing'
+    });
+  }).then(() => {
+    console.log("hostBeginHandler: guessing phase started by host");
+  }).catch(err => {
+    console.error("hostBeginHandler failed:", err);
+  });
 }
 
   // robust markReadyToGuess (replace existing)
