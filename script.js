@@ -180,31 +180,56 @@ class MultiplayerIfIWereGame {
     });
   }
 
-  // join a room and push player record (store myPlayerKey)
-  joinRoom(playerName, roomCode) {
-    this.playerName = playerName;
-    this.roomCode = roomCode;
+     joinRoom(playerName, roomCode) {
+     console.log("joinRoom called with", playerName, roomCode);
 
-    this.roomRef = this.db.ref(`rooms/${this.roomCode}`);
-    this.playersRef = this.roomRef.child("players");
+  if (!this.db) {
+    console.error("joinRoom: window.db not available");
+    alert("Firebase not initialized. Check console.");
+    return;
+  }
+  this.playerName = playerName;
+  this.roomCode = roomCode;
+  this.roomRef = this.db.ref(`rooms/${this.roomCode}`);
+  this.playersRef = this.roomRef.child("players");
 
-    // validate existence, then push
-    this.roomRef.once("value").then(snap => {
-      if (!snap.exists()) {
-        alert("Room not found. Check the code.");
+  // Check room exists first
+  this.roomRef.once("value")
+    .then(snapshot => {
+      if (!snapshot.exists()) {
+        alert("Room not found. Check the code and try again.");
         throw new Error("Room not found: " + this.roomCode);
       }
-      const p = this.playersRef.push();
-      return p.set({ name: playerName, joinedAt: Date.now(), isHost: false }).then(() => {
-        this.myPlayerKey = p.key;
-        console.log("Joined room; myPlayerKey:", this.myPlayerKey);
+
+      // push the player and store the push key on success
+      const newPlayerRef = this.playersRef.push();
+      return newPlayerRef.set({
+        name: playerName,
+        joinedAt: Date.now(),
+        isHost: false
+      }).then(() => {
+        this.myPlayerKey = newPlayerRef.key;
+        console.log("Player pushed with key:", this.myPlayerKey);
+
+        // Show waiting UI and start listening for players + gameStarted
         this.showWaitingUI();
         this.listenForPlayers();
+
+        // optional: write lastSeen or client info
+        try {
+          this.roomRef.child(`lastJoinEvents/${this.myPlayerKey}`).set({
+            name: playerName,
+            ts: Date.now()
+          });
+        } catch (e) { /* ignore write failure */ }
       });
-    }).catch(err => {
-      console.error("joinRoom error:", err);
+    })
+    .catch(err => {
+      // already alerted above for not found; log other errors
+      if (err && err.message) console.error("joinRoom error:", err);
     });
-  }
+}
+
 
   // show waiting room UI
   showWaitingUI() {
@@ -219,48 +244,66 @@ class MultiplayerIfIWereGame {
 
   // listen for players and start flag
   listenForPlayers() {
-    if (!this.playersRef || !this.roomRef) {
-      console.error("listenForPlayers called without refs:", this.playersRef, this.roomRef);
-      return;
+  if (!this.roomRef || !this.playersRef) {
+    console.error("listenForPlayers: missing refs", this.roomRef, this.playersRef);
+    return;
+  }
+
+  console.log("listenForPlayers: attaching listeners for", this.roomCode);
+
+  // Fast incremental update: child_added so UI shows new player immediately
+  this.playersRef.on("child_added", snapshot => {
+    const pdata = snapshot.val();
+    const pkey = snapshot.key;
+    console.log("child_added:", pkey, pdata);
+
+    // Update UI incrementally
+    const playerListEl = document.getElementById("playerList");
+    if (playerListEl) {
+      const li = document.createElement("li");
+      li.dataset.key = pkey;
+      li.textContent = pdata && pdata.name ? pdata.name : ("Player " + pkey);
+      playerListEl.appendChild(li);
+    }
+  });
+
+  // Full snapshot to recalc counts and ensure no dupes
+  this.playersRef.on("value", snapshot => {
+    const obj = snapshot.val() || {};
+    const players = Object.values(obj).map(p => p.name || "Unnamed");
+    console.log("players.value snapshot:", players);
+
+    // dedupe UI list and rebuild (robust approach)
+    const listEl = document.getElementById("playerList");
+    if (listEl) {
+      listEl.innerHTML = "";
+      players.forEach(name => {
+        const li = document.createElement("li");
+        li.textContent = name;
+        listEl.appendChild(li);
+      });
     }
 
-    console.log("listenForPlayers on", `rooms/${this.roomCode}/players`);
+    // Update count if host provided expectedPlayers
+    const countEl = document.getElementById("playersCount");
+    if (countEl) countEl.textContent = `${players.length} / ${this.expectedPlayers || "?"} joined`;
 
-    // update players list
-    this.playersRef.on("value", snapshot => {
-      const obj = snapshot.val() || {};
-      const players = Object.values(obj).map(p => p.name || "Unnamed");
-      console.log("players:", players);
+    // If I'm the host and we've reached expected players, show Begin
+    if (this.isHost && players.length >= this.expectedPlayers) {
+      const beginBtn = document.getElementById("beginBtn") || document.getElementById("beginGame");
+      if (beginBtn) beginBtn.classList.remove("hidden");
+    }
+  });
 
-      const listEl = this.$$(["playerList","playersList","players-list","playersCountEl"]);
-      if (listEl) {
-        listEl.innerHTML = "";
-        players.forEach(n => {
-          const li = document.createElement("li");
-          li.textContent = n;
-          listEl.appendChild(li);
-        });
-      }
+  // Listen for gameStarted flag
+  this.roomRef.child("gameStarted").on("value", snap => {
+    if (snap.val() === true) {
+      console.log("listenForPlayers: gameStarted true -> startGame");
+      this.startGame();
+    }
+  });
+}
 
-      // update count text if present
-      const countEl = this.$$(["playersCount","players-count","playersCountEl"]);
-      if (countEl) countEl.textContent = `${players.length} / ${this.expectedPlayers || "?"} joined`;
-
-      // If host and reached expected players, show Begin
-      if (this.isHost && players.length >= this.expectedPlayers) {
-        const beginBtn = this.$$(["beginBtn","beginGame","begin-game-btn"]);
-        if (beginBtn) beginBtn.classList.remove("hidden");
-      }
-    });
-
-    // listen for gameStarted flag
-    this.roomRef.child("gameStarted").on("value", s => {
-      if (s.val() === true) {
-        console.log("gameStarted observed -> startGame");
-        this.startGame();
-      }
-    });
-  }
 
   // startGame transitions to QA (uses startQA)
   startGame() {
