@@ -400,7 +400,7 @@ markReadyToGuess() {
   }
 
   // safer applyGuessingState (replace existing)
-applyGuessingState() {
+ applyGuessingState() {
   console.log("applyGuessingState running");
   const activeKey = (this.guessingOrder && this.guessingOrder[this.currentGuesserIndex]) || null;
   const isMyTurn = (this.myPlayerKey === activeKey);
@@ -415,13 +415,54 @@ applyGuessingState() {
   const rcd = document.getElementById('roomCodeDisplay_guess');
   if (rcd) rcd.textContent = this.roomCode;
 
-  // render statuses; if missing, create fallback list
+  // ensure status list exists
   if (!document.getElementById('guessPlayerStatusList')) {
     const el = document.getElementById('guessWaitingRoom');
     if (el) {
-      const ul = document.createElement('ul'); ul.id = 'guessPlayerStatusList'; el.appendChild(ul);
+      const ul = document.createElement('ul');
+      ul.id = 'guessPlayerStatusList';
+      el.appendChild(ul);
     }
   }
+  // render current statuses
+  if (typeof this.renderGuessingStatuses === "function") this.renderGuessingStatuses();
+
+  const activeLabel = document.getElementById('activeGuesserLabel');
+  if (activeLabel) {
+    if (isMyTurn) activeLabel.textContent = 'You are guessing now — guess every other player';
+    else {
+      const nm = this.getPlayerNameByKey(activeKey) || 'A player';
+      activeLabel.textContent = `${nm} is guessing — please wait`;
+    }
+  }
+
+  // attach watchers defensively (remove previous handlers first)
+  if (this.db && this.roomCode) {
+    const idxRef = this.db.ref(`rooms/${this.roomCode}/currentGuesserIndex`);
+    idxRef.off();
+    idxRef.on('value', snap => {
+      const idx = snap.val();
+      if (typeof idx === 'number') {
+        this.currentGuesserIndex = idx;
+        // avoid infinite recursion: only re-apply when idx changed
+        // (simple approach: call applyGuessingState but it will be idempotent)
+        this.applyGuessingState();
+      }
+    });
+
+    const compRef = this.db.ref(`rooms/${this.roomCode}/guessCompletions`);
+    compRef.off();
+    compRef.on('value', () => {
+      this.renderGuessingStatuses();
+      this.checkAllGuessingComplete();
+    });
+  }
+
+  // start guessing flow if it's this client's turn
+  if (isMyTurn) {
+    this.startGuessingForMe();
+  }
+}
   this.renderGuessingStatuses();
 
   const activeLabel = document.getElementById('activeGuesserLabel');
@@ -450,15 +491,6 @@ applyGuessingState() {
     this.startGuessingForMe();
   }
 }
-
-    // watch index and completions
-    this.db.ref(`rooms/${this.roomCode}/currentGuesserIndex`).on('value', snap => {
-      const idx = snap.val(); if (typeof idx === 'number') { this.currentGuesserIndex = idx; this.applyGuessingState(); }
-    });
-    this.db.ref(`rooms/${this.roomCode}/guessCompletions`).on('value', () => { this.renderGuessingStatuses(); this.checkAllGuessingComplete(); });
-
-    if (isMyTurn) this.startGuessingForMe();
-  }
 
   renderGuessingStatuses() {
     const listEl = document.getElementById('guessPlayerStatusList'); if (!listEl || !this.db || !this.roomCode) return;
