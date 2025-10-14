@@ -8,5 +8,13 @@ const firebaseConfig = {
   appId: "1:643053862807:web:54ddb442035fda90ce8ed2"  
 };
 
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
+try {
+  firebase.initializeApp(firebaseConfig);
+  // expose the Database instance on window so other scripts (script.js) can use it
+  window.db = firebase.database();
+  console.log("Firebase initialized successfully — window.db is set");
+} catch (err) {
+  console.error("Firebase initialization error:", err);
+  // ensure window.db is undefined if init failed
+  window.db = undefined;
+}
