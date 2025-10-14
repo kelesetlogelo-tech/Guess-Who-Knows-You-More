@@ -399,56 +399,49 @@ markReadyToGuess() {
     });
   }
 
-  // safer applyGuessingState (replace existing)
- applyGuessingState() {
+ /* ===== Listen & apply guessing phase ===== */
+applyGuessingState() {
   console.log("applyGuessingState running");
+
   const activeKey = (this.guessingOrder && this.guessingOrder[this.currentGuesserIndex]) || null;
   const isMyTurn = (this.myPlayerKey === activeKey);
-  console.log('applyGuessingState activeKey', activeKey, 'isMyTurn', isMyTurn);
 
-  // toggle only guessing-specific regions (don't hide entire app)
+  // show/hide UI regions
   const guessWaitingRoom = document.getElementById('guessWaitingRoom');
   const guessPhaseEl = document.getElementById('guessPhase');
-  if (guessWaitingRoom) guessWaitingRoom.classList.toggle('hidden', false);
+  if (guessWaitingRoom) guessWaitingRoom.classList.remove('hidden');
   if (guessPhaseEl) guessPhaseEl.classList.toggle('hidden', !isMyTurn);
 
   const rcd = document.getElementById('roomCodeDisplay_guess');
   if (rcd) rcd.textContent = this.roomCode;
 
   // ensure status list exists
-  if (!document.getElementById('guessPlayerStatusList')) {
-    const el = document.getElementById('guessWaitingRoom');
-    if (el) {
-      const ul = document.createElement('ul');
-      ul.id = 'guessPlayerStatusList';
-      el.appendChild(ul);
-    }
+  if (!document.getElementById('guessPlayerStatusList') && guessWaitingRoom) {
+    const ul = document.createElement('ul');
+    ul.id = 'guessPlayerStatusList';
+    guessWaitingRoom.appendChild(ul);
   }
 
-  // render current statuses if function exists
+  // render statuses
   if (typeof this.renderGuessingStatuses === "function") this.renderGuessingStatuses();
 
+  // update active label
   const activeLabel = document.getElementById('activeGuesserLabel');
   if (activeLabel) {
-    if (isMyTurn) activeLabel.textContent = 'You are guessing now — guess every other player';
-    else {
-      const nm = this.getPlayerNameByKey(activeKey) || 'A player';
-      activeLabel.textContent = `${nm} is guessing — please wait`;
-    }
+    activeLabel.textContent = isMyTurn
+      ? 'You are guessing now — guess every other player'
+      : `${this.getPlayerNameByKey(activeKey) || 'A player'} is guessing — please wait`;
   }
 
-  // attach watchers defensively (remove previous handlers first)
+  // attach watchers safely
   if (this.db && this.roomCode) {
     const idxRef = this.db.ref(`rooms/${this.roomCode}/currentGuesserIndex`);
     idxRef.off();
     idxRef.on('value', snap => {
       const idx = snap.val();
-      if (typeof idx === 'number') {
-        // update and re-apply state (idempotent)
-        if (this.currentGuesserIndex !== idx) {
-          this.currentGuesserIndex = idx;
-          this.applyGuessingState();
-        }
+      if (typeof idx === 'number' && this.currentGuesserIndex !== idx) {
+        this.currentGuesserIndex = idx;
+        this.applyGuessingState();
       }
     });
 
@@ -460,96 +453,180 @@ markReadyToGuess() {
     });
   }
 
-  // start guessing flow if it's this client's turn
-  if (isMyTurn) {
-    if (typeof this.startGuessingForMe === "function") this.startGuessingForMe();
+  // start guessing if it's my turn
+  if (isMyTurn && typeof this.startGuessingForMe === "function") this.startGuessingForMe();
 }
 
-  this.renderGuessingStatuses();
+/* ===== render guessing statuses ===== */
+renderGuessingStatuses() {
+  const listEl = document.getElementById('guessPlayerStatusList');
+  if (!listEl || !this.db || !this.roomCode) return;
 
-  const activeLabel = document.getElementById('activeGuesserLabel');
-  if (activeLabel) {
-    if (isMyTurn) activeLabel.textContent = 'You are guessing now — guess every other player';
-    else {
-      const nm = this.getPlayerNameByKey(activeKey) || 'A player';
-      activeLabel.textContent = `${nm} is guessing — please wait`;
-    }
-  }
-
-  renderGuessingStatuses() {
-    const listEl = document.getElementById('guessPlayerStatusList'); if (!listEl || !this.db || !this.roomCode) return;
-    listEl.innerHTML = '';
-    this.db.ref(`rooms/${this.roomCode}/players`).once('value').then(psnap => {
-      const players = psnap.val() || {};
-      this.db.ref(`rooms/${this.roomCode}/guessCompletions`).once('value').then(csnap => {
-        const comps = csnap.val() || {};
-        Object.keys(players).forEach(pid => {
-          const li = document.createElement('li'); const name = players[pid].name || pid; const status = comps && comps[pid] ? 'completed' : 'pending'; li.textContent = `${name} — ${status}`; listEl.appendChild(li);
-        });
+  listEl.innerHTML = '';
+  this.db.ref(`rooms/${this.roomCode}/players`).once('value').then(psnap => {
+    const players = psnap.val() || {};
+    this.db.ref(`rooms/${this.roomCode}/guessCompletions`).once('value').then(csnap => {
+      const comps = csnap.val() || {};
+      Object.keys(players).forEach(pid => {
+        const li = document.createElement('li');
+        const name = players[pid].name || pid;
+        const status = comps && comps[pid] ? 'completed' : 'pending';
+        li.textContent = `${name} — ${status}`;
+        listEl.appendChild(li);
       });
     });
-  }
+  });
+}
 
-  getPlayerNameByKey(key) {
-    if (!key) return null;
-    if (this.playersCache && this.playersCache[key]) return this.playersCache[key].name;
-    if (this.db && this.roomCode) {
-      this.db.ref(`rooms/${this.roomCode}/players/${key}`).once('value').then(s => { const v = s.val(); if (!this.playersCache) this.playersCache = {}; this.playersCache[key] = v; });
-    }
-    return null;
-  }
-
-  /* ===== Active guesser flow ===== */
-  startGuessingForMe() {
-    this.db.ref(`rooms/${this.roomCode}/players`).once('value').then(psnap => {
-      const playersObj = psnap.val() || {}; const allKeys = Object.keys(playersObj);
-      this.guessTargets = allKeys.filter(k => k !== this.myPlayerKey); this.currentTargetIdx = 0; this.currentTargetQIndex = 0;
-      this.db.ref(`rooms/${this.roomCode}/scores/${this.myPlayerKey}`).transaction(curr => curr || 0);
-      this.renderNextGuessTile();
+/* ===== Get player name safely ===== */
+getPlayerNameByKey(key) {
+  if (!key) return null;
+  if (this.playersCache && this.playersCache[key]) return this.playersCache[key].name;
+  if (this.db && this.roomCode) {
+    this.db.ref(`rooms/${this.roomCode}/players/${key}`).once('value').then(s => {
+      const v = s.val();
+      if (!this.playersCache) this.playersCache = {};
+      this.playersCache[key] = v;
     });
   }
+  return null;
+}
 
-  renderNextGuessTile() {
-    if (!this.guessTargets || this.currentTargetIdx >= this.guessTargets.length) { this.finishMyGuessingTurn(); return; }
-    const targetKey = this.guessTargets[this.currentTargetIdx]; const qIndex = this.currentTargetQIndex; const question = QUESTIONS[qIndex];
-    this.db.ref(`rooms/${this.roomCode}/answers/${targetKey}/${qIndex}`).once('value').then(ansSnap => {
-      const realAnswer = ansSnap.val(); const stage = document.getElementById('guessCard'); if (!stage) return;
-      stage.innerHTML = '<div class="qa-stage" id="guessQAStage"></div>'; const stageInner = document.getElementById('guessQAStage');
-      const tile = document.createElement('div'); tile.className = 'qa-tile'; tile.dataset.qindex = qIndex; tile.dataset.targetKey = targetKey;
+/* ===== Active guesser flow ===== */
+startGuessingForMe() {
+  if (!this.db || !this.roomCode) return;
+
+  this.db.ref(`rooms/${this.roomCode}/players`).once('value').then(psnap => {
+    const playersObj = psnap.val() || {};
+    const allKeys = Object.keys(playersObj);
+    this.guessTargets = allKeys.filter(k => k !== this.myPlayerKey);
+    this.currentTargetIdx = 0;
+    this.currentTargetQIndex = 0;
+
+    this.db.ref(`rooms/${this.roomCode}/scores/${this.myPlayerKey}`)
+      .transaction(curr => curr || 0);
+
+    this.renderNextGuessTile();
+  });
+}
+
+/* ===== Render next guess tile ===== */
+renderNextGuessTile() {
+  if (!this.guessTargets || this.currentTargetIdx >= this.guessTargets.length) {
+    this.finishMyGuessingTurn();
+    return;
+  }
+
+  const targetKey = this.guessTargets[this.currentTargetIdx];
+  const qIndex = this.currentTargetQIndex;
+  const question = QUESTIONS[qIndex];
+
+  this.db.ref(`rooms/${this.roomCode}/answers/${targetKey}/${qIndex}`).once('value')
+    .then(ansSnap => {
+      const realAnswer = ansSnap.val();
+      const stage = document.getElementById('guessCard');
+      if (!stage) return;
+
+      stage.innerHTML = '<div class="qa-stage" id="guessQAStage"></div>';
+      const stageInner = document.getElementById('guessQAStage');
+
+      const tile = document.createElement('div');
+      tile.className = 'qa-tile';
+      tile.dataset.qindex = qIndex;
+      tile.dataset.targetKey = targetKey;
+
       const targetName = this.getPlayerNameByKey(targetKey) || 'Player';
-      tile.innerHTML = `<div class="qa-card"><h3>Guess for ${escapeHtml(targetName)} — Q${qIndex+1}</h3><p>${escapeHtml(question.text)}</p><div class="qa-options">${question.options.map((opt,i)=>`<button class="option-btn" data-opt="${i}">${escapeHtml(opt)}</button>`).join('')}</div><div class="guess-feedback" style="margin-top:12px;"></div></div>`;
-      stageInner.appendChild(tile); requestAnimationFrame(()=>requestAnimationFrame(()=>tile.classList.add('enter')));
+
+      tile.innerHTML = `
+        <div class="qa-card">
+          <h3>Guess for ${escapeHtml(targetName)} — Q${qIndex + 1}</h3>
+          <p>${escapeHtml(question.text)}</p>
+          <div class="qa-options">
+            ${question.options.map((opt,i)=>`<button class="option-btn" data-opt="${i}">${escapeHtml(opt)}</button>`).join('')}
+          </div>
+          <div class="guess-feedback" style="margin-top:12px;"></div>
+        </div>
+      `;
+
+      stageInner.appendChild(tile);
+      requestAnimationFrame(() => requestAnimationFrame(() => tile.classList.add('enter')));
+
       tile.querySelectorAll('.option-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           tile.querySelectorAll('.option-btn').forEach(b=>b.disabled=true);
-          const guessedIndex = parseInt(btn.dataset.opt, 10); const correct = !!realAnswer && (realAnswer.optionIndex === guessedIndex);
-          const feedback = tile.querySelector('.guess-feedback'); feedback.innerHTML = correct ? `<span class="guess-result guess-correct">✓</span> Correct` : `<span class="guess-result guess-wrong">✕</span> Wrong`;
-          const guessRef = this.db.ref(`rooms/${this.roomCode}/guesses/${this.myPlayerKey}/${targetKey}/${qIndex}`);
-          guessRef.set({ guessedIndex, correct, ts: Date.now() }).catch(e=>console.warn('save guess fail',e));
-          const scoreRef = this.db.ref(`rooms/${this.roomCode}/scores/${this.myPlayerKey}`); scoreRef.transaction(curr => (curr||0) + (correct ? 1 : -1));
-          setTimeout(()=>{ tile.classList.remove('enter'); tile.classList.add('exit'); tile.addEventListener('transitionend', ()=>{ if (tile.parentNode) tile.parentNode.removeChild(tile); this.advanceGuessIndices(); this.renderNextGuessTile(); }, { once: true }); }, 700);
+          const guessedIndex = parseInt(btn.dataset.opt, 10);
+          const correct = !!realAnswer && (realAnswer.optionIndex === guessedIndex);
+          const feedback = tile.querySelector('.guess-feedback');
+          feedback.innerHTML = correct
+            ? `<span class="guess-result guess-correct">✓</span> Correct`
+            : `<span class="guess-result guess-wrong">✕</span> Wrong`;
+
+          // save guess
+          this.db.ref(`rooms/${this.roomCode}/guesses/${this.myPlayerKey}/${targetKey}/${qIndex}`)
+            .set({ guessedIndex, correct, ts: Date.now() })
+            .catch(e => console.warn('save guess fail', e));
+
+          // update score
+          this.db.ref(`rooms/${this.roomCode}/scores/${this.myPlayerKey}`)
+            .transaction(curr => (curr||0) + (correct ? 1 : -1));
+
+          // advance to next question/target
+          setTimeout(() => {
+            tile.classList.remove('enter');
+            tile.classList.add('exit');
+            tile.addEventListener('transitionend', () => {
+              if (tile.parentNode) tile.parentNode.removeChild(tile);
+              this.advanceGuessIndices();
+              this.renderNextGuessTile();
+            }, { once: true });
+          }, 700);
         });
       });
-    }).catch(err => { console.error('fetch real answer error', err); this.renderNextGuessTile(); });
-  }
+    })
+    .catch(err => { console.error('fetch real answer error', err); this.renderNextGuessTile(); });
+}
 
-  advanceGuessIndices() { this.currentTargetQIndex += 1; if (this.currentTargetQIndex >= QUESTIONS.length) { this.currentTargetQIndex = 0; this.currentTargetIdx += 1; } }
-
-  finishMyGuessingTurn() {
-    if (!this.db || !this.roomCode) return;
-    const myKey = this.myPlayerKey;
-    this.db.ref(`rooms/${this.roomCode}/guessCompletions/${myKey}`).set(true).catch(e=>console.warn('set completion fail',e));
-    const roomRef = this.db.ref(`rooms/${this.roomCode}`);
-    roomRef.transaction(current => { if (!current) return current; const idx = (current.currentGuesserIndex || 0) + 1; current.currentGuesserIndex = idx; return current; }).then(()=>console.log('incremented currentGuesserIndex')).catch(e=>console.error('increment fail',e));
+/* ===== Advance guess indices ===== */
+advanceGuessIndices() {
+  this.currentTargetQIndex += 1;
+  if (this.currentTargetQIndex >= QUESTIONS.length) {
+    this.currentTargetQIndex = 0;
+    this.currentTargetIdx += 1;
   }
+}
 
-  checkAllGuessingComplete() {
-    if (!this.db || !this.roomCode) return;
-    this.db.ref(`rooms/${this.roomCode}/guessCompletions`).once('value').then(snap => {
-      const comps = snap.val() || {}; const count = Object.keys(comps).length;
-      if (count >= this.expectedPlayers) { this.db.ref(`rooms/${this.roomCode}`).update({ phase: 'done' }).catch(e=>console.warn('set done fail',e)); }
-    }).catch(e=>console.warn('checkAllGuessingComplete fail',e));
-  }
+/* ===== Finish my guessing turn ===== */
+finishMyGuessingTurn() {
+  if (!this.db || !this.roomCode) return;
+
+  const myKey = this.myPlayerKey;
+  this.db.ref(`rooms/${this.roomCode}/guessCompletions/${myKey}`)
+    .set(true)
+    .catch(e => console.warn('set completion fail', e));
+
+  const roomRef = this.db.ref(`rooms/${this.roomCode}`);
+  roomRef.transaction(current => {
+    if (!current) return current;
+    current.currentGuesserIndex = (current.currentGuesserIndex || 0) + 1;
+    return current;
+  }).then(()=>console.log('incremented currentGuesserIndex'))
+    .catch(e=>console.error('increment fail', e));
+}
+
+/* ===== Check if all guessing complete ===== */
+checkAllGuessingComplete() {
+  if (!this.db || !this.roomCode) return;
+
+  this.db.ref(`rooms/${this.roomCode}/guessCompletions`).once('value')
+    .then(snap => {
+      const comps = snap.val() || {};
+      const count = Object.keys(comps).length;
+      if (count >= this.expectedPlayers) {
+        this.db.ref(`rooms/${this.roomCode}`).update({ phase: 'done' })
+          .catch(e => console.warn('set done fail', e));
+      }
+    })
+    .catch(e => console.warn('checkAllGuessingComplete fail', e));
 }
 
 /* ===== instantiate ===== */
