@@ -463,7 +463,6 @@ markReadyToGuess() {
   // start guessing flow if it's this client's turn
   if (isMyTurn) {
     if (typeof this.startGuessingForMe === "function") this.startGuessingForMe();
-  }
 }
 
   this.renderGuessingStatuses();
