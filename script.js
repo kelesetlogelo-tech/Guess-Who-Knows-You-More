@@ -262,7 +262,7 @@ class MultiplayerIfIWereGame {
   }
 
   /* ===== Guessing prep & ready ===== */
-  // robust showGuessPrepUI (replace existing method)
+// robust showGuessPrepUI (improved — host listens for guessReady and starts guessing when readyCount >= expected)
 showGuessPrepUI() {
   console.log("showGuessPrepUI: showing prepare-to-guess screen");
   // hide QA UI (only the QA card area, never hide entire app)
@@ -282,7 +282,6 @@ showGuessPrepUI() {
     fallback.innerHTML = `<div style="padding:20px"><h2>Prepare to Guess</h2><p>If you see this message it means the Prepare UI was missing. Click Ready to continue.</p><button id="readyToGuessBtnFallback">Ready to Guess</button></div>`;
     container.appendChild(fallback);
     document.getElementById("readyToGuessBtnFallback").addEventListener("click", () => {
-      // call existing markReadyToGuess (still uses DB)
       if (typeof this.markReadyToGuess === "function") this.markReadyToGuess();
     });
   }
@@ -298,8 +297,9 @@ showGuessPrepUI() {
   if (this.db && this.roomCode) {
     this.listenForGuessingPhase();
 
-    // Also attach a live listener for guessReady to update waiting statuses while users prepare
+    // live listener for guessReady to update waiting statuses while users prepare
     const readyRef = this.db.ref(`rooms/${this.roomCode}/guessReady`);
+    readyRef.off('value'); // avoid duplicate handlers
     readyRef.on('value', (snap) => {
       const obj = snap.val() || {};
       console.log("guessReady updated:", Object.keys(obj).length, obj);
@@ -318,6 +318,20 @@ showGuessPrepUI() {
             readyListEl.appendChild(li);
           });
         }).catch(e => console.warn("update ready list failed", e));
+      }
+
+      // If I'm the host, and ready count meets expectedPlayers, initialize guessing immediately.
+      if (this.isHost) {
+        // fetch expectedPlayers from room (fallback to this.expectedPlayers)
+        this.db.ref(`rooms/${this.roomCode}/expectedPlayers`).once('value').then(expSnap => {
+          const expected = (expSnap.exists() ? expSnap.val() : (this.expectedPlayers || 0));
+          const readyCount = Object.keys(obj).length;
+          console.log('Host-ready-watcher: readyCount', readyCount, 'expected', expected);
+          if (readyCount >= expected) {
+            // call the init function (it will do safety checks too)
+            this.initGuessingPhaseIfReady();
+          }
+        }).catch(e => console.warn('Host-ready-watcher failed to read expectedPlayers', e));
       }
     });
   }
