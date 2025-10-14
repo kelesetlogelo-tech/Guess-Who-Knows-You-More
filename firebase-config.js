@@ -2,7 +2,7 @@
 const firebaseConfig = {
   apiKey: "AIzaSyCtx_K76mH3agerccTXMc08W8sqKXUI_pA",
   authDomain: "wishing-well-2025.firebaseapp.com",
-  databaseURL:"https://console.firebase.google.com/project/wishing-well-2025/database/wishing-well-2025-default-rtdb/data/~2F"
+  databaseURL:"https://wishing-well-2025-default-rtdb.firebaseio.com",
   projectId: "wishing-well-2025",
   storageBucket: "wishing-well-2025.firebasestorage.app",
   messagingSenderId: "643053862807",
