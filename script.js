@@ -734,7 +734,7 @@ advanceGuessIndices() {
   }
 }
 
-/* ===== Finish my guessing turn ===== */
+  /* ===== Finish my guessing turn ===== */
 finishMyGuessingTurn() {
   if (!this.db || !this.roomCode) return;
 
@@ -742,7 +742,8 @@ finishMyGuessingTurn() {
   const roomRef = this.db.ref(`rooms/${this.roomCode}`);
 
   // mark my completion
-  this.db.ref(`rooms/${this.roomCode}/guessCompletions/${myKey}`).set(true).catch(e => console.warn('set completion fail', e));
+  this.db.ref(`rooms/${this.roomCode}/guessCompletions/${myKey}`).set(true)
+    .catch(e => console.warn('set completion fail', e));
 
   // Read guessingOrder length and advance index safely (host writes DB so everyone sees same result)
   roomRef.child('guessingOrder').once('value').then(orderSnap => {
@@ -770,7 +771,25 @@ finishMyGuessingTurn() {
     console.error('finishMyGuessingTurn error', err);
   });
 }
+
+/* ===== Check if all guessing complete ===== */
+checkAllGuessingComplete() {
+  if (!this.db || !this.roomCode) return;
+
+  this.db.ref(`rooms/${this.roomCode}/guessCompletions`).once('value')
+    .then(snap => {
+      const comps = snap.val() || {};
+      const count = Object.keys(comps).length;
+      if (count >= this.expectedPlayers && this.expectedPlayers > 0) {
+        this.db.ref(`rooms/${this.roomCode}`).update({ phase: 'done' })
+          .catch(e => console.warn('set done fail', e));
+      }
+    })
+    .catch(e => console.warn('checkAllGuessingComplete fail', e));
+}
+
 } // <-- CLOSE THE CLASS MultiplayerIfIWereGame
+
 /* ===== instantiate ===== */
 let gameInstance = null;
 document.addEventListener("DOMContentLoaded", () => {
@@ -778,5 +797,3 @@ document.addEventListener("DOMContentLoaded", () => {
   gameInstance = new MultiplayerIfIWereGame();
 });
 
-
-    
