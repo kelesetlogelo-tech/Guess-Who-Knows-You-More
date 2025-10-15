@@ -769,13 +769,16 @@ finishMyGuessingTurn() {
   }).catch(err => {
     console.error('finishMyGuessingTurn error', err);
   });
-
+}
+} // <-- CLOSE THE CLASS MultiplayerIfIWereGame
 /* ===== instantiate ===== */
 let gameInstance = null;
 document.addEventListener("DOMContentLoaded", () => {
   if (!window.db) console.warn("window.db falsy; check firebase-config.js");
   gameInstance = new MultiplayerIfIWereGame();
 });
+
+
 
 
     
