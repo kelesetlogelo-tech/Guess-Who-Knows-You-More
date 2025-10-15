@@ -235,7 +235,6 @@ this.showWaitingAfterQA();
 // 3) ensure clients listen for phase changes (so they go to guessing when host flips phase)
  if (this.db && this.roomCode) this.listenForGuessingPhase();
 }, 600);
-return;
 }
 
     const q = QUESTIONS[this.qaIndex];
