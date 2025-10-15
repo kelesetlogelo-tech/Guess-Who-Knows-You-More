@@ -179,29 +179,55 @@ class MultiplayerIfIWereGame {
   }
 
   /* ===== listen players & start QA ===== */
-  listenForPlayers() {
-    if (!this.playersRef || !this.roomRef) { console.error("listenForPlayers: refs missing"); return; }
+ listenForPlayers() {
+  if (!this.playersRef || !this.roomRef) { console.error("listenForPlayers: refs missing"); return; }
 
-    this.playersRef.on("child_added", snapshot => {
-      const pdata = snapshot.val(); const pkey = snapshot.key;
-      this.playersCache[pkey] = pdata;
-      const listEl = document.getElementById("playerList");
-      if (listEl) {
-        const li = document.createElement("li"); li.dataset.key = pkey; li.textContent = pdata && pdata.name ? pdata.name : "Player";
+  // Ensure we don't attach duplicate handlers
+  this.playersRef.off();
+
+  // One 'value' listener to render the entire list and update player cache
+  this.playersRef.on("value", snapshot => {
+    const obj = snapshot.val() || {};
+    // update cache
+    this.playersCache = Object.assign({}, this.playersCache, obj);
+
+    // render list once
+    const listEl = document.getElementById("playerList");
+    if (listEl) {
+      listEl.innerHTML = "";
+      Object.keys(obj).forEach(key => {
+        const pdata = obj[key] || {};
+        const li = document.createElement("li");
+        li.dataset.key = key;
+        li.textContent = pdata.name || "Player";
         listEl.appendChild(li);
+      });
+    }
+
+    // update count and host begin button visibility
+    const players = Object.keys(obj);
+    const countEl = document.getElementById("playersCount");
+    if (countEl) countEl.textContent = `${players.length} / ${this.expectedPlayers || "?"} joined`;
+
+    if (this.isHost) {
+      const beginBtn = document.getElementById("beginBtn");
+      if (beginBtn) {
+        // only show begin when host sees enough players
+        if (players.length >= this.expectedPlayers) beginBtn.classList.remove("hidden");
+        else beginBtn.classList.add("hidden");
       }
-    });
+    }
+  });
 
-    this.playersRef.on("value", snapshot => {
-      const obj = snapshot.val() || {}; const players = Object.values(obj).map(p => p.name || "Unnamed");
-      const listEl = document.getElementById("playerList");
-      if (listEl) { listEl.innerHTML = ""; players.forEach(n => { const li = document.createElement("li"); li.textContent = n; listEl.appendChild(li); }); }
-      const countEl = document.getElementById("playersCount"); if (countEl) countEl.textContent = `${players.length} / ${this.expectedPlayers || "?"} joined`;
-      if (this.isHost && players.length >= this.expectedPlayers) { const btn = document.getElementById("beginBtn"); if (btn) btn.classList.remove("hidden"); }
-    });
-
-    this.roomRef.child("gameStarted").on("value", snap => { if (snap.val() === true) { console.log("gameStarted -> startGame"); this.startGame(); } });
-  }
+  // Attach a single listener to gameStarted (phase entry point)
+  this.roomRef.child("gameStarted").off();
+  this.roomRef.child("gameStarted").on("value", snap => {
+    if (snap.val() === true) {
+      console.log("gameStarted -> startGame");
+      this.startGame();
+    }
+  });
+}
 
   startGame() {
     console.log("startGame -> QA");
@@ -385,7 +411,7 @@ hostBeginHandler() {
   }
   const roomRef = this.db.ref(`rooms/${this.roomCode}`);
 
-  // Read players and set order + reset currentGuesserIndex -> 0
+  // Read players and set order + reset currentGuesserIndex -> 0 and flip phase
   roomRef.child('players').once('value').then(psnap => {
     const playersObj = psnap.val() || {};
     const order = Object.keys(playersObj);
@@ -395,7 +421,8 @@ hostBeginHandler() {
       phase: 'guessing'
     });
   }).then(() => {
-    console.log("hostBeginHandler: guessing phase started by host");
+    console.log("hostBeginHandler: guessing phase started by host (DB updated)");
+    // NO local UI changes here: all clients must react to DB 'phase' change
   }).catch(err => {
     console.error("hostBeginHandler failed:", err);
   });
@@ -464,18 +491,35 @@ markReadyToGuess() {
   }
 
   /* ===== Listen & apply guessing phase ===== */
-  listenForGuessingPhase() {
-    if (!this.db || !this.roomCode) return;
-    const roomRef = this.db.ref(`rooms/${this.roomCode}`);
-    roomRef.child('phase').on('value', snap => {
-      const phase = snap.val(); console.log('phase ->', phase);
-      if (phase === 'guessing') {
-        roomRef.child('guessingOrder').once('value').then(oSnap => { this.guessingOrder = oSnap.val() || []; return roomRef.child('currentGuesserIndex').once('value'); })
-          .then(idxSnap => { this.currentGuesserIndex = idxSnap.val() || 0; this.applyGuessingState(); })
-          .catch(e=>console.error('listenForGuessingPhase error',e));
-      }
-    });
-  }
+ listenForGuessingPhase() {
+  if (!this.db || !this.roomCode) return;
+  const roomRef = this.db.ref(`rooms/${this.roomCode}`);
+
+  // ensure single handler
+  roomRef.child('phase').off();
+
+  // on phase change, react accordingly
+  roomRef.child('phase').on('value', snap => {
+    const phase = snap.val();
+    console.log('phase ->', phase);
+    if (phase === 'guessing') {
+      // load guessingOrder and currentGuesserIndex, then apply state
+      roomRef.child('guessingOrder').once('value').then(oSnap => {
+        this.guessingOrder = oSnap.val() || [];
+        return roomRef.child('currentGuesserIndex').once('value');
+      }).then(idxSnap => {
+        this.currentGuesserIndex = idxSnap.val() || 0;
+        // Transition UI for everyone using one method
+        this.applyGuessingState();
+      }).catch(e => console.error('listenForGuessingPhase error', e));
+    } else if (phase === 'qa') {
+      // optional: handle going back to QA
+      // hide guessing UI, show QA etc.
+    } else if (phase === 'done') {
+      // optional: show final scores
+    }
+  });
+}
 
  /* ===== Listen & apply guessing phase ===== */
 applyGuessingState() {
@@ -484,34 +528,22 @@ applyGuessingState() {
   const activeKey = (this.guessingOrder && this.guessingOrder[this.currentGuesserIndex]) || null;
   const isMyTurn = (this.myPlayerKey === activeKey);
 
-  // show/hide UI regions
+  // Hide waiting-room entirely and show the guessPhase section
   const guessWaitingRoom = document.getElementById('guessWaitingRoom');
   const guessPhaseEl = document.getElementById('guessPhase');
-  if (guessWaitingRoom) guessWaitingRoom.classList.remove('hidden');
-  if (guessPhaseEl) guessPhaseEl.classList.toggle('hidden', !isMyTurn);
+  if (guessWaitingRoom) guessWaitingRoom.classList.add('hidden');
+  if (guessPhaseEl) guessPhaseEl.classList.remove('hidden');
 
+  // update header/label
   const rcd = document.getElementById('roomCodeDisplay_guess');
   if (rcd) rcd.textContent = this.roomCode;
 
-  // ensure status list exists
-  if (!document.getElementById('guessPlayerStatusList') && guessWaitingRoom) {
-    const ul = document.createElement('ul');
-    ul.id = 'guessPlayerStatusList';
-    guessWaitingRoom.appendChild(ul);
-  }
-
-  // render statuses
-  if (typeof this.renderGuessingStatuses === "function") this.renderGuessingStatuses();
-
-  // update active label
   const activeLabel = document.getElementById('activeGuesserLabel');
   if (activeLabel) {
-    activeLabel.textContent = isMyTurn
-      ? 'You are guessing now — guess every other player'
-      : `${this.getPlayerNameByKey(activeKey) || 'A player'} is guessing — please wait`;
+    activeLabel.textContent = isMyTurn ? 'You are guessing now' : `${this.getPlayerNameByKey(activeKey) || 'A player'} is guessing — please wait`;
   }
 
-  // attach watchers safely
+  // Attach watchers defensively (only once)
   if (this.db && this.roomCode) {
     const idxRef = this.db.ref(`rooms/${this.roomCode}/currentGuesserIndex`);
     idxRef.off();
@@ -527,12 +559,14 @@ applyGuessingState() {
     compRef.off();
     compRef.on('value', () => {
       if (typeof this.renderGuessingStatuses === "function") this.renderGuessingStatuses();
-      if (typeof this.checkAllGuessingComplete === "function") this.checkAllGuessingComplete();
+      this.checkAllGuessingComplete();
     });
   }
 
-  // start guessing if it's my turn
-  if (isMyTurn && typeof this.startGuessingForMe === "function") this.startGuessingForMe();
+  // Start guessing flow only if it's this client's turn
+  if (isMyTurn) {
+    if (typeof this.startGuessingForMe === "function") this.startGuessingForMe();
+  }
 }
 
 /* ===== render guessing statuses ===== */
