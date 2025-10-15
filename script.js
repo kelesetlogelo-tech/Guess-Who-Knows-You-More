@@ -615,9 +615,18 @@ startGuessingForMe() {
     this.currentTargetIdx = 0;
     this.currentTargetQIndex = 0;
 
+    // If there are no targets (only one player), finish immediately
+    if (!this.guessTargets || this.guessTargets.length === 0) {
+      // mark completion and advance
+      this.finishMyGuessingTurn();
+      return;
+    }
+
+    // ensure my score exists
     this.db.ref(`rooms/${this.roomCode}/scores/${this.myPlayerKey}`)
       .transaction(curr => curr || 0);
 
+    // start rendering
     this.renderNextGuessTile();
   });
 }
@@ -661,11 +670,14 @@ renderNextGuessTile() {
       `;
 
       stageInner.appendChild(tile);
+      // trigger enter animation
       requestAnimationFrame(() => requestAnimationFrame(() => tile.classList.add('enter')));
 
       tile.querySelectorAll('.option-btn').forEach(btn => {
         btn.addEventListener('click', () => {
+          // disable all buttons immediately
           tile.querySelectorAll('.option-btn').forEach(b=>b.disabled=true);
+
           const guessedIndex = parseInt(btn.dataset.opt, 10);
           const correct = !!realAnswer && (realAnswer.optionIndex === guessedIndex);
           const feedback = tile.querySelector('.guess-feedback');
@@ -682,20 +694,35 @@ renderNextGuessTile() {
           this.db.ref(`rooms/${this.roomCode}/scores/${this.myPlayerKey}`)
             .transaction(curr => (curr||0) + (correct ? 1 : -1));
 
-          // advance to next question/target
+          // Immediately start exit animation and move to next tile on transitionend
+          tile.classList.remove('enter');
+          tile.classList.add('exit');
+
+          tile.addEventListener('transitionend', () => {
+            if (tile.parentNode) tile.parentNode.removeChild(tile);
+            this.advanceGuessIndices();
+            // render next immediately
+            this.renderNextGuessTile();
+          }, { once: true });
+
+          // Fallback: if no CSS transitionend is fired within 400ms, advance anyway
           setTimeout(() => {
-            tile.classList.remove('enter');
-            tile.classList.add('exit');
-            tile.addEventListener('transitionend', () => {
-              if (tile.parentNode) tile.parentNode.removeChild(tile);
+            if (tile.parentNode) {
+              // ensure we don't double-advance (only if still present)
+              tile.parentNode.removeChild(tile);
               this.advanceGuessIndices();
               this.renderNextGuessTile();
-            }, { once: true });
-          }, 700);
+            }
+          }, 400);
         });
       });
     })
-    .catch(err => { console.error('fetch real answer error', err); this.renderNextGuessTile(); });
+    .catch(err => {
+      console.error('fetch real answer error', err);
+      // skip fragile case
+      this.advanceGuessIndices();
+      this.renderNextGuessTile();
+    });
 }
 
 /* ===== Advance guess indices ===== */
@@ -712,34 +739,36 @@ finishMyGuessingTurn() {
   if (!this.db || !this.roomCode) return;
 
   const myKey = this.myPlayerKey;
-  this.db.ref(`rooms/${this.roomCode}/guessCompletions/${myKey}`)
-    .set(true)
-    .catch(e => console.warn('set completion fail', e));
-
   const roomRef = this.db.ref(`rooms/${this.roomCode}`);
-  roomRef.transaction(current => {
-    if (!current) return current;
-    current.currentGuesserIndex = (current.currentGuesserIndex || 0) + 1;
-    return current;
-  }).then(()=>console.log('incremented currentGuesserIndex'))
-    .catch(e=>console.error('increment fail', e));
-}
 
-/* ===== Check if all guessing complete ===== */
-checkAllGuessingComplete() {
-  if (!this.db || !this.roomCode) return;
+  // mark my completion
+  this.db.ref(`rooms/${this.roomCode}/guessCompletions/${myKey}`).set(true).catch(e => console.warn('set completion fail', e));
 
-  this.db.ref(`rooms/${this.roomCode}/guessCompletions`).once('value')
-    .then(snap => {
-      const comps = snap.val() || {};
-      const count = Object.keys(comps).length;
-      if (count >= this.expectedPlayers) {
-        this.db.ref(`rooms/${this.roomCode}`).update({ phase: 'done' })
-          .catch(e => console.warn('set done fail', e));
+  // Read guessingOrder length and advance index safely (host writes DB so everyone sees same result)
+  roomRef.child('guessingOrder').once('value').then(orderSnap => {
+    const order = orderSnap.val() || [];
+    const totalGuessers = order.length;
+
+    // Use transaction to update currentGuesserIndex and possibly end phase
+    return roomRef.transaction(current => {
+      if (!current) return current;
+      const currIdx = (current.currentGuesserIndex || 0);
+      const nextIdx = currIdx + 1;
+
+      if (nextIdx >= totalGuessers) {
+        // All guessers have finished -> mark done
+        current.currentGuesserIndex = nextIdx;
+        current.phase = 'done';
+      } else {
+        current.currentGuesserIndex = nextIdx;
       }
-    })
-    .catch(e => console.warn('checkAllGuessingComplete fail', e));
-  }
+      return current;
+    });
+  }).then(() => {
+    console.log('finishMyGuessingTurn: requested advancement of currentGuesserIndex');
+  }).catch(err => {
+    console.error('finishMyGuessingTurn error', err);
+  });
 }
 
 /* ===== instantiate ===== */
