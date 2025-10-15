@@ -777,8 +777,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!window.db) console.warn("window.db falsy; check firebase-config.js");
   gameInstance = new MultiplayerIfIWereGame();
 });
-
-
+}
 
 
     
