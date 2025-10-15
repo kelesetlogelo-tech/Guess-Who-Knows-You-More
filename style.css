@@ -51,7 +51,8 @@ button:hover {
 .hidden {
   display: none;
 }
-
+.guess-controls { margin-top: 18px; }
+.teal-btn { /* your existing teal pastel button style */ }
 #playerList {
   list-style: none;
   padding: 0;
