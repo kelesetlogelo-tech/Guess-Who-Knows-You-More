@@ -223,19 +223,18 @@ class MultiplayerIfIWereGame {
 
   renderNextQuestion() {
     if (this.qaIndex >= this.qaTotal) {
-      // write completion flag
-      try {
-        const pid = this.myPlayerKey || this.playerName || `p_${Date.now()}`;
-        if (this.db && this.roomCode) this.db.ref(`rooms/${this.roomCode}/qaCompletions/${pid}`).set(true);
-      } catch (e) { console.warn("qa write failed", e); }
+      // 1) write completion flag (already in your code)
+const pid = this.myPlayerKey || this.playerName || `p_${Date.now()}`;
+if (this.db && this.roomCode) {
+  this.db.ref(`rooms/${this.roomCode}/qaCompletions/${pid}`).set(true).catch(()=>{});
+}
 
-      // show Guess Prep (instance method)
-      this.showGuessPrepUI();
+// 2) show the waiting UI with live statuses
+this.showWaitingAfterQA();
 
-      // ensure listen for guessing phase and host init attempt
-      setTimeout(() => {
-        if (this.isHost && this.db && this.roomCode) this.initGuessingPhaseIfReady();
-        if (this.db && this.roomCode) this.listenForGuessingPhase();
+// 3) ensure clients listen for phase changes (so they go to guessing when host flips phase)
+if (this.db && this.roomCode) this.listenForGuessingPhase();
+
       }, 600);
 
       return;
