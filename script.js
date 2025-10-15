@@ -222,19 +222,72 @@ class MultiplayerIfIWereGame {
   }
 
   renderNextQuestion() {
-    if (this.qaIndex >= this.qaTotal) {
-      // 1) write completion flag (already in your code)
-const pid = this.myPlayerKey || this.playerName || `p_${Date.now()}`;
-if (this.db && this.roomCode) {
-  this.db.ref(`rooms/${this.roomCode}/qaCompletions/${pid}`).set(true).catch(()=>{});
-}
+  // If we've answered all questions, mark QA complete and show waiting UI
+  if (this.qaIndex >= this.qaTotal) {
+    try {
+      const pid = this.myPlayerKey || this.playerName || `p_${Date.now()}`;
+      if (this.db && this.roomCode) {
+        this.db.ref(`rooms/${this.roomCode}/qaCompletions/${pid}`).set(true).catch(()=>{});
+      }
+    } catch (e) {
+      console.warn("qa write failed", e);
+    }
 
-// 2) show the waiting UI with live statuses
-this.showWaitingAfterQA();
+    // Show waiting UI and ensure clients listen for phase changes
+    this.showWaitingAfterQA();
+    if (this.db && this.roomCode) this.listenForGuessingPhase();
+    return;
+  }
 
-// 3) ensure clients listen for phase changes (so they go to guessing when host flips phase)
- if (this.db && this.roomCode) this.listenForGuessingPhase();
-}, 600);
+  // Otherwise render the next question tile
+  const q = QUESTIONS[this.qaIndex];
+  const tile = document.createElement("div");
+  tile.className = "qa-tile";
+  tile.dataset.qindex = this.qaIndex;
+  tile.innerHTML = `
+    <div class="qa-card">
+      <h3>${escapeHtml(q.text)}</h3>
+      <div class="qa-options">
+        ${q.options.map((opt, i) => `<button class="option-btn" data-opt="${i}">${escapeHtml(opt)}</button>`).join("")}
+      </div>
+    </div>
+  `;
+  if (!this.qaStageInner) {
+    console.error("qaStageInner not found");
+    return;
+  }
+  this.qaStageInner.appendChild(tile);
+  requestAnimationFrame(() => requestAnimationFrame(() => tile.classList.add("enter")));
+
+  tile.querySelectorAll(".option-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      // disable buttons
+      tile.querySelectorAll(".option-btn").forEach(b => b.disabled = true);
+      const idx = parseInt(btn.dataset.opt, 10);
+      const pid = this.myPlayerKey || this.playerName || `p_${Date.now()}`;
+
+      // save answer
+      if (this.db && this.roomCode) {
+        this.db.ref(`rooms/${this.roomCode}/answers/${pid}/${this.qaIndex}`).set({
+          optionIndex: idx,
+          optionText: q.options[idx],
+          ts: Date.now()
+        }).catch(e => console.warn("save answer failed:", e));
+      }
+
+      // animate out then render next
+      tile.classList.remove("enter");
+      tile.classList.add("exit");
+      const onEnd = (ev) => {
+        if (ev.target !== tile) return;
+        tile.removeEventListener("transitionend", onEnd);
+        if (tile.parentNode) tile.parentNode.removeChild(tile);
+        this.qaIndex += 1;
+        this.renderNextQuestion();
+      };
+      tile.addEventListener("transitionend", onEnd);
+    });
+  });
 }
 
     const q = QUESTIONS[this.qaIndex];
