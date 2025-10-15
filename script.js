@@ -37,6 +37,9 @@ class MultiplayerIfIWereGame {
     this.playerName = "";
     this.isHost = false;
     this.expectedPlayers = 0;
+    this.isGuessingActive = false;   // prevents re-entrancy for the active guesser
+    this._finishRequested = false;   // local guard to avoid double transaction increments
+
 
     // QA state
     this.qaIndex = 0;
@@ -528,7 +531,7 @@ applyGuessingState() {
   const activeKey = (this.guessingOrder && this.guessingOrder[this.currentGuesserIndex]) || null;
   const isMyTurn = (this.myPlayerKey === activeKey);
 
-  // Hide waiting-room entirely and show the guessPhase section
+  // Hide waiting-room and show the guessPhase section when phase=guessing
   const guessWaitingRoom = document.getElementById('guessWaitingRoom');
   const guessPhaseEl = document.getElementById('guessPhase');
   if (guessWaitingRoom) guessWaitingRoom.classList.add('hidden');
@@ -543,29 +546,56 @@ applyGuessingState() {
     activeLabel.textContent = isMyTurn ? 'You are guessing now' : `${this.getPlayerNameByKey(activeKey) || 'A player'} is guessing — please wait`;
   }
 
-  // Attach watchers defensively (only once)
+  // Detach previous watchers (defensive)
+  if (this.db && this.roomCode) {
+    try {
+      const idxRef = this.db.ref(`rooms/${this.roomCode}/currentGuesserIndex`);
+      idxRef.off();
+
+      const compRef = this.db.ref(`rooms/${this.roomCode}/guessCompletions`);
+      compRef.off();
+    } catch (e) {
+      console.warn("applyGuessingState: failed to off refs", e);
+    }
+  }
+
+  // Re-attach watchers (single handlers)
   if (this.db && this.roomCode) {
     const idxRef = this.db.ref(`rooms/${this.roomCode}/currentGuesserIndex`);
-    idxRef.off();
     idxRef.on('value', snap => {
       const idx = snap.val();
       if (typeof idx === 'number' && this.currentGuesserIndex !== idx) {
         this.currentGuesserIndex = idx;
+        // reset local guess guard when index changes (new player's turn)
+        this.isGuessingActive = false;
+        this._finishRequested = false;
         this.applyGuessingState();
       }
     });
 
     const compRef = this.db.ref(`rooms/${this.roomCode}/guessCompletions`);
-    compRef.off();
     compRef.on('value', () => {
       if (typeof this.renderGuessingStatuses === "function") this.renderGuessingStatuses();
       this.checkAllGuessingComplete();
     });
   }
 
-  // Start guessing flow only if it's this client's turn
+  // Start guessing flow only if it's this client's turn and not already active
   if (isMyTurn) {
-    if (typeof this.startGuessingForMe === "function") this.startGuessingForMe();
+    if (!this.isGuessingActive) {
+      this.isGuessingActive = true;
+      // small safety: reset finish guard
+      this._finishRequested = false;
+      if (typeof this.startGuessingForMe === "function") this.startGuessingForMe();
+    } else {
+      console.log("applyGuessingState: my turn already active — ignoring re-entry");
+    }
+  } else {
+    // ensure local guessing UI is cleared so only the active player sees tiles
+    const guessCard = document.getElementById('guessCard');
+    if (guessCard) guessCard.innerHTML = '';
+    // mark not active locally
+    this.isGuessingActive = false;
   }
 }
 
@@ -607,6 +637,11 @@ getPlayerNameByKey(key) {
 /* ===== Active guesser flow ===== */
 startGuessingForMe() {
   if (!this.db || !this.roomCode) return;
+  if (this.isGuessingActive && (this.guessTargets && this.guessTargets.length > 0)) {
+    // already active — do not restart
+    console.log("startGuessingForMe: already active — skipping");
+    return;
+  }
 
   this.db.ref(`rooms/${this.roomCode}/players`).once('value').then(psnap => {
     const playersObj = psnap.val() || {};
@@ -615,9 +650,8 @@ startGuessingForMe() {
     this.currentTargetIdx = 0;
     this.currentTargetQIndex = 0;
 
-    // If there are no targets (only one player), finish immediately
+    // If there are no targets (single-player room), finish immediately
     if (!this.guessTargets || this.guessTargets.length === 0) {
-      // mark completion and advance
       this.finishMyGuessingTurn();
       return;
     }
@@ -626,13 +660,22 @@ startGuessingForMe() {
     this.db.ref(`rooms/${this.roomCode}/scores/${this.myPlayerKey}`)
       .transaction(curr => curr || 0);
 
+    this.isGuessingActive = true;
     // start rendering
     this.renderNextGuessTile();
+  }).catch(e => {
+    console.error("startGuessingForMe failed:", e);
   });
 }
 
 /* ===== Render next guess tile ===== */
 renderNextGuessTile() {
+  // defensive: if not active, do nothing
+  if (!this.isGuessingActive) {
+    console.log("renderNextGuessTile: not active — exiting");
+    return;
+  }
+
   if (!this.guessTargets || this.currentTargetIdx >= this.guessTargets.length) {
     this.finishMyGuessingTurn();
     return;
@@ -648,6 +691,7 @@ renderNextGuessTile() {
       const stage = document.getElementById('guessCard');
       if (!stage) return;
 
+      // clear stage to avoid duplicates
       stage.innerHTML = '<div class="qa-stage" id="guessQAStage"></div>';
       const stageInner = document.getElementById('guessQAStage');
 
@@ -670,10 +714,10 @@ renderNextGuessTile() {
       `;
 
       stageInner.appendChild(tile);
-      // trigger enter animation
       requestAnimationFrame(() => requestAnimationFrame(() => tile.classList.add('enter')));
 
       tile.querySelectorAll('.option-btn').forEach(btn => {
+        btn.onclick = null;
         btn.addEventListener('click', () => {
           // disable all buttons immediately
           tile.querySelectorAll('.option-btn').forEach(b=>b.disabled=true);
@@ -681,9 +725,7 @@ renderNextGuessTile() {
           const guessedIndex = parseInt(btn.dataset.opt, 10);
           const correct = !!realAnswer && (realAnswer.optionIndex === guessedIndex);
           const feedback = tile.querySelector('.guess-feedback');
-          feedback.innerHTML = correct
-            ? `<span class="guess-result guess-correct">✓</span> Correct`
-            : `<span class="guess-result guess-wrong">✕</span> Wrong`;
+          feedback.innerHTML = correct ? `<span class="guess-result guess-correct">✓</span> Correct` : `<span class="guess-result guess-wrong">✕</span> Wrong`;
 
           // save guess
           this.db.ref(`rooms/${this.roomCode}/guesses/${this.myPlayerKey}/${targetKey}/${qIndex}`)
@@ -698,18 +740,23 @@ renderNextGuessTile() {
           tile.classList.remove('enter');
           tile.classList.add('exit');
 
-          tile.addEventListener('transitionend', () => {
+          // Use a once-only handler to avoid accidental double-calls
+          const onTransitionEnd = () => {
+            tile.removeEventListener('transitionend', onTransitionEnd);
             if (tile.parentNode) tile.parentNode.removeChild(tile);
             this.advanceGuessIndices();
-            // render next immediately
             this.renderNextGuessTile();
-          }, { once: true });
+          };
+          tile.addEventListener('transitionend', onTransitionEnd, { once: true });
 
           // Fallback: if no CSS transitionend is fired within 400ms, advance anyway
           setTimeout(() => {
-            if (tile.parentNode) {
-              // ensure we don't double-advance (only if still present)
-              tile.parentNode.removeChild(tile);
+            // if transition handler already removed the tile, do nothing
+            if (stageInner.contains(tile)) {
+              try {
+                tile.removeEventListener('transitionend', onTransitionEnd);
+              } catch(e) {}
+              if (tile.parentNode) tile.parentNode.removeChild(tile);
               this.advanceGuessIndices();
               this.renderNextGuessTile();
             }
@@ -737,6 +784,12 @@ advanceGuessIndices() {
   /* ===== Finish my guessing turn ===== */
 finishMyGuessingTurn() {
   if (!this.db || !this.roomCode) return;
+
+  if (this._finishRequested) {
+    console.log("finishMyGuessingTurn: already requested — skipping");
+    return;
+  }
+  this._finishRequested = true; // set guard immediately
 
   const myKey = this.myPlayerKey;
   const roomRef = this.db.ref(`rooms/${this.roomCode}`);
