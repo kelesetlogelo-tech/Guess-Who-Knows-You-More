@@ -538,24 +538,42 @@ markReadyToGuess() {
  /* ===== Listen & apply guessing phase ===== */
 applyGuessingState() {
   console.log("applyGuessingState running");
-
+ // after fetching guessingOrder and currentGuesserIndex in applyGuessingState
   const activeKey = (this.guessingOrder && this.guessingOrder[this.currentGuesserIndex]) || null;
+
+// Check completions snapshot to see if the activeKey is actually completed (defensive)
+  const compsRef = this.db ? this.db.ref(`rooms/${this.roomCode}/guessCompletions`) : null;
+    if (compsRef) {
+  compsRef.once('value').then(s => {
+    const comps = s.val() || {};
+    if (activeKey && comps[activeKey]) {
+      // activeKey already marked completed (race); we should not make them active.
+      // Let the host/transaction decide next — force a re-read of currentGuesserIndex if needed.
+      console.warn('applyGuessingState: activeKey already completed; waiting for DB to advance index');
+      // show post-guess waiting for this client if they themselves are completed
+      if (this.myPlayerKey && comps[this.myPlayerKey]) {
+        this.showPostGuessWaitingUI();
+      } else {
+        // otherwise show the standard guessing waiting room that shows who is active
+        const guessWaiting = document.getElementById('guessWaitingRoom');
+        if (guessWaiting) guessWaiting.classList.remove('hidden');
+        const guessPhaseEl = document.getElementById('guessPhase');
+        if (guessPhaseEl) guessPhaseEl.classList.add('hidden');
+      }
+      return;
+    }
+
+    // If not completed, continue normal active determination:
+    const isMyTurn = (this.myPlayerKey === activeKey);
+    // ... proceed with the rest of applyGuessingState using isMyTurn ...
+  }).catch(e => {
+    console.warn('applyGuessingState comps read failed', e);
+  });
+} else {
+  // fallback: normal behavior if no DB available
   const isMyTurn = (this.myPlayerKey === activeKey);
-
-  // Hide waiting-room and show the guessPhase section when phase=guessing
-  const guessWaitingRoom = document.getElementById('guessWaitingRoom');
-  const guessPhaseEl = document.getElementById('guessPhase');
-  if (guessWaitingRoom) guessWaitingRoom.classList.add('hidden');
-  if (guessPhaseEl) guessPhaseEl.classList.remove('hidden');
-
-  // update header/label
-  const rcd = document.getElementById('roomCodeDisplay_guess');
-  if (rcd) rcd.textContent = this.roomCode;
-
-  const activeLabel = document.getElementById('activeGuesserLabel');
-  if (activeLabel) {
-    activeLabel.textContent = isMyTurn ? 'You are guessing now' : `${this.getPlayerNameByKey(activeKey) || 'A player'} is guessing — please wait`;
-  }
+  // ... proceed ...
+}
 
   // Detach previous watchers (defensive)
   if (this.db && this.roomCode) {
@@ -808,7 +826,9 @@ showDoneGuessButton() {
     // disable quickly to prevent double-click
     btn.disabled = true;
     btn.classList.add('hidden');
-
+    // Mark local state and show post-guess waiting UI quickly
+    this.isGuessingActive = false;
+    this.showPostGuessWaitingUI();
     // call the existing finish mechanism (which advances currentGuesserIndex via transaction)
     // ensure finishMyGuessingTurn is idempotent (we recommended guard _finishRequested earlier)
     if (typeof this.finishMyGuessingTurn === 'function') {
@@ -832,42 +852,54 @@ advanceGuessIndices() {
 finishMyGuessingTurn() {
   if (!this.db || !this.roomCode) return;
 
+  // guard to avoid duplicate requests from same client
   if (this._finishRequested) {
     console.log("finishMyGuessingTurn: already requested — skipping");
     return;
   }
-  this._finishRequested = true; // set guard immediately
+  this._finishRequested = true;
 
   const myKey = this.myPlayerKey;
   const roomRef = this.db.ref(`rooms/${this.roomCode}`);
 
-  // mark my completion
-  this.db.ref(`rooms/${this.roomCode}/guessCompletions/${myKey}`).set(true).catch(e => console.warn('set completion fail', e));
+  // 1) mark this player as completed (visible to all)
+  roomRef.child(`guessCompletions/${myKey}`).set(true).catch(e => console.warn('set completion fail', e));
 
-  // Read guessingOrder length and advance index safely (host writes DB so everyone sees same result)
-  roomRef.child('guessingOrder').once('value').then(orderSnap => {
-    const order = orderSnap.val() || [];
-    const totalGuessers = order.length;
+  // 2) atomically advance to next *not completed* player OR mark phase done
+  roomRef.transaction(current => {
+    if (!current) return current;
 
-    // Use transaction to update currentGuesserIndex and possibly end phase
-    return roomRef.transaction(current => {
-      if (!current) return current;
-      const currIdx = (current.currentGuesserIndex || 0);
-      const nextIdx = currIdx + 1;
+    const order = current.guessingOrder || [];
+    const completions = current.guessCompletions || {};
+    const total = order.length;
+    const currIdx = (current.currentGuesserIndex || 0);
 
-      if (nextIdx >= totalGuessers) {
-        // All guessers have finished -> mark done
-        current.currentGuesserIndex = nextIdx;
-        current.phase = 'done';
-      } else {
-        current.currentGuesserIndex = nextIdx;
-      }
-      return current;
-    });
+    // find next index after currIdx that is NOT yet completed
+    let nextIdx = currIdx + 1;
+    while (nextIdx < total && completions && completions[ order[nextIdx] ]) {
+      nextIdx += 1;
+    }
+
+    if (nextIdx >= total) {
+      // everybody done -> mark phase done
+      current.currentGuesserIndex = nextIdx;
+      current.phase = 'done';
+    } else {
+      current.currentGuesserIndex = nextIdx;
+      // leave phase unchanged (should already be 'guessing')
+    }
+
+    return current;
   }).then(() => {
-    console.log('finishMyGuessingTurn: requested advancement of currentGuesserIndex');
+    console.log('finishMyGuessingTurn: transaction complete — advanced to next uncompleted player or ended phase');
+    // Locally mark we're no longer actively guessing and show post-guess waiting UI
+    this.isGuessingActive = false;
+    // show the post-guess waiting UI for this client
+    if (typeof this.showPostGuessWaitingUI === 'function') this.showPostGuessWaitingUI();
   }).catch(err => {
     console.error('finishMyGuessingTurn error', err);
+    // allow retries on future clicks
+    this._finishRequested = false;
   });
 }
 
@@ -887,6 +919,51 @@ checkAllGuessingComplete() {
     .catch(e => console.warn('checkAllGuessingComplete fail', e));
 }
 
+  showPostGuessWaitingUI() {
+  // hide guess phase UI
+  const guessPhase = document.getElementById('guessPhase');
+  if (guessPhase) guessPhase.classList.add('hidden');
+
+  // hide pre-guess waiting room if present
+  const guessWaiting = document.getElementById('guessWaitingRoom');
+  if (guessWaiting) guessWaiting.classList.add('hidden');
+
+  // show post-guess waiting UI
+  let post = document.getElementById('postGuessWaitingRoom');
+  if (!post) {
+    // create fallback if not present
+    post = document.createElement('div');
+    post.id = 'postGuessWaitingRoom';
+    post.innerHTML = '<h2>Waiting for other players to finish guessing...</h2><ul id="postGuessStatusList"></ul>';
+    document.body.appendChild(post);
+  }
+  post.classList.remove('hidden');
+
+  // render status list
+  this.renderPostGuessStatuses();
+}
+
+  renderPostGuessStatuses() {
+  const list = document.getElementById('postGuessStatusList');
+  if (!list || !this.db || !this.roomCode) return;
+  list.innerHTML = '';
+
+  // retrieve players and guessCompletions to render names + completed/pending
+  Promise.all([
+    this.db.ref(`rooms/${this.roomCode}/players`).once('value'),
+    this.db.ref(`rooms/${this.roomCode}/guessCompletions`).once('value')
+  ]).then(([psnap, csnap]) => {
+    const players = psnap.val() || {};
+    const comps = csnap.val() || {};
+    Object.keys(players).forEach(k => {
+      const li = document.createElement('li');
+      const name = players[k].name || k;
+      const status = comps && comps[k] ? 'completed' : 'pending';
+      li.textContent = `${name} — ${status}`;
+      list.appendChild(li);
+    });
+  }).catch(e => console.warn('renderPostGuessStatuses failed', e));
+}
 } // <-- CLOSE THE CLASS MultiplayerIfIWereGame
 
 /* ===== instantiate ===== */
