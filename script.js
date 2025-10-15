@@ -407,6 +407,7 @@ showWaitingAfterQA() {
 /* ===== Host clicks Begin Guessing =====
    Host should create guessingOrder and set phase:'guessing'
 */
+// Host clicks Begin Guessing — create alphabetic guessingOrder (by first name)
 hostBeginHandler() {
   if (!this.isHost || !this.db || !this.roomCode) {
     console.warn("hostBeginHandler: not allowed or missing refs");
@@ -414,18 +415,28 @@ hostBeginHandler() {
   }
   const roomRef = this.db.ref(`rooms/${this.roomCode}`);
 
-  // Read players and set order + reset currentGuesserIndex -> 0 and flip phase
+  // Read players and build order sorted by first name (alphabetical)
   roomRef.child('players').once('value').then(psnap => {
     const playersObj = psnap.val() || {};
-    const order = Object.keys(playersObj);
+    const items = Object.keys(playersObj).map(key => {
+      const nm = (playersObj[key] && playersObj[key].name) ? playersObj[key].name : '';
+      // first name = first token before a space (fallback to whole name)
+      const firstName = (nm || '').split(/\s+/)[0] || nm || key;
+      return { key, name: nm, firstName };
+    });
+
+    items.sort((a, b) => {
+      return a.firstName.localeCompare(b.firstName, undefined, { sensitivity: 'base' });
+    });
+
+    const order = items.map(x => x.key);
     return roomRef.update({
       guessingOrder: order,
       currentGuesserIndex: 0,
       phase: 'guessing'
     });
   }).then(() => {
-    console.log("hostBeginHandler: guessing phase started by host (DB updated)");
-    // NO local UI changes here: all clients must react to DB 'phase' change
+    console.log("hostBeginHandler: guessing phase started by host (DB updated, ordered by first name)");
   }).catch(err => {
     console.error("hostBeginHandler failed:", err);
   });
@@ -677,7 +688,8 @@ renderNextGuessTile() {
   }
 
   if (!this.guessTargets || this.currentTargetIdx >= this.guessTargets.length) {
-    this.finishMyGuessingTurn();
+    // Completed all targets/questions for this player -> show Done button for manual end
+    this.showDoneGuessButton();
     return;
   }
 
@@ -771,6 +783,41 @@ renderNextGuessTile() {
       this.renderNextGuessTile();
     });
 }
+// Show the "Done Guessing!" button to the active guesser when they've completed all guesses
+showDoneGuessButton() {
+  const btn = document.getElementById('doneGuessingBtn');
+  if (!btn) {
+    console.warn("showDoneGuessButton: #doneGuessingBtn not found");
+    return;
+  }
+
+  // Only show to the active guesser
+  const activeKey = (this.guessingOrder && this.guessingOrder[this.currentGuesserIndex]) || null;
+  const isMyTurn = (this.myPlayerKey === activeKey);
+  if (!isMyTurn) {
+    // make sure it's hidden for non-active players
+    btn.classList.add('hidden');
+    return;
+  }
+
+  // Show and wire the button. Remove previous handlers to avoid duplicates.
+  btn.classList.remove('hidden');
+  btn.disabled = false;
+  btn.onclick = null;
+  btn.addEventListener('click', () => {
+    // disable quickly to prevent double-click
+    btn.disabled = true;
+    btn.classList.add('hidden');
+
+    // call the existing finish mechanism (which advances currentGuesserIndex via transaction)
+    // ensure finishMyGuessingTurn is idempotent (we recommended guard _finishRequested earlier)
+    if (typeof this.finishMyGuessingTurn === 'function') {
+      this.finishMyGuessingTurn();
+    } else {
+      console.warn("finishMyGuessingTurn not found");
+    }
+  });
+}
 
 /* ===== Advance guess indices ===== */
 advanceGuessIndices() {
@@ -795,8 +842,7 @@ finishMyGuessingTurn() {
   const roomRef = this.db.ref(`rooms/${this.roomCode}`);
 
   // mark my completion
-  this.db.ref(`rooms/${this.roomCode}/guessCompletions/${myKey}`).set(true)
-    .catch(e => console.warn('set completion fail', e));
+  this.db.ref(`rooms/${this.roomCode}/guessCompletions/${myKey}`).set(true).catch(e => console.warn('set completion fail', e));
 
   // Read guessingOrder length and advance index safely (host writes DB so everyone sees same result)
   roomRef.child('guessingOrder').once('value').then(orderSnap => {
