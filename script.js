@@ -290,26 +290,6 @@ class MultiplayerIfIWereGame {
   });
 }
 
-    const q = QUESTIONS[this.qaIndex];
-    const tile = document.createElement("div"); tile.className = "qa-tile"; tile.dataset.qindex = this.qaIndex;
-    tile.innerHTML = `<div class="qa-card"><h3>${escapeHtml(q.text)}</h3><div class="qa-options">${q.options.map((opt,i)=>`<button class="option-btn" data-opt="${i}">${escapeHtml(opt)}</button>`).join("")}</div></div>`;
-    this.qaStageInner.appendChild(tile);
-    requestAnimationFrame(() => requestAnimationFrame(() => tile.classList.add("enter")));
-    tile.querySelectorAll(".option-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        tile.querySelectorAll(".option-btn").forEach(b => b.disabled = true);
-        const idx = parseInt(btn.dataset.opt, 10);
-        const pid = this.myPlayerKey || this.playerName || `p_${Date.now()}`;
-        if (this.db && this.roomCode) {
-          this.db.ref(`rooms/${this.roomCode}/answers/${pid}/${this.qaIndex}`).set({ optionIndex: idx, optionText: q.options[idx], ts: Date.now() }).catch(e=>console.warn("save answer",e));
-        }
-        tile.classList.remove("enter"); tile.classList.add("exit");
-        const onEnd = ev => { if (ev.target !== tile) return; tile.removeEventListener("transitionend", onEnd); if (tile.parentNode) tile.parentNode.removeChild(tile); this.qaIndex += 1; this.renderNextQuestion(); };
-        tile.addEventListener("transitionend", onEnd);
-      });
-    });
-  }
-
   /* ===== Guessing prep & ready ===== */
 // robust showGuessPrepUI (improved — host listens for guessReady and starts guessing when readyCount >= expected)
 /* ===== Show waiting room after Q&A and host-only Begin button ===== */
