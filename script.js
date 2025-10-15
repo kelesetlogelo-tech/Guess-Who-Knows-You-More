@@ -619,10 +619,6 @@ applyGuessingState() {
     console.warn('applyGuessingState comps read failed', e);
   });
 }
-  // fallback: normal behavior if no DB available
-  const isMyTurn = (this.myPlayerKey === activeKey);
-  // ... proceed ...
-}
   // Detach previous watchers (defensive)
   if (this.db && this.roomCode) {
     try {
