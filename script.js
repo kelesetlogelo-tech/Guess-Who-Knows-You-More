@@ -769,7 +769,6 @@ finishMyGuessingTurn() {
   }).catch(err => {
     console.error('finishMyGuessingTurn error', err);
   });
-}
 
 /* ===== instantiate ===== */
 let gameInstance = null;
