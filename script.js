@@ -220,7 +220,6 @@ class MultiplayerIfIWereGame {
     this.qaStageInner = document.getElementById("qaStageInner");
     this.renderNextQuestion();
   }
-
   renderNextQuestion() {
   // If we've answered all questions, mark QA complete and show waiting UI
   if (this.qaIndex >= this.qaTotal) {
