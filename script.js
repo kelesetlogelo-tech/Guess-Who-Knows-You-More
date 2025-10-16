@@ -741,7 +741,7 @@ finishMyGuessingTurn() {
       this.showPostGuessWaitingUI();
     })
     .catch(e => console.error("Failed to mark guess complete", e));
-},
+}
 
 // Host-only: check if everyone finished or move to next guesser
 advanceGuesserIfNeeded() {
