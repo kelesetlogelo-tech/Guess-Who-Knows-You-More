@@ -377,7 +377,7 @@ showWaitingAfterQA() {
     if (this.db && this.roomCode) {
       const qaRef = this.db.ref(`rooms/${this.roomCode}/qaCompletions`);
       // remove previous handler to avoid duplicates (defensive)
-      try { qaRef.off('value'); } catch (e) {}
+      try { qaRef.off('value'); } catch (e) { /* ignore */ }
 
       qaRef.on('value', snap => {
         const doneObj = snap.val() || {};
@@ -387,7 +387,9 @@ showWaitingAfterQA() {
         // load players once (authoritative source for who should be in the room)
         this.db.ref(`rooms/${this.roomCode}/players`).once('value').then(psnap => {
           const players = psnap.val() || {};
-          const keys = Object.keys(players);
+          const keys = Object.keys(players || {});
+          const playersCount = keys.length; // <-- define playersCount here (was missing)
+
           statusList.innerHTML = "";
 
           keys.forEach(k => {
@@ -399,44 +401,58 @@ showWaitingAfterQA() {
             statusList.appendChild(li);
           });
 
-          // --- AUTO-START (drop-in replace for host enable/disable block) ---
-if (this.isHost) {
-  // if all players completed, auto-start the guessing phase after a small debounce
-  if (playersCount > 0 && doneCount >= playersCount) {
-    console.log('All players completed QA — host will auto-start guessing in 700ms');
-    // create a small debounce to avoid accidental double-writes
-    if (this._autoStartTimeout) clearTimeout(this._autoStartTimeout);
-    this._autoStartTimeout = setTimeout(() => {
-      // double-check DB state immediately before flipping (avoid races)
-      this.db.ref(`rooms/${this.roomCode}/qaCompletions`).once('value').then(checkSnap => {
-        const checkDone = checkSnap.val() || {};
-        if (Object.keys(checkDone).length >= playersCount) {
-          // set guessingOrder (alphabetic by first name) and flip phase atomically
-          return this.db.ref(`rooms/${this.roomCode}/players`).once('value').then(psnap => {
-            const playersObj = psnap.val() || {};
-            const items = Object.keys(playersObj).map(key => {
-              const nm = (playersObj[key] && playersObj[key].name) ? playersObj[key].name : '';
-              const firstName = (nm || '').split(/\s+/)[0] || nm || key;
-              return { key, firstName };
-            });
-            items.sort((a,b) => a.firstName.localeCompare(b.firstName, undefined, { sensitivity: 'base' }));
-            const order = items.map(x => x.key);
-            return this.db.ref(`rooms/${this.roomCode}`).update({
-              guessingOrder: order,
-              currentGuesserIndex: 0,
-              phase: 'guessing'
-            }).then(() => console.log('Auto-started guessing phase (host)'));
-          });
-        } else {
-          console.log('Auto-start aborted: completions changed during debounce');
-        }
-      }).catch(e => console.warn('Auto-start check failed', e));
-    }, 700);
-  } else {
-    // not ready yet: clear any pending auto-start timer
-    if (this._autoStartTimeout) { clearTimeout(this._autoStartTimeout); this._autoStartTimeout = null; }
-  }
-}
+          // --- AUTO-START (drop-in for host enable/disable) ---
+          if (this.isHost) {
+            // only auto-start if we have an authoritative playersCount ( > 0 )
+            if (playersCount > 0 && doneCount >= playersCount) {
+              console.log('All players completed QA — host will auto-start guessing in 700ms');
+              if (this._autoStartTimeout) clearTimeout(this._autoStartTimeout);
+              this._autoStartTimeout = setTimeout(() => {
+                // double-check DB state immediately before flipping (avoid races)
+                this.db.ref(`rooms/${this.roomCode}/qaCompletions`).once('value').then(checkSnap => {
+                  const checkDone = checkSnap.val() || {};
+                  if (Object.keys(checkDone).length >= playersCount) {
+                    // set guessingOrder (alphabetic by first name) and flip phase atomically
+                    return this.db.ref(`rooms/${this.roomCode}/players`).once('value').then(psnap2 => {
+                      const playersObj = psnap2.val() || {};
+                      const items = Object.keys(playersObj).map(key => {
+                        const nm = (playersObj[key] && playersObj[key].name) ? playersObj[key].name : '';
+                        const firstName = (nm || '').split(/\s+/)[0] || nm || key;
+                        return { key, firstName };
+                      });
+                      items.sort((a, b) => a.firstName.localeCompare(b.firstName, undefined, { sensitivity: 'base' }));
+                      const order = items.map(x => x.key);
+                      return this.db.ref(`rooms/${this.roomCode}`).update({
+                        guessingOrder: order,
+                        currentGuesserIndex: 0,
+                        phase: 'guessing'
+                      }).then(() => console.log('Auto-started guessing phase (host)'));
+                    });
+                  } else {
+                    console.log('Auto-start aborted: completions changed during debounce');
+                  }
+                }).catch(e => console.warn('Auto-start check failed', e));
+              }, 400);
+            } else {
+              // not ready yet: clear any pending auto-start timer
+              if (this._autoStartTimeout) { clearTimeout(this._autoStartTimeout); this._autoStartTimeout = null; }
+            }
+          }
+          // --- end auto-start ---
+        }).catch(e => {
+          console.warn("showWaitingAfterQA: failed to load players for status list", e);
+        });
+      }); // end qaRef.on('value')
+    } // end if (this.db && this.roomCode)
+
+    // Ensure we are also listening for phase changes so clients react instantly
+    if (this.db && this.roomCode) {
+      try {
+        this.listenForGuessingPhase();
+      } catch (e) {
+        console.warn("showWaitingAfterQA: listenForGuessingPhase failed", e);
+      }
+    }
   } catch (err) {
     // Last-resort fallback to avoid blank screen
     console.error("showWaitingAfterQA: unexpected error", err);
