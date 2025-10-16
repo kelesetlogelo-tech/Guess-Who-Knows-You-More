@@ -791,7 +791,7 @@ renderGuessingStatuses() {
       ul.appendChild(li);
     });
   });
-},
+}
 
 // Post-guessing waiting room
 showPostGuessWaitingUI() {
@@ -809,7 +809,7 @@ showPostGuessWaitingUI() {
   document.querySelectorAll("section").forEach(s => s.classList.add("hidden"));
   post.classList.remove("hidden");
   this.renderGuessingStatuses();
-},
+}
 
   /* ===== render guessing statuses ===== */
 renderGuessingStatuses() {
