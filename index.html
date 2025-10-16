@@ -44,7 +44,7 @@
   <button id="readyToGuessBtn">Ready to Guess</button>
 </section>
 
-  <!-- Waiting room shown after Q&A (all players) -->
+<!-- Waiting room shown after Q&A (all players) -->
 <section id="guessWaitingRoom" class="hidden">
   <h2>Waiting for everyone to finish Q&A</h2>
   <p>Room code: <span id="roomCodeDisplay_guess"></span></p>
@@ -52,16 +52,12 @@
 
   <!-- Host-only control (hidden for non-hosts) -->
   <div id="hostControls" class="hidden">
-    <button id="hostBeginGuessBtn" class="teal-btn">Begin Guessing (host)</button>
+    <button id="hostBeginGuessBtn" class="teal-btn muted" disabled>Begin Guessing (host)</button>
   </div>
 </section>
 
-<!-- Guessing UI containers remain as before -->
+<!-- Guessing UI containers -->
 <section id="guessPhase" class="hidden">
-  <h2 id="activeGuesserLabel"></h2>
-  <div id="guessCard"></div>
-  <!-- inside guessPhase section, near guessCard -->
-<div id="guessPhase">
   <h2 id="activeGuesserLabel"></h2>
   <div id="guessCard"></div>
 
@@ -69,9 +65,7 @@
   <div class="guess-controls">
     <button id="doneGuessingBtn" class="teal-btn hidden">Done Guessing!</button>
   </div>
-</div>
 </section>
-
 
   <!-- ========= IMPORTANT: Firebase scripts must load BEFORE firebase-config.js ========= -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
