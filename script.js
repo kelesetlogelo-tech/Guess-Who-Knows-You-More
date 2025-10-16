@@ -319,113 +319,125 @@ class MultiplayerIfIWereGame {
 }
 
   /* ===== Guessing prep & ready ===== */
-// robust showGuessPrepUI (improved — host listens for guessReady and starts guessing when readyCount >= expected)
-/* ===== Show waiting room after Q&A and host-only Begin button ===== */
+// Robust waiting UI shown after Q&A (replace existing showWaitingAfterQA)
 showWaitingAfterQA() {
-  console.log("showWaitingAfterQA: showing waiting room and live statuses");
+  console.log("showWaitingAfterQA: showing waiting room and live statuses (defensive)");
 
-  // Hide QA UI
-  const gamePhase = document.getElementById("gamePhase");
-  if (gamePhase) gamePhase.classList.add("hidden");
+  try {
+    // 1. Hide QA UI (only the QA/gamePhase region)
+    const gamePhase = document.getElementById("gamePhase");
+    if (gamePhase) gamePhase.classList.add("hidden");
 
-  // Show the pre-guess waiting room (visible to everyone while host decides to begin)
-  const guessWaiting = document.getElementById("guessWaitingRoom");
-  if (guessWaiting) guessWaiting.classList.remove("hidden");
+    // 2. Ensure guess waiting container exists and is visible
+    let guessWaiting = document.getElementById("guessWaitingRoom");
+    if (!guessWaiting) {
+      console.warn("showWaitingAfterQA: #guessWaitingRoom missing — creating fallback container");
+      guessWaiting = document.createElement("section");
+      guessWaiting.id = "guessWaitingRoom";
+      document.body.appendChild(guessWaiting);
+    }
+    guessWaiting.classList.remove("hidden");
 
-  const roomCodeDisp = document.getElementById("roomCodeDisplay_guess");
-  if (roomCodeDisp) roomCodeDisp.textContent = this.roomCode || "";
+    // 3. Room code display
+    const roomCodeDisp = document.getElementById("roomCodeDisplay_guess");
+    if (roomCodeDisp) roomCodeDisp.textContent = this.roomCode || "";
 
-  // Show host controls if host
-  const hostControls = document.getElementById("hostControls");
-  if (hostControls) hostControls.classList.toggle("hidden", !this.isHost);
+    // 4. Host controls visibility (hostControls may be missing in some markup)
+    let hostControls = document.getElementById("hostControls");
+    if (!hostControls) {
+      hostControls = document.createElement("div");
+      hostControls.id = "hostControls";
+      hostControls.classList.add("hidden");
+      guessWaiting.appendChild(hostControls);
+    }
+    hostControls.classList.toggle("hidden", !this.isHost);
 
-  // Ensure host Begin button exists and is wired once (host only)
-  if (this.isHost) {
-    const hostBtn = document.getElementById("hostBeginGuessBtn");
-    if (hostBtn) {
-      hostBtn.onclick = null;
+    // 5. Ensure hostBeginGuessBtn exists and is wired (but disabled by default)
+    let hostBtn = document.getElementById("hostBeginGuessBtn");
+    if (!hostBtn) {
+      hostBtn = document.createElement("button");
+      hostBtn.id = "hostBeginGuessBtn";
+      hostBtn.textContent = "Begin Guessing (host)";
+      hostBtn.className = "teal-btn muted";
+      hostBtn.disabled = true;
+      hostControls.appendChild(hostBtn);
       hostBtn.addEventListener("click", () => this.hostBeginHandler());
-      // we'll enable/disable it below based on qa completions count
     }
-  }
 
-  // Prepare / clear status list
-  const statusList = document.getElementById("guessPlayerStatusList");
-  if (statusList) statusList.innerHTML = "";
-
-  // Now listen for qaCompletions to update statuses and enable host button once all done
-  if (this.db && this.roomCode) {
-    const qaRef = this.db.ref(`rooms/${this.roomCode}/qaCompletions`);
-    // detach previous to avoid duplicates
-    try { qaRef.off('value'); } catch(e){}
-
-    // --- paste this over the existing qaRef.on('value', ...) handler inside showWaitingAfterQA()
-qaRef.on('value', snap => {
-  const doneObj = snap.val() || {};
-  const doneCount = Object.keys(doneObj).length;
-  console.log("qaCompletions updated:", doneCount, doneObj);
-
-  // Ensure the pre-guess waiting UI is visible
-  let statusList = document.getElementById("guessPlayerStatusList");
-  if (!statusList) {
-    statusList = document.createElement('ul');
-    statusList.id = 'guessPlayerStatusList';
-    const gw = document.getElementById('guessWaitingRoom');
-    if (gw) gw.appendChild(statusList);
-  }
-
-  // Render players + done/pending by reading players node (authoritative)
-  this.db.ref(`rooms/${this.roomCode}/players`).once('value').then(psnap => {
-    const players = psnap.val() || {};
-    const keys = Object.keys(players);
-    statusList.innerHTML = "";
-    keys.forEach(k => {
-      const name = players[k] && players[k].name ? players[k].name : k;
-      const li = document.createElement('li');
-      const status = (doneObj && doneObj[k]) ? 'completed' : 'pending';
-      li.textContent = `${name} — ${status}`;
-      if (status === 'completed') li.classList.add('status-completed'); else li.classList.remove('status-completed');
-      statusList.appendChild(li);
-    });
-
-    // Host: ensure host button exists and enable/disable it based on real player count
-    if (this.isHost) {
-      let hostBtn = document.getElementById("hostBeginGuessBtn");
-      if (!hostBtn) {
-        const hostControls = document.getElementById('hostControls') || (function(){
-          const h = document.createElement('div'); h.id = 'hostControls'; document.getElementById('guessWaitingRoom').appendChild(h); return h;
-        })();
-        hostBtn = document.createElement('button');
-        hostBtn.id = 'hostBeginGuessBtn';
-        hostBtn.textContent = 'Begin Guessing (host)';
-        hostBtn.disabled = true;
-        hostBtn.classList.add('teal-btn', 'muted');
-        hostControls.appendChild(hostBtn);
-        hostBtn.addEventListener('click', () => this.hostBeginHandler());
-      }
-
-      const playersCount = keys.length;
-      console.log('Host check: doneCount', doneCount, 'playersCount', playersCount);
-
-      if (playersCount > 0 && doneCount >= playersCount) {
-        hostBtn.disabled = false;
-        hostBtn.classList.remove('muted');
-      } else {
-        hostBtn.disabled = true;
-        hostBtn.classList.add('muted');
-      }
-
-      // ensure hostControls visible for host
-      const hostControls = document.getElementById('hostControls');
-      if (hostControls) hostControls.classList.toggle('hidden', !this.isHost);
+    // 6. Ensure status list element exists inside guessWaitingRoom
+    let statusList = document.getElementById("guessPlayerStatusList");
+    if (!statusList) {
+      statusList = document.createElement("ul");
+      statusList.id = "guessPlayerStatusList";
+      guessWaiting.appendChild(statusList);
     }
-  }).catch(e => {
-    console.warn("Failed to load players for status list", e);
-  });
-});
+    statusList.innerHTML = ""; // clear for fresh rendering
 
-    // Also ensure we are listening for phase changes (so when host flips to 'guessing' we react)
-    this.listenForGuessingPhase();
+    // 7. Now attach a safe listener to qaCompletions: read completions and players and render
+    if (this.db && this.roomCode) {
+      const qaRef = this.db.ref(`rooms/${this.roomCode}/qaCompletions`);
+      // remove previous handler to avoid duplicates (defensive)
+      try { qaRef.off('value'); } catch (e) {}
+
+      qaRef.on('value', snap => {
+        const doneObj = snap.val() || {};
+        const doneCount = Object.keys(doneObj).length;
+        console.log("qaCompletions updated:", doneCount, doneObj);
+
+        // load players once (authoritative source for who should be in the room)
+        this.db.ref(`rooms/${this.roomCode}/players`).once('value').then(psnap => {
+          const players = psnap.val() || {};
+          const keys = Object.keys(players);
+          statusList.innerHTML = "";
+
+          keys.forEach(k => {
+            const name = players[k] && players[k].name ? players[k].name : k;
+            const li = document.createElement('li');
+            const status = (doneObj && doneObj[k]) ? 'completed' : 'pending';
+            li.textContent = `${name} — ${status}`;
+            if (status === 'completed') li.classList.add('status-completed'); else li.classList.remove('status-completed');
+            statusList.appendChild(li);
+          });
+
+          // Host: enable Begin button if doneCount >= players.length
+          if (this.isHost) {
+            const playersCount = keys.length;
+            console.log('Host check: doneCount', doneCount, 'playersCount', playersCount);
+            if (playersCount > 0 && doneCount >= playersCount) {
+              hostBtn.disabled = false;
+              hostBtn.classList.remove('muted');
+            } else {
+              hostBtn.disabled = true;
+              hostBtn.classList.add('muted');
+            }
+          }
+        }).catch(e => {
+          console.warn("showWaitingAfterQA: failed to load players", e);
+        });
+
+        // also ensure clients are listening to phase changes so they react to host flipping phase
+        try { this.listenForGuessingPhase(); } catch (e) { console.warn("listenForGuessingPhase error", e); }
+      });
+    } else {
+      // If DB not present, simply show a fallback message
+      if (statusList) {
+        const li = document.createElement('li');
+        li.textContent = "Waiting (offline mode: DB not available)";
+        statusList.appendChild(li);
+      }
+    }
+  } catch (err) {
+    // Last-resort fallback to avoid blank screen
+    console.error("showWaitingAfterQA: unexpected error", err);
+    // create a minimal fallback UI to keep users informed
+    let fallback = document.getElementById('guessWaitingFallback');
+    if (!fallback) {
+      fallback = document.createElement('div');
+      fallback.id = 'guessWaitingFallback';
+      fallback.innerHTML = '<h2>Waiting for other players...</h2><p>If you see this message something in the waiting UI failed — check your console.</p>';
+      document.body.appendChild(fallback);
+    }
+    fallback.classList.remove('hidden');
   }
 }
 
