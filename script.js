@@ -253,7 +253,10 @@ class MultiplayerIfIWereGame {
     qc.innerHTML = '<div class="qa-stage" id="qaStageInner"></div>';
     this.qaStageInner = document.getElementById("qaStageInner");
     this.renderNextQuestion();
+    document.getElementById("doneGuessBtn")
+  ?.addEventListener("click", () => game.finishMyGuessingTurn());
   }
+  
   renderNextQuestion() {
   // --- inside renderNextQuestion(), when qaIndex >= qaTotal ---
     if (this.qaIndex >= this.qaTotal) {
@@ -716,6 +719,97 @@ listenForGuessingPhase() {
     console.warn('applyGuessingState: failed to read completions', err);
   });
 }
+
+  /* ===== Guessing flow control (after applyGuessingState) ===== */
+
+// Called by the active guesser when done guessing all others
+finishMyGuessingTurn() {
+  if (this._finishRequested) return;
+  this._finishRequested = true;
+
+  const pid = this.myPlayerKey;
+  const roomRef = this.db.ref(`rooms/${this.roomCode}`);
+  const completionsRef = roomRef.child("guessCompletions");
+
+  // mark self complete
+  completionsRef.child(pid).set(true)
+    .then(() => {
+      console.log("Marked guess complete for", pid);
+      // Now host advances to next
+      if (this.isHost) this.advanceGuesserIfNeeded();
+      // move player to post-guess waiting
+      this.showPostGuessWaitingUI();
+    })
+    .catch(e => console.error("Failed to mark guess complete", e));
+},
+
+// Host-only: check if everyone finished or move to next guesser
+advanceGuesserIfNeeded() {
+  const roomRef = this.db.ref(`rooms/${this.roomCode}`);
+  roomRef.once("value").then(snap => {
+    const data = snap.val() || {};
+    const order = data.guessingOrder || [];
+    const comps = data.guessCompletions || {};
+    const idx = data.currentGuesserIndex || 0;
+
+    // if all have completed -> move to "done"
+    if (Object.keys(comps).length >= order.length) {
+      console.log("All players guessed — finishing game");
+      roomRef.update({ phase: "done" });
+      return;
+    }
+
+    // otherwise advance to next not-completed player
+    let nextIdx = idx + 1;
+    while (nextIdx < order.length && comps[order[nextIdx]]) nextIdx++;
+    if (nextIdx >= order.length) nextIdx = idx; // guard
+
+    roomRef.update({ currentGuesserIndex: nextIdx });
+  });
+},
+
+// Everyone sees a live list during guessing
+renderGuessingStatuses() {
+  if (!this.db || !this.roomCode) return;
+  const ul = document.getElementById("guessPlayerStatusList");
+  if (!ul) return;
+  this.db.ref(`rooms/${this.roomCode}`).once("value").then(snap => {
+    const data = snap.val() || {};
+    const players = data.players || {};
+    const comps = data.guessCompletions || {};
+    const order = data.guessingOrder || [];
+    const currentIdx = data.currentGuesserIndex || 0;
+    const currentKey = order[currentIdx];
+
+    ul.innerHTML = "";
+    Object.entries(players).forEach(([k, v]) => {
+      const li = document.createElement("li");
+      let status = "waiting";
+      if (k === currentKey) status = "guessing";
+      else if (comps[k]) status = "done";
+      li.textContent = `${v.name} — ${status}`;
+      ul.appendChild(li);
+    });
+  });
+},
+
+// Post-guessing waiting room
+showPostGuessWaitingUI() {
+  let post = document.getElementById("postGuessWaitingRoom");
+  if (!post) {
+    post = document.createElement("section");
+    post.id = "postGuessWaitingRoom";
+    post.innerHTML = `
+      <h2>Post-Guessing Waiting Room</h2>
+      <p>Waiting for others to finish their guessing turns...</p>
+      <ul id="guessPlayerStatusList"></ul>
+    `;
+    document.body.appendChild(post);
+  }
+  document.querySelectorAll("section").forEach(s => s.classList.add("hidden"));
+  post.classList.remove("hidden");
+  this.renderGuessingStatuses();
+},
 
   /* ===== render guessing statuses ===== */
 renderGuessingStatuses() {
