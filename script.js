@@ -255,22 +255,29 @@ class MultiplayerIfIWereGame {
     this.renderNextQuestion();
   }
   renderNextQuestion() {
-  // If we've answered all questions, mark QA complete and show waiting UI
-  if (this.qaIndex >= this.qaTotal) {
-    try {
-      const pid = this.myPlayerKey || this.playerName || `p_${Date.now()}`;
-      if (this.db && this.roomCode) {
-        this.db.ref(`rooms/${this.roomCode}/qaCompletions/${pid}`).set(true).catch(()=>{});
-      }
-    } catch (e) {
-      console.warn("qa write failed", e);
+  // --- inside renderNextQuestion(), when qaIndex >= qaTotal ---
+    if (this.qaIndex >= this.qaTotal) {
+     try {
+    // use the push-key (myPlayerKey) when available — consistent with players list
+    const pid = this.myPlayerKey || this.playerName || `p_${Date.now()}`;
+    if (this.db && this.roomCode) {
+      this.db.ref(`rooms/${this.roomCode}/qaCompletions/${pid}`).set(true)
+        .then(() => console.log("QA completion written for", pid))
+        .catch(()=>{ /* ignore write errors here; listener UI will handle */ });
     }
-
-    // Show waiting UI and ensure clients listen for phase changes
-    this.showWaitingAfterQA();
-    if (this.db && this.roomCode) this.listenForGuessingPhase();
-    return;
+  } catch (e) {
+    console.warn("qa write failed", e);
   }
+
+  // show the defensive waiting UI (will also attach listeners)
+  this.showWaitingAfterQA();
+
+  // ensure we listen for phase changes so when host flips to 'guessing' clients react
+  if (this.db && this.roomCode) {
+    try { this.listenForGuessingPhase(); } catch(e){ console.warn("listenForGuessingPhase attach failed", e); }
+  }
+  return;
+}
 
   // Otherwise render the next question tile
   const q = QUESTIONS[this.qaIndex];
@@ -324,7 +331,6 @@ class MultiplayerIfIWereGame {
 }
 
   /* ===== Guessing prep & ready ===== */
-// Robust waiting UI shown after Q&A (replace existing showWaitingAfterQA)
 showWaitingAfterQA() {
   console.log("showWaitingAfterQA: showing waiting room and live statuses (defensive)");
 
@@ -344,7 +350,7 @@ showWaitingAfterQA() {
     const roomCodeDisp = document.getElementById("roomCodeDisplay_guess");
     if (roomCodeDisp) roomCodeDisp.textContent = this.roomCode || "";
 
-    // host controls container
+    // host controls container (create if missing)
     let hostControls = document.getElementById("hostControls");
     if (!hostControls) {
       hostControls = document.createElement("div");
@@ -354,7 +360,7 @@ showWaitingAfterQA() {
     }
     hostControls.classList.toggle("hidden", !this.isHost);
 
-    // host begin button (wire once)
+    // host button
     if (this.isHost) {
       let hostBtn = document.getElementById("hostBeginGuessBtn");
       if (!hostBtn) {
@@ -377,7 +383,7 @@ showWaitingAfterQA() {
     }
     statusList.innerHTML = "";
 
-    // If DB available, attach a single listener that updates the statuses and (if host) maybe flip phase
+    // attach listener to qaCompletions to render statuses and let host flip phase when ready
     if (this.db && this.roomCode) {
       const qaRef = this.db.ref(`rooms/${this.roomCode}/qaCompletions`);
       try { qaRef.off('value'); } catch (e) { /* ignore */ }
@@ -387,7 +393,7 @@ showWaitingAfterQA() {
         const doneCount = Object.keys(doneObj).length;
         console.log("qaCompletions updated:", doneCount, doneObj);
 
-        // load players and render statuses
+        // load players and render status
         this.db.ref(`rooms/${this.roomCode}/players`).once('value').then(psnap => {
           const players = psnap.val() || {};
           const keys = Object.keys(players || {});
@@ -403,33 +409,29 @@ showWaitingAfterQA() {
             statusList.appendChild(li);
           });
 
-          // Host: enable host button or auto-start once, but avoid racing/writes
+          // host: enable manual Begin when counts match and optionally auto-start (guarded)
           if (this.isHost) {
             const hostBtn = document.getElementById("hostBeginGuessBtn");
-            // manual enable logic
             if (hostBtn) {
               if (playersCount > 0 && doneCount >= playersCount) {
-                hostBtn.disabled = false;
-                hostBtn.classList.remove('muted');
+                hostBtn.disabled = false; hostBtn.classList.remove('muted');
               } else {
-                hostBtn.disabled = true;
-                hostBtn.classList.add('muted');
+                hostBtn.disabled = true; hostBtn.classList.add('muted');
               }
             }
 
-            // Optional: auto-start (only once) - keep a small debounce to avoid race between clients
+            // optional guarded auto-start (runs once)
             if (!this._autoStarted && playersCount > 0 && doneCount >= playersCount) {
-              // mark as auto-start requested locally
               this._autoStarted = true;
               if (this._autoStartTimeout) clearTimeout(this._autoStartTimeout);
               this._autoStartTimeout = setTimeout(() => {
-                // Double-check DB just prior to the write
+                // double-check DB before write
                 this.db.ref(`rooms/${this.roomCode}/qaCompletions`).once('value').then(checkSnap => {
                   const checkDone = checkSnap.val() || {};
                   if (Object.keys(checkDone).length >= playersCount) {
                     // build alphabetic order by first name and flip phase
-                    return this.db.ref(`rooms/${this.roomCode}/players`).once('value').then(psnap2 => {
-                      const playersObj = psnap2.val() || {};
+                    return this.db.ref(`rooms/${this.roomCode}/players`).once('value').then(ps2 => {
+                      const playersObj = ps2.val() || {};
                       const items = Object.keys(playersObj).map(key => {
                         const nm = (playersObj[key] && playersObj[key].name) ? playersObj[key].name : '';
                         const firstName = (nm || '').split(/\s+/)[0] || nm || key;
@@ -445,23 +447,18 @@ showWaitingAfterQA() {
                         .catch(e => { console.warn('Auto-start write failed', e); this._autoStarted = false; });
                     });
                   } else {
-                    console.log('Auto-start aborted: completions changed during debounce');
-                    this._autoStarted = false;
+                    console.log('Auto-start aborted: completions changed during debounce'); this._autoStarted = false;
                   }
                 }).catch(e => { console.warn('Auto-start check failed', e); this._autoStarted = false; });
               }, 400);
             }
-          } // end if isHost
-        }).catch(e => {
-          console.warn("showWaitingAfterQA: failed to load players for status list", e);
-        });
-      }); // end qaRef.on
-    } // end if db
+          } // end isHost
+        }).catch(e => console.warn("showWaitingAfterQA: failed to load players for status list", e));
+      }); // qaRef.on
+    } // end db check
 
-    // Also ensure we are listening for phase changes (client reacts when host flips)
-    if (this.db && this.roomCode) {
-      try { this.listenForGuessingPhase(); } catch (e) { console.warn("showWaitingAfterQA: listenForGuessingPhase failed", e); }
-    }
+    // ensure clients listen for phase changes so they react when host flips it
+    if (this.db && this.roomCode) try { this.listenForGuessingPhase(); } catch(e){ console.warn("listenForGuessingPhase failed", e); }
   } catch (err) {
     console.error("showWaitingAfterQA: unexpected error", err);
     let fallback = document.getElementById('guessWaitingFallback');
