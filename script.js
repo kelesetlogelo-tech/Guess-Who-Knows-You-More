@@ -149,6 +149,7 @@ class MultiplayerIfIWereGame {
           console.log("Host added with key:", this.myPlayerKey);
           this.showWaitingUI();
           this.listenForPlayers();
+          this.listenForGuessingPhase();
         });
       }).catch(err => { console.error("createRoom error:", err); alert("Could not create room — see console."); });
   }
@@ -168,6 +169,7 @@ class MultiplayerIfIWereGame {
         console.log("Joined with key:", this.myPlayerKey);
         this.showWaitingUI();
         this.listenForPlayers();
+        this.listenForGuessingPhase();
       });
     }).catch(err => console.error("joinRoom error:", err));
   }
@@ -567,61 +569,61 @@ markReadyToGuess() {
 
   /* ===== Listen & apply guessing phase ===== */
 // Called on clients so everyone reacts when host flips phase -> 'guessing'
+// Replace the existing listenForGuessingPhase() with this:
 listenForGuessingPhase() {
   if (!this.db || !this.roomCode) return;
   const roomRef = this.db.ref(`rooms/${this.roomCode}`);
 
-  // remove previous handler to avoid duplicates
-  try { roomRef.child('phase').off(); } catch(e){}
+  // Ensure single phase handler
+  try { roomRef.child('phase').off(); } catch(e) {}
 
-  // react to phase changes
   roomRef.child('phase').on('value', snap => {
     const phase = snap.val();
     console.log('phase ->', phase);
 
-    if (phase === 'qa' || !phase) {
-      // still in QA - show QA waiting or QA UI (no-op if already in QA)
+    if (!phase || phase === 'qa') {
+      // We're in QA: show QA area, hide guess UIs
       const gamePhase = document.getElementById('gamePhase');
       if (gamePhase) gamePhase.classList.remove('hidden');
       const guessWaiting = document.getElementById('guessWaitingRoom');
       if (guessWaiting) guessWaiting.classList.add('hidden');
+      const guessPhase = document.getElementById('guessPhase');
+      if (guessPhase) guessPhase.classList.add('hidden');
       return;
     }
 
     if (phase === 'guessing') {
-      // Everybody should show the pre-guess waiting room (which shows who is currently guessing)
-      // Hide QA/gamePhase UI and show guessWaitingRoom
+      // Everyone shows the pre-guess waiting room (the host or the active player will transition to playing UI)
       const gamePhase = document.getElementById('gamePhase');
       if (gamePhase) gamePhase.classList.add('hidden');
       const guessWaiting = document.getElementById('guessWaitingRoom');
       if (guessWaiting) guessWaiting.classList.remove('hidden');
+      const guessPhase = document.getElementById('guessPhase');
+      if (guessPhase) guessPhase.classList.add('hidden'); // initially hide until we know active
 
-      // Render statuses (reads players + guessCompletions)
-      if (typeof this.renderGuessingStatuses === "function") this.renderGuessingStatuses();
-
-      // Ensure we load guessingOrder and currentGuesserIndex once so applyGuessingState can run
+      // load guessingOrder and currentGuesserIndex, then apply state
       roomRef.child('guessingOrder').once('value').then(oSnap => {
         this.guessingOrder = oSnap.val() || [];
         return roomRef.child('currentGuesserIndex').once('value');
       }).then(idxSnap => {
-        this.currentGuesserIndex = idxSnap.val() || 0;
-        // let applyGuessingState decide who is active and whether this client should start guessing
-        if (typeof this.applyGuessingState === "function") this.applyGuessingState();
+        this.currentGuesserIndex = (typeof idxSnap.val() === 'number') ? idxSnap.val() : 0;
+        // apply state; applyGuessingState will set up watchers for index/completions
+        this.applyGuessingState();
       }).catch(err => {
         console.error('listenForGuessingPhase error', err);
       });
-
       return;
     }
 
     if (phase === 'done') {
-      // final state (scores, etc.). Show appropriate UI if desired
-      // hide waiting/guess UI and show final results (not implemented here)
+      // final state — you can add UI here for scores
+      console.log('phase -> done');
     }
   });
 }
 
  /* ===== Listen & apply guessing phase ===== */
+// Replace the existing applyGuessingState() with this:
 applyGuessingState() {
   console.log("applyGuessingState running");
 
@@ -634,91 +636,76 @@ applyGuessingState() {
     return;
   }
 
-  // read completions once to make authoritative decisions
-  const completionsRef = this.db.ref(`rooms/${this.roomCode}/guessCompletions`);
-  completionsRef.once('value').then(snap => {
-    const comps = snap.val() || {};
-    const activeCompleted = !!(activeKey && comps[activeKey]);
-    const iAmCompleted = !!(this.myPlayerKey && comps[this.myPlayerKey]);
+  // Update the waiting UI with who is active and statuses
+  // make sure waiting room is visible by default
+  const guessWaitingRoom = document.getElementById('guessWaitingRoom');
+  const guessPhaseEl = document.getElementById('guessPhase');
+  if (guessWaitingRoom) guessWaitingRoom.classList.remove('hidden');
+  if (guessPhaseEl) guessPhaseEl.classList.add('hidden');
 
-    if (activeCompleted) {
-      console.warn('applyGuessingState: activeKey already completed; waiting for DB to advance index');
-      if (iAmCompleted) {
-        if (typeof this.showPostGuessWaitingUI === 'function') this.showPostGuessWaitingUI();
-      } else {
-        const guessWaiting = document.getElementById('guessWaitingRoom');
-        if (guessWaiting) guessWaiting.classList.remove('hidden');
-        const guessPhaseEl = document.getElementById('guessPhase');
-        if (guessPhaseEl) guessPhaseEl.classList.add('hidden');
-      }
-      return;
+  // update the label showing who is active
+  const activeLabel = document.getElementById('activeGuesserLabel');
+  if (activeLabel) {
+    if (activeKey === this.myPlayerKey) activeLabel.textContent = 'You are guessing now — guess every other player';
+    else activeLabel.textContent = `${this.getPlayerNameByKey(activeKey) || 'A player'} is guessing — please wait`;
+  }
+
+  // render statuses
+  if (typeof this.renderGuessingStatuses === 'function') this.renderGuessingStatuses();
+
+  // detach old watchers (defensive)
+  try {
+    this.db.ref(`rooms/${this.roomCode}/currentGuesserIndex`).off();
+    this.db.ref(`rooms/${this.roomCode}/guessCompletions`).off();
+  } catch (e) {}
+
+  // watch for index changes (so UI updates promptly for everyone)
+  const idxRef = this.db.ref(`rooms/${this.roomCode}/currentGuesserIndex`);
+  idxRef.on('value', snap => {
+    const idx = snap.val();
+    if (typeof idx === 'number' && this.currentGuesserIndex !== idx) {
+      this.currentGuesserIndex = idx;
+      // reset local guards: new player's turn
+      this.isGuessingActive = false;
+      this._finishRequested = false;
+      // re-run to update UI for this client
+      this.applyGuessingState();
     }
+  });
 
-    // now safe to decide if it's my turn
-    const isMyTurn = (this.myPlayerKey === activeKey);
+  // watch completions for status updates
+  const compRef = this.db.ref(`rooms/${this.roomCode}/guessCompletions`);
+  compRef.on('value', () => {
+    if (typeof this.renderGuessingStatuses === 'function') this.renderGuessingStatuses();
+    if (typeof this.checkAllGuessingComplete === 'function') this.checkAllGuessingComplete();
+  });
 
-    // detach previous handlers defensively
-    try {
-      this.db.ref(`rooms/${this.roomCode}/currentGuesserIndex`).off();
-      this.db.ref(`rooms/${this.roomCode}/guessCompletions`).off();
-    } catch (e) {
-      /* ignore off() errors */
-    }
+  // If it's my turn, switch to guessing UI and start the guesses
+  const isMyTurn = (this.myPlayerKey === activeKey);
+  if (isMyTurn) {
+    // show guessPhase for the active player only
+    if (guessPhaseEl) guessPhaseEl.classList.remove('hidden');
+    if (guessWaitingRoom) guessWaitingRoom.classList.add('hidden');
 
-    // attach single watchers
-    const idxRef = this.db.ref(`rooms/${this.roomCode}/currentGuesserIndex`);
-    idxRef.on('value', snapIdx => {
-      const idx = snapIdx.val();
-      if (typeof idx === 'number' && this.currentGuesserIndex !== idx) {
-        this.currentGuesserIndex = idx;
-        // reset local guards for the new index
-        this.isGuessingActive = false;
-        this._finishRequested = false;
-        this.applyGuessingState();
-      }
-    });
-
-    const gcRef = this.db.ref(`rooms/${this.roomCode}/guessCompletions`);
-    gcRef.on('value', () => {
-      if (typeof this.renderGuessingStatuses === "function") this.renderGuessingStatuses();
-      if (typeof this.checkAllGuessingComplete === "function") this.checkAllGuessingComplete();
-    });
-
-    // update UI labels/regions
-    const rcd = document.getElementById('roomCodeDisplay_guess');
-    if (rcd) rcd.textContent = this.roomCode || '';
-
-    const activeLabel = document.getElementById('activeGuesserLabel');
-    if (activeLabel) {
-      activeLabel.textContent = isMyTurn
-        ? 'You are guessing now — guess every other player'
-        : `${this.getPlayerNameByKey(activeKey) || 'A player'} is guessing — please wait`;
-    }
-
-    const guessWaitingRoom = document.getElementById('guessWaitingRoom');
-    const guessPhaseEl = document.getElementById('guessPhase');
-    if (guessWaitingRoom) guessWaitingRoom.classList.toggle('hidden', isMyTurn);
-    if (guessPhaseEl) guessPhaseEl.classList.toggle('hidden', !isMyTurn);
-
-    // start guessing flow if this client is the active guesser
-    if (isMyTurn) {
-      if (!this.isGuessingActive) {
-        this.isGuessingActive = true;
-        this._finishRequested = false;
-        if (typeof this.startGuessingForMe === "function") this.startGuessingForMe();
-      } else {
-        console.log("applyGuessingState: my turn already active — ignoring re-entry");
+    // start guessing flow for this client if not already active
+    if (!this.isGuessingActive) {
+      this.isGuessingActive = true;
+      this._finishRequested = false;
+      if (typeof this.startGuessingForMe === 'function') {
+        // small timeout to allow UI settle
+        setTimeout(() => this.startGuessingForMe(), 50);
       }
     } else {
-      // ensure only active player sees guess tiles
-      const guessCard = document.getElementById('guessCard');
-      if (guessCard) guessCard.innerHTML = '';
-      this.isGuessingActive = false;
+      console.log("applyGuessingState: my turn already active — ignoring re-entry");
     }
-  }).catch(err => {
-    console.warn('applyGuessingState: failed to read completions', err);
-  });
+  } else {
+    // Not my turn: ensure I see waiting UI
+    if (guessPhaseEl) guessPhaseEl.classList.add('hidden');
+    if (guessWaitingRoom) guessWaitingRoom.classList.remove('hidden');
+    this.isGuessingActive = false;
+  }
 }
+
   /* ===== render guessing statuses ===== */
 renderGuessingStatuses() {
   const listEl = document.getElementById('guessPlayerStatusList');
