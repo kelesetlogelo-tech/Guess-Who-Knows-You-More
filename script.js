@@ -766,7 +766,7 @@ advanceGuesserIfNeeded() {
 
     roomRef.update({ currentGuesserIndex: nextIdx });
   });
-},
+}
 
 // Everyone sees a live list during guessing
 renderGuessingStatuses() {
