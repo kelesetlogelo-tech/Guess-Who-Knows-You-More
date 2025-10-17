@@ -1,163 +1,172 @@
+/* ===== Theme variables (easy to tweak) ===== */
+:root{
+  --bg-grad-start: #6a11cb;    /* purple */
+  --bg-grad-end:   #2575fc;    /* blue */
+  --surface: #ffffff;          /* white tiles */
+  --muted-surface: #fbfdff;
+  --text: #0b1220;
+  --muted-text: #4b5563;
+  --teal: #0aa8a0;             /* teal for buttons */
+  --teal-dark: #078f86;
+  --border: rgba(11,18,32,0.06);
+  --shadow: rgba(2,6,23,0.12);
+  --radius: 12px;
+  --max-width: 940px;
+}
+
+/* ===== Page layout & responsive container ===== */
+* { box-sizing: border-box; }
+html,body { height:100%; margin:0; padding:0; }
 body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: linear-gradient(135deg, #6a11cb, #2575fc);
-  color: #fff;
-  min-height: 100vh;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: linear-gradient(135deg, var(--bg-grad-start), var(--bg-grad-end));
+  color: var(--text);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  padding: 18px;
   display: flex;
-  align-items: center;
   justify-content: center;
 }
 
-.container {
-  background: rgba(255, 255, 255, 0.15);
-  padding: 20px;
-  border-radius: 16px;
-  text-align: center;
-  max-width: 500px;
-  width: 90%;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+/* main page wrapper */
+.app-shell {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 18px;
 }
 
-h1, h2 {
+/* center small screens, keep contents readable */
+@media (min-width: 880px) {
+  .app-shell { padding: 28px; }
+}
+
+/* ===== Cards & surfaces ===== */
+.card, .qa-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin: 12px 0;
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 30px var(--shadow);
+}
+
+/* muted container (e.g., waiting room list) */
+.container-muted {
+  background: var(--muted-surface);
+  border-radius: 10px;
+  padding: 12px;
+  border: 1px solid rgba(255,255,255,0.04);
+}
+
+/* small headings */
+h1,h2,h3 { margin: 8px 0; color: #fff; text-align: center; }
+h2 { font-size: 1.15rem; }
+
+/* utility */
+.hidden { display:none; }
+ul { padding-left: 18px; margin: 10px 0; text-align: left; }
+
+/* ===== Buttons (teal with BLACK text) ===== */
+/* accessible touch sizes and consistent look */
+button {
+  font-size: 16px;
+  line-height: 1;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: transform .08s ease, box-shadow .08s ease, opacity .12s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* teal primary button (used throughout) */
+button.teal-btn {
+  background: linear-gradient(180deg, var(--teal), var(--teal-dark));
+  color: #000;                 /* black text as requested */
+  font-weight: 600;
+  box-shadow: 0 8px 20px rgba(6,60,56,0.12);
+  border: 1px solid rgba(0,0,0,0.06);
+}
+button.teal-btn:active { transform: translateY(0); }
+button.teal-btn:hover { transform: translateY(-2px); }
+
+/* neutral/ghost buttons (on white) */
+button.neutral {
+  background: #fff;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+/* disabled/muted */
+button.muted {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* focus outline for keyboard users */
+button:focus {
+  outline: 3px solid rgba(10,168,160,0.14);
+  outline-offset: 2px;
+}
+
+/* ===== Q&A tiles & animation ===== */
+.qa-stage { max-width: 760px; margin: 0 auto; text-align:left; }
+.qa-tile {
+  transform-origin: center top;
+  transition: transform 180ms cubic-bezier(.2,.8,.2,1), opacity 180ms ease;
+  opacity: 0;
+  transform: translateY(8px) scale(.995);
+  border-radius: 10px;
+  overflow: hidden;
   margin-bottom: 10px;
 }
+.qa-tile.enter { opacity:1; transform: translateY(0) scale(1); }
+.qa-tile.exit  { opacity:0; transform: translateY(-8px) scale(.99); }
 
-input {
-  display: block;
-  margin: 10px auto;
-  padding: 10px;
-  border: none;
-  border-radius: 8px;
-  width: 80%;
-}
+.qa-card { padding: 14px; background: var(--surface); border-radius: 10px; }
 
-button {
-  background-color: #64d6d1;
-  color: black;
-  border: none;
-  border-radius: 12px;
-  padding: 10px 20px;
-  margin-top: 10px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: background 0.3s;
-}
-
-button:hover {
-  background-color: #52c0bb;
-}
-
-.hidden {
-  display: none;
-}
-.guess-controls { margin-top: 18px; }
-.teal-btn { /* your existing teal pastel button style */ }
-#playerList {
-  list-style: none;
-  padding: 0;
-}
-
-#questionCard {
-  background: #fff;
-  color: black;
-  padding: 20px;
-  border-radius: 12px;
-  margin-top: 20px;
-/* ---------- Q&A tile animations (append to style.css) ---------- */
-.qa-stage {
-  position: relative;
-  min-height: 160px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: visible;
-}
-
-.qa-tile {
-  position: absolute;
-  width: 92%;
-  max-width: 520px;
-  transform: translateX(-120%); /* start off left */
-  opacity: 0;
-  transition: transform 420ms cubic-bezier(.22,.9,.35,1), opacity 280ms ease;
-  z-index: 10;
-}
-
-.qa-tile.enter {
-  transform: translateX(0%);
-  opacity: 1;
-}
-
-.qa-tile.exit {
-  transform: translateX(120%);
-  opacity: 0;
-}
-
-.qa-card {
-  background: #fff;
-  color: #000;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
-  text-align: left;
-}
-
-.qa-options {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 12px;
-}
-
-.option-btn {
-  background: #80cbc4;
-  border: none;
+/* options layout */
+.qa-options { margin-top:12px; display:flex; flex-wrap:wrap; gap:10px; }
+.qa-options button {
   padding: 10px 12px;
   border-radius: 10px;
+  background: var(--teal);
+  color: #000;                  /* black text for options */
+  border: 1px solid rgba(0,0,0,0.06);
+  font-weight:600;
   cursor: pointer;
-  font-weight: 600;
-  color: #000;
-  transition: transform 120ms ease, background 160ms ease;
-  text-align: left;
+  min-width: 120px;
+  text-align: center;
+}
+.qa-options button:active { transform: translateY(0); }
+.qa-options button:hover { transform: translateY(-2px); }
+
+/* small responsive adjustments */
+@media (max-width: 520px) {
+  body { padding: 12px; }
+  .app-shell { padding: 12px; }
+  button { font-size: 15px; padding: 12px; border-radius: 10px; }
+  .qa-options button { min-width: 100px; font-size: 14px; padding: 10px; }
+  h2 { font-size: 1rem; }
 }
 
-.option-btn:active { transform: translateY(1px); }
-.option-btn[disabled] { opacity: 0.6; cursor: default; transform: none; }
-}
+/* ===== Status lists ===== */
+.status-completed { color: #065f46; font-weight:700; }
+.status-pending { color: var(--muted-text); }
 
-/* guessing prep */
-#guessPrep {
-  background: rgba(255,255,255,0.08);
-  padding: 1.25rem;
+/* ===== Guess card small tweaks ===== */
+#guessCard { min-height: 120px; display:flex; align-items:flex-start; justify-content:center; flex-direction:column; }
+
+/* ===== Small decorative accent for page content so white cards stand out on gradient ===== */
+.app-top {
+  padding: 18px;
+  margin-bottom: 6px;
   border-radius: 12px;
-  margin-top: 12px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 8px 20px rgba(8,12,38,0.06);
 }
 
-/* Guess result badges */
-.guess-result {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  font-weight: bold;
-  margin-left: 10px;
-}
-
-.guess-correct {
-  background: #d4f8e6;
-  color: #0a7a3a;
-  border: 2px solid #8fe0b3;
-}
-
-.guess-wrong {
-  background: #fdecea;
-  color: #b52121;
-  border: 2px solid #f3a0a0;
-}
-
-/* Reuse tile animations from QA; ensure #guessCard uses same .qa-stage wrapper */
-#guessCard .qa-stage { min-height: 220px; }
-
+/* Ensure large clickable areas on mobile for lists */
+li button, li .btn-like { padding: 12px 10px; display: inline-block; border-radius: 8px; }
