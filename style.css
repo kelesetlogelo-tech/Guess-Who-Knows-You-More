@@ -1,172 +1,87 @@
-/* ===== Theme variables (easy to tweak) ===== */
 :root{
-  --bg-grad-start: #6a11cb;    /* purple */
-  --bg-grad-end:   #2575fc;    /* blue */
-  --surface: #ffffff;          /* white tiles */
-  --muted-surface: #fbfdff;
-  --text: #0b1220;
-  --muted-text: #4b5563;
-  --teal: #0aa8a0;             /* teal for buttons */
+  --bg-grad-start: #6a11cb;
+  --bg-grad-end:   #2575fc;
+  --teal: #0aa8a0;
   --teal-dark: #078f86;
-  --border: rgba(11,18,32,0.06);
-  --shadow: rgba(2,6,23,0.12);
+  --surface: #ffffff;
+  --text: #05202a;
   --radius: 12px;
+  --shadow: rgba(2,6,23,0.12);
   --max-width: 940px;
 }
 
-/* ===== Page layout & responsive container ===== */
-* { box-sizing: border-box; }
-html,body { height:100%; margin:0; padding:0; }
-body {
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  background: linear-gradient(135deg, var(--bg-grad-start), var(--bg-grad-end));
-  color: var(--text);
-  -webkit-font-smoothing:antialiased;
-  -moz-osx-font-smoothing:grayscale;
-  padding: 18px;
-  display: flex;
-  justify-content: center;
+*{ box-sizing:border-box; }
+html,body{ height:100%; margin:0; padding:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; -webkit-font-smoothing:antialiased; }
+body{
+  display:flex; align-items:flex-start; justify-content:center;
+  background: linear-gradient(135deg,var(--bg-grad-start),var(--bg-grad-end));
+  color:var(--text); padding:20px;
 }
 
-/* main page wrapper */
-.app-shell {
-  width: 100%;
-  max-width: var(--max-width);
-  margin: 0 auto;
-  padding: 18px;
+/* container */
+.app-shell{ width:100%; max-width:var(--max-width); margin:0 auto; }
+
+/* header / title */
+.app-top{ text-align:center; color:white; margin-bottom:12px; }
+.app-top h1{ margin:0; font-size:1.6rem; font-weight:700; letter-spacing:0.4px; }
+
+/* cards */
+.card{
+  background:var(--surface);
+  border-radius:var(--radius);
+  padding:14px;
+  margin:10px 0;
+  border: 1px solid rgba(11,18,32,0.06);
+  box-shadow: 0 12px 30px var(--shadow);
 }
 
-/* center small screens, keep contents readable */
-@media (min-width: 880px) {
-  .app-shell { padding: 28px; }
+/* Buttons */
+button{
+  cursor:pointer;
+  border-radius:10px;
+  border:none;
+  padding:10px 14px;
+  font-weight:600;
+  transition: transform .08s ease, box-shadow .12s ease, opacity .12s ease;
 }
 
-/* ===== Cards & surfaces ===== */
-.card, .qa-card {
-  background: var(--surface);
-  border-radius: var(--radius);
-  padding: 14px;
-  margin: 12px 0;
-  border: 1px solid var(--border);
-  box-shadow: 0 10px 30px var(--shadow);
-}
-
-/* muted container (e.g., waiting room list) */
-.container-muted {
-  background: var(--muted-surface);
-  border-radius: 10px;
-  padding: 12px;
-  border: 1px solid rgba(255,255,255,0.04);
-}
-
-/* small headings */
-h1,h2,h3 { margin: 8px 0; color: #fff; text-align: center; }
-h2 { font-size: 1.15rem; }
-
-/* utility */
-.hidden { display:none; }
-ul { padding-left: 18px; margin: 10px 0; text-align: left; }
-
-/* ===== Buttons (teal with BLACK text) ===== */
-/* accessible touch sizes and consistent look */
-button {
-  font-size: 16px;
-  line-height: 1;
-  padding: 12px 16px;
-  border-radius: 12px;
-  border: none;
-  cursor: pointer;
-  transition: transform .08s ease, box-shadow .08s ease, opacity .12s;
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* teal primary button (used throughout) */
-button.teal-btn {
-  background: linear-gradient(180deg, var(--teal), var(--teal-dark));
-  color: #000;                 /* black text as requested */
-  font-weight: 600;
+button.teal-btn{
+  background: linear-gradient(180deg,var(--teal),var(--teal-dark));
+  color: #000; /* black text */
   box-shadow: 0 8px 20px rgba(6,60,56,0.12);
   border: 1px solid rgba(0,0,0,0.06);
 }
-button.teal-btn:active { transform: translateY(0); }
-button.teal-btn:hover { transform: translateY(-2px); }
+button.teal-btn:hover{ transform: translateY(-3px); }
+button.teal-btn:active{ transform: translateY(0); }
 
-/* neutral/ghost buttons (on white) */
-button.neutral {
-  background: #fff;
-  color: var(--text);
-  border: 1px solid var(--border);
+button.neutral{
+  background:#fff;
+  color:var(--text);
+  border:1px solid rgba(0,0,0,0.06);
+}
+button.muted{ opacity:0.45; pointer-events:none; }
+
+/* qa tiles & animation */
+.qa-stage{ max-width:760px; margin: 8px auto; }
+.qa-tile{ opacity:0; transform: translateY(8px) scale(.995); transition: transform 180ms cubic-bezier(.2,.8,.2,1), opacity 180ms ease; }
+.qa-tile.enter{ opacity:1; transform: translateY(0) scale(1); }
+.qa-tile.exit{ opacity:0; transform: translateY(-8px) scale(.99); }
+.qa-card{ background:var(--surface); padding:14px; border-radius:10px; }
+
+/* option buttons (teal with black text) */
+.qa-options{ margin-top:12px; display:flex; flex-wrap:wrap; gap:10px; }
+.qa-options button{ background:var(--teal); color:#000; border-radius:8px; padding:10px 12px; min-width:110px; }
+
+/* small screens */
+@media (max-width:520px){
+  body{ padding:10px; }
+  .app-top h1{ font-size:1.2rem; }
+  button{ font-size:15px; padding:12px; border-radius:10px; }
+  .qa-options button{ min-width:100px; }
 }
 
-/* disabled/muted */
-button.muted {
-  opacity: 0.55;
-  pointer-events: none;
-}
-
-/* focus outline for keyboard users */
-button:focus {
-  outline: 3px solid rgba(10,168,160,0.14);
-  outline-offset: 2px;
-}
-
-/* ===== Q&A tiles & animation ===== */
-.qa-stage { max-width: 760px; margin: 0 auto; text-align:left; }
-.qa-tile {
-  transform-origin: center top;
-  transition: transform 180ms cubic-bezier(.2,.8,.2,1), opacity 180ms ease;
-  opacity: 0;
-  transform: translateY(8px) scale(.995);
-  border-radius: 10px;
-  overflow: hidden;
-  margin-bottom: 10px;
-}
-.qa-tile.enter { opacity:1; transform: translateY(0) scale(1); }
-.qa-tile.exit  { opacity:0; transform: translateY(-8px) scale(.99); }
-
-.qa-card { padding: 14px; background: var(--surface); border-radius: 10px; }
-
-/* options layout */
-.qa-options { margin-top:12px; display:flex; flex-wrap:wrap; gap:10px; }
-.qa-options button {
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: var(--teal);
-  color: #000;                  /* black text for options */
-  border: 1px solid rgba(0,0,0,0.06);
-  font-weight:600;
-  cursor: pointer;
-  min-width: 120px;
-  text-align: center;
-}
-.qa-options button:active { transform: translateY(0); }
-.qa-options button:hover { transform: translateY(-2px); }
-
-/* small responsive adjustments */
-@media (max-width: 520px) {
-  body { padding: 12px; }
-  .app-shell { padding: 12px; }
-  button { font-size: 15px; padding: 12px; border-radius: 10px; }
-  .qa-options button { min-width: 100px; font-size: 14px; padding: 10px; }
-  h2 { font-size: 1rem; }
-}
-
-/* ===== Status lists ===== */
-.status-completed { color: #065f46; font-weight:700; }
-.status-pending { color: var(--muted-text); }
-
-/* ===== Guess card small tweaks ===== */
-#guessCard { min-height: 120px; display:flex; align-items:flex-start; justify-content:center; flex-direction:column; }
-
-/* ===== Small decorative accent for page content so white cards stand out on gradient ===== */
-.app-top {
-  padding: 18px;
-  margin-bottom: 6px;
-  border-radius: 12px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
-  border: 1px solid rgba(255,255,255,0.06);
-  box-shadow: 0 8px 20px rgba(8,12,38,0.06);
-}
-
-/* Ensure large clickable areas on mobile for lists */
-li button, li .btn-like { padding: 12px 10px; display: inline-block; border-radius: 8px; }
+.hidden{ display:none; }
+ul{ padding-left:18px; margin:8px 0; }
+.status-completed{ color:#065f46; font-weight:700; }
+.status-pending{ color:#6b7280; }
+#guessCard{ min-height:120px; display:flex; align-items:flex-start; justify-content:center; flex-direction:column; }
