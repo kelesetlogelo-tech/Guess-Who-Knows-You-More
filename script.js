@@ -26,6 +26,9 @@ class MultiplayerIfIWereGame {
     // room/player
     this.roomCode = null; this.roomRef = null; this.playersRef = null;
     this.myPlayerKey = null; this.playerName = ""; this.isHost = false; this.expectedPlayers = 0;
+    this.revealHelper = new RevealHelper(this.roomCode, this.myPlayerKey, this.isHost);
+    this.revealHelper.showHostRevealIfEligible();
+
     // QA
     this.qaIndex = 0; this.qaTotal = QUESTIONS.length; this.qaStageInner = null;
     // Guessing
