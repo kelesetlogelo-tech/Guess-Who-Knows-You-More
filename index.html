@@ -1,82 +1,82 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html>
 <head>
-  <meta charset="utf-8"/>
+  <meta charset="utf-8" />
+  <title>Multiplayer Test</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>If I Were Game</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="container">
-    <!-- landing / waiting / game UI (same ids used by script.js) -->
-    <div id="landing">
-      <h1>If I Were Game</h1>
-      <input id="hostName" placeholder="Host name" />
-      <input id="playerCount" type="number" min="2" max="8" placeholder="Players (2-8)" />
-      <button id="createRoomBtn">Create Room</button>
-      <hr/>
-      <input id="playerName" placeholder="Your name" />
-      <input id="roomCodeInput" placeholder="Room code" />
+  <h1>Minimal Multiplayer Test</h1>
+
+  <!-- Landing / Lobby -->
+  <section id="landing" class="card">
+    <div>
+      <label>Host name: <input id="hostName" placeholder="Host name" /></label>
+      <label>Players (#): <input id="playerCount" value="2" style="width:60px" /></label>
+      <button id="createRoomBtn" class="teal-btn">Create Room</button>
+    </div>
+    <hr/>
+    <div>
+      <label>Your name: <input id="playerName" placeholder="Player name" /></label>
+      <label>Room code: <input id="roomCodeInput" placeholder="ROOM" /></label>
       <button id="joinRoomBtn">Join Room</button>
     </div>
+  </section>
 
-    <div id="waitingRoom" class="hidden">
-      <h2>Waiting Room</h2>
-      <p>Code: <strong id="roomCodeDisplay"></strong></p>
-      <ul id="playerList"></ul>
-      <p id="playersCount"></p>
-      <button id="beginBtn" class="hidden">Begin</button>
+  <!-- Waiting for players -->
+  <section id="waitingRoom" class="card hidden">
+    <h3>Lobby</h3>
+    <p>Room code: <span id="roomCode"></span></p>
+    <p>Players joined: <span id="playersCount">0</span></p>
+    <ul id="playerList"></ul>
+    <div>
+      <button id="beginBtn" class="teal-btn hidden">Begin (host)</button>
     </div>
+  </section>
 
-    <div id="gamePhase" class="hidden">
-      <div id="questionCard" class="card"></div>
+  <!-- QA area -->
+  <section id="gamePhase" class="card hidden">
+    <h3>Q&A</h3>
+    <div id="questionCard" class="card"></div>
+  </section>
+
+  <!-- Pre-guess waiting room -->
+  <section id="guessWaitingRoom" class="card hidden">
+    <h3>Pre-Guess Waiting Room</h3>
+    <p>Room code: <span id="roomCodeDisplay_guess"></span></p>
+    <ul id="guessPlayerStatusList"></ul>
+    <div id="hostControls" class="hidden">
+      <button id="hostRevealBtn" class="teal-btn hidden">Reveal Scores (host)</button>
     </div>
-  </div>
+  </section>
 
-  <!-- Guessing Preparation / Ready screen -->
-<section id="guessPrep" class="hidden">
-  <h2>Next: Guessing Phase</h2>
-  <p>
-    In the next phase you will guess how each of the other players answered the 10 questions.
-    For each correct guess you earn <strong>+1</strong> point; for each incorrect guess you lose <strong>-1</strong> point.
-  </p>
-  <p>Please click <strong>Ready to Guess</strong> when you understand and are ready to continue.</p>
-  <button id="readyToGuessBtn">Ready to Guess</button>
-</section>
+  <!-- Guessing UI -->
+  <section id="guessPhase" class="card hidden">
+    <h3 id="activeGuesserLabel">You're guessing</h3>
+    <div id="guessCard" class="card"></div>
+    <div class="guess-controls">
+      <button id="doneGuessingBtn" class="teal-btn hidden">Done Guessing!</button>
+    </div>
+  </section>
 
-<!-- Waiting room shown after Q&A (all players) -->
-<section id="guessWaitingRoom" class="hidden">
-  <h2>Waiting for everyone to finish Q&A</h2>
-  <p>Room code: <span id="roomCodeDisplay_guess"></span></p>
-  <ul id="guessPlayerStatusList"></ul>
+  <!-- Post-guess waiting room -->
+  <section id="postGuessWaitingRoom" class="card hidden">
+    <h3>Post-guess waiting room</h3>
+    <ul id="postGuessStatusList"></ul>
+  </section>
 
-  <!-- Host-only control (hidden for non-hosts) -->
-  <div id="hostControls" class="hidden">
-    <button id="hostBeginGuessBtn" class="teal-btn muted" disabled>Begin Guessing (host)</button>
-  </div>
-</section>
+  <!-- Reveal board -->
+  <section id="revealBoard" class="card hidden"></section>
 
-<!-- Guessing UI containers -->
-<section id="guessPhase" class="hidden">
-  <h2 id="activeGuesserLabel"></h2>
-  <div id="guessCard"></div>
-  <button id="doneGuessBtn">Done!</button>
-
-  <!-- Done button for the active guesser -->
-  <div class="guess-controls">
-    <button id="doneGuessingBtn" class="teal-btn hidden">Done Guessing!</button>
-  </div>
-</section>
-
-  <!-- ========= IMPORTANT: Firebase scripts must load BEFORE firebase-config.js ========= -->
+  <!-- Firebase libs (must load before firebase-config.js) -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
-  <!-- Your firebase-config.js must initialize Firebase and set window.db = firebase.database() -->
+  <!-- Your firebase-config.js: must initialize firebase and set window.db = firebase.database() -->
   <script src="firebase-config.js"></script>
 
-  <!-- Lastly, your app logic that depends on window.db -->
+  <!-- Main app script -->
   <script src="script.js"></script>
 </body>
 </html>
-
