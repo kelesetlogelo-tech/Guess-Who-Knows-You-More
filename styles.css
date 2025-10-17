@@ -1,48 +1,138 @@
-body {
-  font-family: Arial, sans-serif;
-  background: #f9f9f9;
-  margin: 0;
-  padding: 20px;
-  text-align: center;
+:root{
+  --bg: #f7fbfb;           /* page background */
+  --surface: #ffffff;      /* card background */
+  --muted-surface: #fafafa;/* slightly off-white card container */
+  --text: #111827;         /* main text */
+  --muted-text: #4b5563;   /* secondary text */
+  --primary: #0aa;         /* primary action (teal) */
+  --primary-hover: #088;   /* hover */
+  --accent: #6200ea;       /* accent (kept if you want purple) */
+  --danger: #ef4444;
+  --border: #e6e9eb;
+  --shadow: rgba(18,24,38,0.06);
 }
 
+/* Page */
+html,body{
+  height:100%;
+  margin:0;
+  padding:16px;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  text-align:center;
+}
+
+/* Utility */
+.hidden{ display:none; }
+ul{ padding-left:18px; margin:8px 0; text-align:left; }
+
+/* Cards */
+.card, .qa-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  margin: 8px auto;
+  max-width: 760px;
+  box-shadow: 0 6px 18px var(--shadow);
+}
+
+/* Slightly muted container */
+.container-muted, .card-muted {
+  background: var(--muted-surface);
+  border-radius: 10px;
+  padding: 12px;
+  border: 1px solid rgba(0,0,0,0.03);
+}
+
+/* Buttons
+   - base neutral button (light)
+   - .teal-btn primary action
+   - .muted for disabled look
+*/
 button {
-  padding: 12px 24px;
-  margin: 10px;
-  border: none;
-  border-radius: 25px;
-  background-color: #6200ea;
-  color: white;
-  font-size: 16px;
+  font-size: 15px;
+  line-height: 1;
+  padding: 10px 16px;
+  margin: 8px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
   cursor: pointer;
-  transition: background 0.3s ease;
+  transition: background .18s ease, transform .12s ease, box-shadow .12s ease;
+  box-shadow: none;
 }
 
-button:hover {
-  background-color: #3700b3;
+/* Neutral button that looks like a pill with border */
+button.neutral {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
 }
 
-.quiz-card {
-  animation: slideIn 0.5s ease;
+/* Primary teal button (used widely in your HTML) */
+button.teal-btn {
+  background: linear-gradient(180deg, var(--primary), var(--primary-hover));
+  color: white;
+  border: none;
+  box-shadow: 0 6px 14px rgba(6, 110, 91, 0.12);
+}
+button.teal-btn:hover { transform: translateY(-1px); background: var(--primary-hover); }
+button.teal-btn:active { transform: translateY(0); }
+
+/* Accent (if you want purple actions) */
+button.accent {
+  background: linear-gradient(180deg, var(--accent), #4800b0);
+  color: #fff;
+  border: none;
 }
 
+/* Disabled / muted buttons */
+button.muted {
+  opacity: 0.52;
+  pointer-events: none;
+  filter: grayscale(.08);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+/* Focus (keyboard users) */
+button:focus {
+  outline: 3px solid rgba(10,170,170,0.13);
+  outline-offset: 2px;
+}
+
+/* QA / Guess tile + animation (200ms) */
+.qa-stage { max-width:760px; margin: 12px auto 0; text-align:left; }
+.qa-tile { transform-origin:center top; transition: transform 200ms ease, opacity 200ms ease; opacity:0; transform: translateY(10px) scale(0.995); border-radius:10px; overflow:hidden; }
+.qa-tile.enter { opacity:1; transform: translateY(0) scale(1); box-shadow: 0 8px 22px rgba(8,20,36,0.06); }
+.qa-tile.exit  { opacity:0; transform: translateY(-8px) scale(0.99); }
+
+/* small card within tile */
+.qa-card { padding:14px; background: var(--surface); border-radius:8px; margin:8px 0; }
+
+/* Options layout */
+.qa-options { margin-top:10px; display:flex; flex-wrap:wrap; gap:8px; }
+.qa-options button { display:inline-block; margin:0; padding:8px 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface); }
+
+/* Option button when used as primary */
+.qa-options button.primary {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+}
+
+/* Tiny slide-in used on some other UI */
 @keyframes slideIn {
-  from { opacity: 0; transform: translateX(100%); }
+  from { opacity: 0; transform: translateX(14px); }
   to { opacity: 1; transform: translateX(0); }
 }
+.quiz-card { animation: slideIn 0.36s ease; }
 
-body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; margin:16px; }
-.hidden{ display:none; }
-.card{ border:1px solid #ddd; padding:12px; border-radius:8px; margin:8px 0; background:#fafafa; }
-button { padding:8px 12px; margin:6px; border-radius:6px; border:1px solid #ccc; background:white; cursor:pointer; }
-button.teal-btn { background:#0aa; color:white; border:none; }
-button.muted { opacity:0.45; pointer-events:none; }
-
-/* small QA/guess tile + animation (200ms) */
-.qa-stage { max-width:640px; margin-top:8px; }
-.qa-tile { transform-origin:center top; transition: transform 200ms ease, opacity 200ms ease; opacity:0; transform: translateY(10px) scale(0.995); border-radius:8px; overflow:hidden; }
-.qa-tile.enter { opacity:1; transform: translateY(0) scale(1); box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
-.qa-tile.exit  { opacity:0; transform: translateY(-8px) scale(0.99); }
-.qa-card { padding:12px; background:white; border-radius:6px; margin:8px 0; }
-.qa-options button { display:inline-block; margin:6px 6px 0 0; }
-ul { padding-left:18px; }
+/* Small helpers for status lists */
+.status-completed { color: #065f46; font-weight:600; }
+.status-pending { color: var(--muted-text); }
