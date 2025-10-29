@@ -26,8 +26,16 @@ class MultiplayerIfIWereGame {
     // room/player
     this.roomCode = null; this.roomRef = null; this.playersRef = null;
     this.myPlayerKey = null; this.playerName = ""; this.isHost = false; this.expectedPlayers = 0;
-    this.revealHelper = new RevealHelper(this.roomCode, this.myPlayerKey, this.isHost);
-    this.revealHelper.showHostRevealIfEligible();
+    // inside constructor AFTER this.roomCode / this.myPlayerKey / this.isHost are known:
+    if (typeof RevealHelper !== 'undefined') {
+      this.revealHelper = new RevealHelper(this.roomCode, this.myPlayerKey, this.isHost);
+      if (typeof this.revealHelper.showHostRevealIfEligible === 'function') {
+       this.revealHelper.showHostRevealIfEligible();
+      }
+    } else {
+    // If RevealHelper isn't loaded yet, store a small context so the helper can auto-wire later
+      window.__ROOM_CTX = { roomCode: this.roomCode, myKey: this.myPlayerKey, isHost: this.isHost };
+    }
 
     // QA
     this.qaIndex = 0; this.qaTotal = QUESTIONS.length; this.qaStageInner = null;
@@ -182,7 +190,6 @@ class MultiplayerIfIWereGame {
       this.db.ref(`rooms/${this.roomCode}/guessCompletions`).on('value', ()=>this.renderPreGuessStatuses());
     }
     this.renderPreGuessStatuses();
-    this.updateHostRevealButton(); 
   }
 
   renderPreGuessStatuses(){
@@ -280,7 +287,6 @@ class MultiplayerIfIWereGame {
     if (post) post.classList.remove('hidden');
     if (this.db && this.roomCode) { this.db.ref(`rooms/${this.roomCode}/guessCompletions`).on('value', ()=>this.renderPostGuessStatuses()); this.db.ref(`rooms/${this.roomCode}/players`).on('value', ()=>this.renderPostGuessStatuses()); }
     this.renderPostGuessStatuses();
-    this.updateHostRevealButton(); 
   }
 
   renderPostGuessStatuses(){
@@ -303,48 +309,7 @@ class MultiplayerIfIWereGame {
       }).catch(e=>console.warn('renderPostGuessStatuses failed',e));
   }
 
-  /* ===== Host reveal helper: enable reveal button when all players finished guessing ===== */
-updateHostRevealButton() {
-  // Only hosts care about this; quick no-op otherwise
-  if (!this.isHost || !this.db || !this.roomCode) return;
-
-  const revealBtn = document.getElementById('hostRevealBtn');
-  if (!revealBtn) return;
-
-  // Query authoritative counts from DB
-  Promise.all([
-    this.db.ref(`rooms/${this.roomCode}/players`).once('value'),
-    this.db.ref(`rooms/${this.roomCode}/guessCompletions`).once('value')
-  ]).then(([psnap, csnap]) => {
-    const players = psnap.val() || {};
-    const comps = csnap.val() || {};
-    const playersCount = Object.keys(players).length;
-    const doneCount = Object.keys(comps).length;
-
-    // Show the button only when everyone has completed guessing
-    if (playersCount > 0 && doneCount >= playersCount) {
-      revealBtn.classList.remove('hidden');
-      revealBtn.disabled = false;
-      // Ensure it is wired (idempotent)
-      if (!revealBtn._wiredToHostReveal) {
-        revealBtn._wiredToHostReveal = true;
-        revealBtn.onclick = null;
-        revealBtn.addEventListener('click', () => {
-          // double-check before firing
-          revealBtn.disabled = true;
-          this.hostRevealScores();
-        });
-      }
-    } else {
-      revealBtn.classList.add('hidden');
-      revealBtn.disabled = true;
-    }
-  }).catch(e => {
-    console.warn('updateHostRevealButton failed', e);
-  });
-}
-
-   // Host computes scores and sets phase='reveal' (manual only)
+  // Host computes scores and sets phase='reveal' (manual only)
   hostRevealScores(){
     if (!this.isHost || !this.db || !this.roomCode) return;
     const roomRef = this.db.ref(`rooms/${this.roomCode}`);
@@ -357,7 +322,7 @@ updateHostRevealButton() {
         return roomRef.update({ scoresSnapshot: items, winner: winners, phase: 'reveal' }).then(()=>console.log('scores snapshot + reveal'));
       }).catch(e=>console.error('hostRevealScores failed', e));
   }
- 
+
   listenForPhaseChanges(){
     if (!this.db || !this.roomCode) return;
     const roomRef = this.db.ref(`rooms/${this.roomCode}`);
