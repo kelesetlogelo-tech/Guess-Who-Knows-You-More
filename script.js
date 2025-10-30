@@ -51,7 +51,7 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("Could not create room — check Firebase connection.");
     }
   };
-});
+}
 
 // ----------- JOIN ROOM -----------
 $("joinRoomBtn").onclick = () => {
@@ -65,8 +65,8 @@ $("joinRoomBtn").onclick = () => {
     gameRef.child("players/" + playerName).set({ score: 0, doneQA: false, doneGuess: false });
     attachRoomListener();
     switchSection("preQA-waiting");
-  });
-};
+  };
+}
 
 // ----------- ROOM LISTENER -----------
 function attachRoomListener() {
@@ -74,7 +74,7 @@ function attachRoomListener() {
     const data = snap.val();
     if (!data) return;
     handlePhase(data.phase, data);
-  });
+  };
 }
 
 // ----------- HANDLE PHASES -----------
@@ -103,6 +103,7 @@ $("startGameBtn").onclick = () => updatePhase("qa");
 $("startGuessingBtn").onclick = () => updatePhase("guess");
 $("revealScoresBtn").onclick = () => updatePhase("scoreboard");
 $("playAgainBtn").onclick = () => window.location.reload();
+
 
 
 
