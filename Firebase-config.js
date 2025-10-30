@@ -1,14 +1,17 @@
-// ✅ Replace with your own Firebase credentials
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+import { getDatabase } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_APP.firebaseapp.com",
-  databaseURL: "https://YOUR_APP.firebaseio.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_APP.appspot.com",
-  messagingSenderId: "YOUR_MSG_ID",
-  appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyCtx_K76mH3agerccTXMc08W8sqKXUI_pA",
+    authDomain: "wishing-well-2025.firebaseapp.com",
+    databaseURL:"https://wishing-well-2025-default-rtdb.firebaseio.com",
+    projectId: "wishing-well-2025",
+    storageBucket: "wishing-well-2025.firebasestorage.app",
+    messagingSenderId: "643053862807",
+    appId: "1:643053862807:web:54ddb442035fda90ce8ed2"  
 };
 
-firebase.initializeApp(firebaseConfig);
-window.db = firebase.database();
+const app = initializeApp(firebaseConfig);
+window.db = getDatabase(app);
 console.log("✅ Firebase initialized successfully");
+
