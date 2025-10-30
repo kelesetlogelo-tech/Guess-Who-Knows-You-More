@@ -41,8 +41,10 @@ document.addEventListener("DOMContentLoaded", () => {
       phase: "waiting",
       players: { [playerName]: { ready: false, score: 0 } },
     };
+  }
+  });   
 
-    try {
+try {
       await window.db.ref("rooms/" + roomCode).set(roomData);
       document.getElementById("room-code-display").textContent = `Room Code: ${roomCode}`;
       console.log("Room created:", roomCode);
@@ -116,3 +118,4 @@ $("start-guessing-btn").onclick = () => updatePhase("guess");
 $("reveal-scores-btn").onclick = () => updatePhase("scoreboard");
 $("play-again-btn").onclick = () => window.location.reload();
   
+
