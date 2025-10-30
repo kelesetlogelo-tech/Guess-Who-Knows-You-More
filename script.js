@@ -77,6 +77,17 @@ function attachRoomListener() {
   });
 }
 
+const ids = ["startGameBtn", "startGuessingBtn", "revealScoresBtn", "playAgainBtn"];
+ids.forEach(id => {
+  const el = $(id);
+  if (el) {
+    if (id === "startGameBtn") el.onclick = () => updatePhase("qa");
+    if (id === "startGuessingBtn") el.onclick = () => updatePhase("guess");
+    if (id === "revealScoresBtn") el.onclick = () => updatePhase("scoreboard");
+    if (id === "playAgainBtn") el.onclick = () => window.location.reload();
+  }
+});
+
 // ----------- HANDLE PHASES -----------
 function handlePhase(phase, data) {
   if (phase === "waiting") {
@@ -103,6 +114,7 @@ $("startGameBtn").onclick = () => updatePhase("qa");
 $("startGuessingBtn").onclick = () => updatePhase("guess");
 $("revealScoresBtn").onclick = () => updatePhase("scoreboard");
 $("playAgainBtn").onclick = () => window.location.reload();
+
 
 
 
