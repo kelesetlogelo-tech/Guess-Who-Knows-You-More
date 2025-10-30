@@ -53,11 +53,6 @@ document.getElementById("create-room-btn").onclick = async () => {
   }
 };
 
-
-  attachRoomListener();
-  switchSection("preQA-waiting");
-   };
-};
 // ----------- JOIN ROOM -----------
 $("joinRoomBtn").onclick = () => {
   playerName = $("playerName").value.trim();
@@ -108,5 +103,6 @@ $("beginGameBtn").onclick = () => updatePhase("qa");
 $("startGuessingBtn").onclick = () => updatePhase("guess");
 $("revealScoresBtn").onclick = () => updatePhase("scoreboard");
 $("playAgainBtn").onclick = () => window.location.reload();
+
 
 
