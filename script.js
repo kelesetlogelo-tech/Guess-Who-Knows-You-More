@@ -49,10 +49,10 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       console.error("Error creating room:", err);
       alert("Could not create room — check Firebase connection.");
-    }
-  };
-}
-
+       }
+     };
+   }
+});
 // ----------- JOIN ROOM -----------
 $("joinRoomBtn").onclick = () => {
   playerName = $("playerName").value.trim();
@@ -65,8 +65,8 @@ $("joinRoomBtn").onclick = () => {
     gameRef.child("players/" + playerName).set({ score: 0, doneQA: false, doneGuess: false });
     attachRoomListener();
     switchSection("preQA-waiting");
-  };
-}
+  });
+};
 
 // ----------- ROOM LISTENER -----------
 function attachRoomListener() {
@@ -74,7 +74,7 @@ function attachRoomListener() {
     const data = snap.val();
     if (!data) return;
     handlePhase(data.phase, data);
-  };
+  });
 }
 
 // ----------- HANDLE PHASES -----------
@@ -92,7 +92,7 @@ function handlePhase(phase, data) {
   if (phase === "scoreboard") switchSection("scoreboard");
 
   if (isHost) {
-    $("beginGameBtn").classList.toggle("hidden", phase !== "waiting");
+    $("startGameBtn").classList.toggle("hidden", phase !== "waiting");
     $("startGuessingBtn").classList.toggle("hidden", phase !== "preGuess");
     $("revealScoresBtn").classList.toggle("hidden", phase !== "postGuess");
   }
@@ -103,6 +103,7 @@ $("startGameBtn").onclick = () => updatePhase("qa");
 $("startGuessingBtn").onclick = () => updatePhase("guess");
 $("revealScoresBtn").onclick = () => updatePhase("scoreboard");
 $("playAgainBtn").onclick = () => window.location.reload();
+
 
 
 
