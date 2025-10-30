@@ -77,14 +77,15 @@ function attachRoomListener() {
   });
 }
 
-const ids = ["startGameBtn", "startGuessingBtn", "revealScoresBtn", "playAgainBtn"];
-ids.forEach(id => {
+document.addEventListener("DOMContentLoaded", () => {
+ const ids = ["start-game-btn", "start-guessing-btn", "reveal-scores-btn", "play-again-btn"];
+  ids.forEach(id => {
   const el = $(id);
   if (el) {
-    if (id === "startGameBtn") el.onclick = () => updatePhase("qa");
-    if (id === "startGuessingBtn") el.onclick = () => updatePhase("guess");
-    if (id === "revealScoresBtn") el.onclick = () => updatePhase("scoreboard");
-    if (id === "playAgainBtn") el.onclick = () => window.location.reload();
+    if (id === "start-game-btn") el.onclick = () => updatePhase("qa");
+    if (id === "start-guessing-btn") el.onclick = () => updatePhase("guess");
+    if (id === "reveal-scores-btn") el.onclick = () => updatePhase("scoreboard");
+    if (id === "play-again-btn") el.onclick = () => window.location.reload();
   }
 });
 
@@ -94,7 +95,7 @@ function handlePhase(phase, data) {
     switchSection("preQA-waiting");
     $("playerList").textContent = Object.keys(data.players).join(", ");
     const ready = Object.keys(data.players).length === data.numPlayers;
-    if (isHost && ready) $("beginGameBtn").classList.remove("hidden");
+    if (isHost && ready) $("start-game-btn").classList.remove("hidden");
   }
   if (phase === "qa") switchSection("qa-phase");
   if (phase === "preGuess") switchSection("preGuess-waiting");
@@ -103,17 +104,18 @@ function handlePhase(phase, data) {
   if (phase === "scoreboard") switchSection("scoreboard");
 
   if (isHost) {
-    $("startGameBtn").classList.toggle("hidden", phase !== "waiting");
-    $("startGuessingBtn").classList.toggle("hidden", phase !== "preGuess");
-    $("revealScoresBtn").classList.toggle("hidden", phase !== "postGuess");
+    $("start-game-btn").classList.toggle("hidden", phase !== "waiting");
+    $("start-guessing-btn").classList.toggle("hidden", phase !== "preGuess");
+    $("reveal-scores-btn").classList.toggle("hidden", phase !== "postGuess");
   }
 }
 
 // ----------- HOST BUTTONS -----------
-$("startGameBtn").onclick = () => updatePhase("qa");
-$("startGuessingBtn").onclick = () => updatePhase("guess");
-$("revealScoresBtn").onclick = () => updatePhase("scoreboard");
-$("playAgainBtn").onclick = () => window.location.reload();
+$("start-game-btn").onclick = () => updatePhase("qa");
+$("start-guessing-btn").onclick = () => updatePhase("guess");
+$("reveal-scores-btn").onclick = () => updatePhase("scoreboard");
+$("play-again-btn").onclick = () => window.location.reload();
+
 
 
 
