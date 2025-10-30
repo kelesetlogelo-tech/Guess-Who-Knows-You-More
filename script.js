@@ -26,6 +26,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const btn = document.getElementById("create-room-btn");
   if (btn) {
     btn.onclick = async () => {
+     document.addEventListener("DOMContentLoaded", () => {
+     console.log("DOM fully loaded — attaching create-room-btn click handler");
+     const btn = document.getElementById("create-room-btn");
+     if (!btn) {
+     console.log("create-room-btn not found in DOM!");
+     return;
+  }
+  
     const playerName = document.getElementById("host-name").value.trim();
     const numPlayers = parseInt(document.getElementById("player-count").value);
 
@@ -50,8 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
         console.error("Error creating room:", err);
         alert("Could not create room — check Firebase connection.");
 
-document.addEventListener("DOMContentLoaded", () => {
-  console.log("DOM fully loaded, attaching events");
+
 });
      
   isHost = true;
@@ -122,6 +129,7 @@ function handlePhase(phase, data) {
 }
 
   
+
 
 
 
