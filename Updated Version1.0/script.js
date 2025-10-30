@@ -57,19 +57,19 @@ window.addEventListener("DOMContentLoaded", () => {
     showPhase("waiting-room");
   };
 
-  beginBtn.onclick = () => {
+  document.getElementById(beginBtn.onclick = () => {
     db.ref(`rooms/${roomCode}/phase`).set("qa");
   };
 
-  startGuessBtn.onclick = () => {
+  document.getElementById(startGuessBtn.onclick = () => {
     db.ref(`rooms/${roomCode}/phase`).set("guessing");
   };
 
-  revealBtn.onclick = () => {
+  document.getElementById(revealBtn.onclick = () => {
     db.ref(`rooms/${roomCode}/phase`).set("scoreboard");
   };
 
-  playAgainBtn.onclick = () => {
+  document.getElementById(playAgainBtn.onclick = () => {
     location.reload();
   };
 
@@ -91,3 +91,4 @@ window.addEventListener("DOMContentLoaded", () => {
 });
   // === your existing code ends here ===
 }); // <-- closes DOMContentLoaded listener
+
