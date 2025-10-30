@@ -1,8 +1,11 @@
 console.log("script.js loaded");
 
-document.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", () => {
+  console.log("DOM fully loaded — safe to bind elements");
+  // === your existing code starts here ===
+  document.addEventListener("DOMContentLoaded", () => {
   const phases = document.querySelectorAll(".phase");
-  let currentPhaseIndex = 0;
+   let currentPhaseIndex = 0;
 
   const showPhase = (id) => {
     phases.forEach(p => p.classList.remove("active"));
@@ -86,3 +89,5 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 });
+  // === your existing code ends here ===
+}); // <-- closes DOMContentLoaded listener
