@@ -40,20 +40,18 @@ document.addEventListener("DOMContentLoaded", () => {
       playerCount: numPlayers,
       phase: "waiting",
       players: { [playerName]: { ready: false, score: 0 } },
-    };
-  }
-  });   
-
-try {
-      await window.db.ref("rooms/" + roomCode).set(roomData);
-      document.getElementById("room-code-display").textContent = `Room Code: ${roomCode}`;
-      console.log("Room created:", roomCode);
-    } catch (err) {
-      console.error("Error creating room:", err);
-      alert("Could not create room — check Firebase connection.");
+  };
+    
+      try {
+        await window.db.ref("rooms/" + roomCode).set(roomData);
+        document.getElementById("room-code-display").textContent = `Room Code: ${roomCode}`;
+        console.log("Room created:", roomCode);
+      } catch (err) {
+        console.error("Error creating room:", err);
+        alert("Could not create room — check Firebase connection.");
       }
     };
-  }
+   }
 });
 // ----------- JOIN ROOM -----------
 $("joinRoomBtn").onclick = () => {
@@ -88,8 +86,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (id === "start-guessing-btn") el.onclick = () => updatePhase("guess");
     if (id === "reveal-scores-btn") el.onclick = () => updatePhase("scoreboard");
     if (id === "play-again-btn") el.onclick = () => window.location.reload();
-  }
-});
+    }
+  });
+});  
 
 // ----------- HANDLE PHASES -----------
 function handlePhase(phase, data) {
@@ -118,4 +117,5 @@ $("start-guessing-btn").onclick = () => updatePhase("guess");
 $("reveal-scores-btn").onclick = () => updatePhase("scoreboard");
 $("play-again-btn").onclick = () => window.location.reload();
   
+
 
