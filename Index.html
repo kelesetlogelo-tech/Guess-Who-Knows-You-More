@@ -19,8 +19,6 @@
         <input id="player-count" type="number" placeholder="Number of players (host only)" />
         <button id="create-room-btn">Create Room</button>
       </div>
-      <!-- Display room code -->
-      <div id="room-code-display"></div>
 
       <div class="card">
         <input id= "playerName" placeholder="Your name" />
@@ -52,13 +50,13 @@
     </section>
 
     <!-- =============== PRE-GUESS WAITING ROOM =============== -->
-    <section id="pre-guess-waiting" class="phase hidden">
+    <section id="preGuess-waiting" class="phase hidden">
       <h2>Waiting for others to finish Q&A...</h2>
       <button id="start-guessing-btn" class="host-only">Start Guessing</button>
     </section>
 
     <!-- =============== GUESSING PHASE =============== -->
-    <section id="guessing-phase" class="phase hidden">
+    <section id="guess-phase" class="phase hidden">
       <h2>Guessing Phase</h2>
       <p>Try to match answers to players!</p>
       <div id="guess-container" class="card">
@@ -68,13 +66,13 @@
     </section>
 
     <!-- =============== POST-GUESS WAITING =============== -->
-    <section id="post-guess-waiting" class="phase hidden">
+    <section id="postGuess-waiting" class="phase hidden">
       <h2>Waiting for others to finish guessing...</h2>
       <button id="reveal-scores-btn" class="host-only">Reveal Scores</button>
     </section>
 
     <!-- =============== SCOREBOARD =============== -->
-    <section id="scoreboard-phase" class="phase hidden">
+    <section id="scoreboard" class="phase hidden">
       <h2>Final Scores</h2>
       <div id="scoreboard" class="card">
         <p>Player 1: 10 points</p>
@@ -90,6 +88,7 @@
   <script src="script.js"></script>
 </body>
 </html>
+
 
 
 
