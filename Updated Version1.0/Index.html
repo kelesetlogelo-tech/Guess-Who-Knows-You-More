@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>If I Were...</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- PHASE 1: JOINING -->
+    <section id="join-phase" class="phase active">
+      <h1>If I Were...</h1>
+      <p>Create or Join a Room</p>
+      <input id="host-name" type="text" placeholder="Enter your name" />
+      <input id="player-count" type="number" placeholder="Number of players" min="2" max="10" />
+      <button id="create-room-btn">Create Room</button>
+      <input id="join-code" type="text" placeholder="Enter Room Code" />
+      <button id="join-room-btn">Join Room</button>
+      <p id="join-error" class="error"></p>
+    </section>
+
+    <!-- PHASE 2: WAITING ROOM -->
+    <section id="waiting-room" class="phase">
+      <h2>Waiting Room</h2>
+      <p id="room-code-display"></p>
+      <div id="player-list"></div>
+      <button id="begin-game-btn" class="host-only">Begin Game</button>
+    </section>
+
+    <!-- PHASE 3: Q&A -->
+    <section id="qa-phase" class="phase">
+      <h2>Q&A Phase</h2>
+      <div id="qa-container"></div>
+      <button id="qa-done-btn">Done with Q&A</button>
+    </section>
+
+    <!-- PHASE 4: PRE-GUESS WAITING -->
+    <section id="pre-guess-waiting" class="phase">
+      <h2>Waiting for others to finish Q&A...</h2>
+      <button id="start-guessing-btn" class="host-only">Start Guessing</button>
+    </section>
+
+    <!-- PHASE 5: GUESSING -->
+    <section id="guessing-phase" class="phase">
+      <h2>Guessing Phase</h2>
+      <div id="guess-container"></div>
+      <button id="done-guessing-btn">Done Guessing</button>
+    </section>
+
+    <!-- PHASE 6: POST-GUESS WAITING -->
+    <section id="post-guess-waiting" class="phase">
+      <h2>Waiting for everyone to finish guessing...</h2>
+      <button id="reveal-btn" class="host-only">Reveal Results</button>
+    </section>
+
+    <!-- PHASE 7: SCOREBOARD -->
+    <section id="scoreboard-phase" class="phase">
+      <h2>Final Results</h2>
+      <div id="scoreboard"></div>
+      <h3 id="winner-display"></h3>
+      <button id="play-again-btn">Play Again</button>
+    </section>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
