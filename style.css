@@ -1,87 +1,143 @@
-:root{
-  --bg-grad-start: #6a11cb;
-  --bg-grad-end:   #2575fc;
-  --teal: #0aa8a0;
-  --teal-dark: #078f86;
-  --surface: #ffffff;
-  --text: #05202a;
-  --radius: 12px;
-  --shadow: rgba(2,6,23,0.12);
-  --max-width: 940px;
+/* ---------- GLOBAL LAYOUT ---------- */
+body {
+  font-family: 'Segoe UI', Roboto, sans-serif;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #4a00e0, #8e2de2);
+  color: #fff;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-*{ box-sizing:border-box; }
-html,body{ height:100%; margin:0; padding:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; -webkit-font-smoothing:antialiased; }
-body{
-  display:flex; align-items:flex-start; justify-content:center;
-  background: linear-gradient(135deg,var(--bg-grad-start),var(--bg-grad-end));
-  color:var(--text); padding:20px;
+h1.game-title {
+  margin-top: 24px;
+  font-size: 2.5rem;
+  text-shadow: 2px 2px 6px rgba(0,0,0,0.25);
 }
 
-/* container */
-.app-shell{ width:100%; max-width:var(--max-width); margin:0 auto; }
-
-/* header / title */
-.app-top{ text-align:center; color:white; margin-bottom:12px; }
-.app-top h1{ margin:0; font-size:1.6rem; font-weight:700; letter-spacing:0.4px; }
-
-/* cards */
-.card{
-  background:var(--surface);
-  border-radius:var(--radius);
-  padding:14px;
-  margin:10px 0;
-  border: 1px solid rgba(11,18,32,0.06);
-  box-shadow: 0 12px 30px var(--shadow);
+/* ---------- SECTIONS + TRANSITIONS ---------- */
+section {
+  position: absolute;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(50px);
+  opacity: 0;
+  transition: all 0.7s ease;
+  width: 100%;
+  max-width: 600px;
+  padding: 20px;
 }
 
-/* Buttons */
-button{
-  cursor:pointer;
-  border-radius:10px;
-  border:none;
-  padding:10px 14px;
-  font-weight:600;
-  transition: transform .08s ease, box-shadow .12s ease, opacity .12s ease;
+section.active {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  z-index: 5;
 }
 
-button.teal-btn{
-  background: linear-gradient(180deg,var(--teal),var(--teal-dark));
-  color: #000; /* black text */
-  box-shadow: 0 8px 20px rgba(6,60,56,0.12);
-  border: 1px solid rgba(0,0,0,0.06);
-}
-button.teal-btn:hover{ transform: translateY(-3px); }
-button.teal-btn:active{ transform: translateY(0); }
-
-button.neutral{
-  background:#fff;
-  color:var(--text);
-  border:1px solid rgba(0,0,0,0.06);
-}
-button.muted{ opacity:0.45; pointer-events:none; }
-
-/* qa tiles & animation */
-.qa-stage{ max-width:760px; margin: 8px auto; }
-.qa-tile{ opacity:0; transform: translateY(8px) scale(.995); transition: transform 180ms cubic-bezier(.2,.8,.2,1), opacity 180ms ease; }
-.qa-tile.enter{ opacity:1; transform: translateY(0) scale(1); }
-.qa-tile.exit{ opacity:0; transform: translateY(-8px) scale(.99); }
-.qa-card{ background:var(--surface); padding:14px; border-radius:10px; }
-
-/* option buttons (teal with black text) */
-.qa-options{ margin-top:12px; display:flex; flex-wrap:wrap; gap:10px; }
-.qa-options button{ background:var(--teal); color:#000; border-radius:8px; padding:10px 12px; min-width:110px; }
-
-/* small screens */
-@media (max-width:520px){
-  body{ padding:10px; }
-  .app-top h1{ font-size:1.2rem; }
-  button{ font-size:15px; padding:12px; border-radius:10px; }
-  .qa-options button{ min-width:100px; }
+section.hidden {
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1;
 }
 
-.hidden{ display:none; }
-ul{ padding-left:18px; margin:8px 0; }
-.status-completed{ color:#065f46; font-weight:700; }
-.status-pending{ color:#6b7280; }
-#guessCard{ min-height:120px; display:flex; align-items:flex-start; justify-content:center; flex-direction:column; }
+/* ---------- CARDS ---------- */
+.card {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  padding: 24px;
+  margin-top: 30px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+}
+
+input {
+  padding: 10px 14px;
+  margin: 8px;
+  border: none;
+  border-radius: 8px;
+  width: 80%;
+  font-size: 1rem;
+}
+
+/* ---------- BUTTONS ---------- */
+button {
+  padding: 12px 24px;
+  margin: 10px;
+  border: none;
+  border-radius: 25px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+}
+
+.teal-btn {
+  background-color: #00bfa6;
+  color: #000;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+}
+
+.teal-btn:hover {
+  background-color: #26d8c0;
+  transform: scale(1.07);
+}
+
+/* ---------- Q&A + GUESS TILES ---------- */
+.qa-stage {
+  margin: 16px auto;
+  max-width: 600px;
+}
+
+.qa-card {
+  background: white;
+  color: #000;
+  padding: 16px;
+  border-radius: 12px;
+  margin: 12px auto;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.2);
+  animation: slideUp 0.4s ease;
+}
+
+.qa-options button {
+  background-color: #00bfa6;
+  color: #000;
+  margin: 8px;
+  border-radius: 18px;
+  padding: 10px 16px;
+  transition: transform 0.2s ease;
+}
+
+.qa-options button:hover {
+  transform: scale(1.1);
+}
+
+/* ---------- SCOREBOARD ---------- */
+#scoreboardList {
+  background: rgba(255,255,255,0.15);
+  border-radius: 16px;
+  padding: 20px;
+  max-width: 400px;
+  margin: auto;
+  text-align: left;
+}
+
+/* ---------- ANIMATIONS ---------- */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 600px) {
+  .qa-card {
+    font-size: 0.9rem;
+    padding: 12px;
+  }
+  button {
+    width: 80%;
+  }
+}

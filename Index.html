@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>If I Were...</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1 class="game-title">If I Were...</h1>
+
+  <!-- 1️⃣ JOIN / HOST -->
+  <section id="join-phase" class="active">
+    <div class="card">
+      <h2>Join or Host a Game</h2>
+      <input id="playerName" placeholder="Your name" />
+      <input id="numPlayers" type="number" placeholder="Number of players (Host only)" />
+      <button id="createRoomBtn" class="teal-btn">Create Room</button>
+      <input id="roomCodeInput" placeholder="Enter room code" />
+      <button id="joinRoomBtn" class="teal-btn">Join Room</button>
+      <p id="roomCodeDisplay"></p>
+    </div>
+  </section>
+
+  <!-- 2️⃣ WAITING -->
+  <section id="preQA-waiting" class="hidden">
+    <h2>Waiting Room</h2>
+    <p id="playerList"></p>
+    <p id="waitingMsg">Waiting for players to join...</p>
+    <button id="beginGameBtn" class="teal-btn hidden">Begin Game</button>
+  </section>
+
+  <!-- 3️⃣ Q&A -->
+  <section id="qa-phase" class="hidden">
+    <h2>Answer the questions</h2>
+    <div id="qaContainer" class="qa-stage"></div>
+    <button id="finishQA" class="teal-btn hidden">Done Answering</button>
+  </section>
+
+  <!-- 4️⃣ PRE-GUESS -->
+  <section id="preGuess-waiting" class="hidden">
+    <h2>Waiting for others to finish Q&A...</h2>
+    <p id="qaWaitingStatus"></p>
+    <button id="startGuessingBtn" class="teal-btn hidden">Start Guessing</button>
+  </section>
+
+  <!-- 5️⃣ GUESS -->
+  <section id="guess-phase" class="hidden">
+    <h2>Guess the answers!</h2>
+    <div id="guessContainer" class="qa-stage"></div>
+    <button id="doneGuessingBtn" class="teal-btn hidden">Done Guessing</button>
+  </section>
+
+  <!-- 6️⃣ POST-GUESS -->
+  <section id="postGuess-waiting" class="hidden">
+    <h2>Waiting for others to finish guessing...</h2>
+    <p id="guessWaitingStatus"></p>
+    <button id="revealScoresBtn" class="teal-btn hidden">Reveal Scores</button>
+  </section>
+
+  <!-- 7️⃣ SCOREBOARD -->
+  <section id="scoreboard" class="hidden">
+    <h2>Final Results</h2>
+    <div id="scoreboardList"></div>
+    <button id="playAgainBtn" class="teal-btn">Play Again</button>
+  </section>
+
+  <script src="firebase-config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
