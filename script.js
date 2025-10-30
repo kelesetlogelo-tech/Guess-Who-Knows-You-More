@@ -50,6 +50,10 @@ document.addEventListener("DOMContentLoaded", () => {
         console.error("Error creating room:", err);
         alert("Could not create room — check Firebase connection.");
 
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("DOM fully loaded, attaching events");
+});
+     
   isHost = true;
   gameRef = window.db.ref("rooms/" + roomCode);
   attachRoomListener();
@@ -118,6 +122,7 @@ function handlePhase(phase, data) {
 }
 
   
+
 
 
 
