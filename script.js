@@ -49,9 +49,9 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       console.error("Error creating room:", err);
       alert("Could not create room — check Firebase connection.");
-       }
-     };
-   }
+      }
+    };
+  }
 });
 // ----------- JOIN ROOM -----------
 $("joinRoomBtn").onclick = () => {
@@ -115,14 +115,4 @@ $("start-game-btn").onclick = () => updatePhase("qa");
 $("start-guessing-btn").onclick = () => updatePhase("guess");
 $("reveal-scores-btn").onclick = () => updatePhase("scoreboard");
 $("play-again-btn").onclick = () => window.location.reload();
-
-
-
-
-
-
-
-
-
-
-
+  
