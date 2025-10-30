@@ -111,11 +111,7 @@ function handlePhase(phase, data) {
   }
 }
 
-// ----------- HOST BUTTONS -----------
-$("start-game-btn").onclick = () => updatePhase("qa");
-$("start-guessing-btn").onclick = () => updatePhase("guess");
-$("reveal-scores-btn").onclick = () => updatePhase("scoreboard");
-$("play-again-btn").onclick = () => window.location.reload();
   
+
 
 
