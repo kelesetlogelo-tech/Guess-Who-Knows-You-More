@@ -49,6 +49,12 @@ document.addEventListener("DOMContentLoaded", () => {
       } catch (err) {
         console.error("Error creating room:", err);
         alert("Could not create room — check Firebase connection.");
+
+isHost = true;
+ gameRef = window.db.ref("rooms/" + roomCode);
+ attachRoomListener();
+ switchSection("preQA-waiting");
+      
       }
     };
    }
@@ -112,6 +118,7 @@ function handlePhase(phase, data) {
 }
 
   
+
 
 
 
