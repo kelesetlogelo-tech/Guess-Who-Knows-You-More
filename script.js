@@ -21,23 +21,38 @@ function updatePhase(newPhase) {
   if (gameRef) gameRef.child("phase").set(newPhase);
 }
 
-// ----------- ROOM CREATION -----------
-$("createRoomBtn").onclick = () => {
-  playerName = $("playerName").value.trim();
-  const num = parseInt($("numPlayers").value);
-  if (!playerName || !num) return alert("Enter name and number of players.");
+// ---------- ROOM CREATION ----------
+document.getElementById("create-room-btn").onclick = async () => {
+  const playerName = document.getElementById("host-name").value.trim();
+  const numPlayers = parseInt(document.getElementById("player-count").value);
 
-  roomCode = Math.random().toString(36).substr(2, 5).toUpperCase();
-  $("roomCodeDisplay").textContent = `Room Code: ${roomCode}`;
-  isHost = true;
+  if (!playerName || !numPlayers) {
+    alert("Enter your name and number of players");
+    return;
+  }
 
-  gameRef = window.db.ref("rooms/" + roomCode);
-  gameRef.set({
+  const roomCode = Math.random().toString(36).substring(2, 7).toUpperCase();
+  const roomData = {
     host: playerName,
-    numPlayers: num,
+    playerCount: numPlayers,
     phase: "waiting",
-    players: { [playerName]: { score: 0, doneQA: false, doneGuess: false } }
-  });
+    players: {
+      [playerName]: { ready: false, score: 0 }
+    }
+  };
+
+  try {
+    await window.db.ref("rooms/" + roomCode).set(roomData);
+    localStorage.setItem("roomCode", roomCode);
+    localStorage.setItem("playerName", playerName);
+    document.getElementById("room-code-display").textContent = `Room Code: ${roomCode}`;
+    console.log("Room created:", roomCode);
+  } catch (err) {
+    console.error("Error creating room:", err);
+    alert("Could not create room — check Firebase connection.");
+  }
+};
+
 
   attachRoomListener();
   switchSection("preQA-waiting");
@@ -93,3 +108,4 @@ $("beginGameBtn").onclick = () => updatePhase("qa");
 $("startGuessingBtn").onclick = () => updatePhase("guess");
 $("revealScoresBtn").onclick = () => updatePhase("scoreboard");
 $("playAgainBtn").onclick = () => window.location.reload();
+
