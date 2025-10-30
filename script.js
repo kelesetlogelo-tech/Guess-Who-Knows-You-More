@@ -23,8 +23,9 @@ function updatePhase(newPhase) {
 
 // ---------- ROOM CREATION ----------
 document.addEventListener("DOMContentLoaded", () => {
-  const createBtn = document.getElementById("create-room-btn");
-  createBtn.onclick = async () => {
+  const btn = document.getElementById("create-room-btn");
+  if (btn) {
+    btn.onclick = () => {
     const playerName = document.getElementById("host-name").value.trim();
     const numPlayers = parseInt(document.getElementById("player-count").value);
 
@@ -102,6 +103,7 @@ $("beginGameBtn").onclick = () => updatePhase("qa");
 $("startGuessingBtn").onclick = () => updatePhase("guess");
 $("revealScoresBtn").onclick = () => updatePhase("scoreboard");
 $("playAgainBtn").onclick = () => window.location.reload();
+
 
 
 
