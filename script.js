@@ -22,36 +22,35 @@ function updatePhase(newPhase) {
 }
 
 // ---------- ROOM CREATION ----------
-document.getElementById("create-room-btn").onclick = async () => {
-  const playerName = document.getElementById("host-name").value.trim();
-  const numPlayers = parseInt(document.getElementById("player-count").value);
+document.addEventListener("DOMContentLoaded", () => {
+  const createBtn = document.getElementById("create-room-btn");
+  createBtn.onclick = async () => {
+    const playerName = document.getElementById("host-name").value.trim();
+    const numPlayers = parseInt(document.getElementById("player-count").value);
 
-  if (!playerName || !numPlayers) {
-    alert("Enter your name and number of players");
-    return;
-  }
+    if (!playerName || !numPlayers) {
+      alert("Enter your name and number of players");
+      return;
+    }
 
-  const roomCode = Math.random().toString(36).substring(2, 7).toUpperCase();
-  const roomData = {
-    host: playerName,
-    playerCount: numPlayers,
-    phase: "waiting",
-    players: {
-      [playerName]: { ready: false, score: 0 }
+    const roomCode = Math.random().toString(36).substring(2, 7).toUpperCase();
+    const roomData = {
+      host: playerName,
+      playerCount: numPlayers,
+      phase: "waiting",
+      players: { [playerName]: { ready: false, score: 0 } },
+    };
+
+    try {
+      await window.db.ref("rooms/" + roomCode).set(roomData);
+      document.getElementById("room-code-display").textContent = `Room Code: ${roomCode}`;
+      console.log("Room created:", roomCode);
+    } catch (err) {
+      console.error("Error creating room:", err);
+      alert("Could not create room — check Firebase connection.");
     }
   };
-
-  try {
-    await window.db.ref("rooms/" + roomCode).set(roomData);
-    localStorage.setItem("roomCode", roomCode);
-    localStorage.setItem("playerName", playerName);
-    document.getElementById("room-code-display").textContent = `Room Code: ${roomCode}`;
-    console.log("Room created:", roomCode);
-  } catch (err) {
-    console.error("Error creating room:", err);
-    alert("Could not create room — check Firebase connection.");
-  }
-};
+});
 
 // ----------- JOIN ROOM -----------
 $("joinRoomBtn").onclick = () => {
@@ -103,6 +102,7 @@ $("beginGameBtn").onclick = () => updatePhase("qa");
 $("startGuessingBtn").onclick = () => updatePhase("guess");
 $("revealScoresBtn").onclick = () => updatePhase("scoreboard");
 $("playAgainBtn").onclick = () => window.location.reload();
+
 
 
 
