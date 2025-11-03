@@ -3,60 +3,38 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>If I Were...</title>
+  <title>Realtime Multiplayer Game</title>
   <link rel="stylesheet" href="style.css" />
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-  <script src="firebase-config.js"></script>
 </head>
 <body>
-  <h1 class="game-title">If I Were...</h1>
 
-  <!-- === PHASE 1: JOINING PHASE === -->
-  <section id="joining-phase" class="phase active">
-    <div class="card">
-      <h2>Host a Game</h2>
-      <input id="host-name" placeholder="Host name" />
-      <input id="player-count" type="number" min="2" max="10" placeholder="Number of players" />
-      <button id="create-room-btn" class="teal-btn">Create Room</button>
-    </div>
-
-    <div class="card">
-      <h2>Join a Game</h2>
-      <input id="player-name" placeholder="Player name" />
-      <input id="join-code" placeholder="Enter Room Code" />
-      <button id="join-room-btn" class="teal-btn">Join Room</button>
-    </div>
-  </section>
-
-  <!-- === PHASE 2: WAITING ROOM === -->
-  <section id="waiting-room" class="phase hidden">
-    <h2>Waiting Room</h2>
+  <!-- LOBBY -->
+  <section id="lobby">
+    <h1>Host a Game</h1>
+    <input id="host-name" type="text" placeholder="Your name" />
+    <input id="player-count" type="number" placeholder="Number of players" min="2" max="8" />
+    <button id="create-room-btn">Create Room</button>
     <p id="room-code-display"></p>
-    <button id="begin-game-btn" class="teal-btn host-only hidden">Begin Game</button>
+
+    <h2>Join Existing Room</h2>
+    <input id="player-name" type="text" placeholder="Your name" />
+    <input id="join-code" type="text" placeholder="Room code" maxlength="4" />
+    <button id="join-room-btn">Join Room</button>
   </section>
 
-  <!-- === PHASE 3: Q&A === -->
-  <section id="qa-phase" class="phase hidden">
-    <h2>Q&A Phase</h2>
-    <p>Answer all 10 questions!</p>
-    <button id="start-guessing-btn" class="teal-btn host-only hidden">Start Guessing</button>
+  <!-- GAME PHASES -->
+  <section id="game" class="hidden">
+    <h2 id="phase-title">Waiting for players...</h2>
+
+    <button id="begin-game-btn" class="hidden">Begin Game</button>
+    <button id="start-guessing-btn" class="hidden">Start Guessing</button>
+    <button id="reveal-scores-btn" class="hidden">Reveal Scores</button>
+    <button id="play-again-btn" class="hidden">Play Again</button>
   </section>
 
-  <!-- === PHASE 4: GUESSING === -->
-  <section id="guessing-phase" class="phase hidden">
-    <h2>Guessing Phase</h2>
-    <p>Try to guess what others answered!</p>
-    <button id="reveal-btn" class="teal-btn host-only hidden">Reveal Scores</button>
-  </section>
+  <script src="firebase-config.js"></script>
+  <!-- NOTE: The key fix — make this script a module -->
+  <script type="module" src="script.js"></script>
 
-  <!-- === PHASE 5: SCOREBOARD === -->
-  <section id="scoreboard-phase" class="phase hidden">
-    <h2>Final Scores</h2>
-    <p id="scoreboard"></p>
-    <button id="play-again-btn" class="teal-btn">Play Again</button>
-  </section>
-
-  <script src="script.js"></script>
 </body>
 </html>
