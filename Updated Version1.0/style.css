@@ -1,113 +1,63 @@
 body {
-  margin: 0;
-  font-family: 'Poppins', sans-serif;
-  background: linear-gradient(135deg, #5d3fd3, #00b4d8);
-  color: white;
-  height: 100vh;
-  overflow: hidden;
-}
-
-#app {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-}
-
-.phase {
-  display: none;
-  flex-direction: column;
-  align-items: center;
+  font-family: "Poppins", sans-serif;
   text-align: center;
-  width: 90%;
-  max-width: 600px;
-  padding: 30px;
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 20px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-  transform: translateX(100%);
-  transition: all 0.6s ease;
-}
-
-.phase.active {
+  background: linear-gradient(135deg, #4b0082, #483d8b, #00008b);
+  color: white;
+  margin: 0;
+  min-height: 100vh;
   display: flex;
-  transform: translateX(0);
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  padding-top: 40px;
 }
 
-h1, h2 {
+.game-title {
+  font-size: 2.5em;
   margin-bottom: 20px;
 }
 
-input, button {
-  margin: 10px 0;
-  padding: 10px 15px;
-  font-size: 1rem;
-  border-radius: 8px;
-  border: none;
+.card {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 20px;
+  margin: 10px auto;
+  width: 260px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 input {
-  width: 80%;
+  width: 90%;
+  padding: 8px;
+  margin: 6px 0;
+  border: none;
+  border-radius: 8px;
+  text-align: center;
 }
 
-button {
-  background-color: teal;
-  color: black;
+.teal-btn {
+  background: #00bfa6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
   cursor: pointer;
-  font-weight: bold;
-  transition: background 0.3s, transform 0.2s;
+  transition: all 0.3s ease;
+  margin-top: 10px;
 }
-
-button:hover {
-  background-color: #00d4d8;
+.teal-btn:hover {
+  background: #00e6c3;
   transform: scale(1.05);
 }
 
-.error {
-  color: #ffdddd;
-  font-size: 0.9em;
-}
-
-#qa-container, #guess-container, #scoreboard {
-  width: 100%;
-  background: white;
-  color: black;
-  border-radius: 12px;
-  padding: 15px;
-  margin-bottom: 15px;
-  text-align: left;
-}
-
-.host-only {
+.phase.hidden {
   display: none;
 }
-
-.slide-enter {
-  animation: slideIn 0.6s forwards;
+.fade-in {
+  animation: fadeIn 0.4s ease;
 }
 
-@keyframes slideIn {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-.slide-exit {
-  animation: slideOut 0.6s forwards;
-}
-
-@keyframes slideOut {
-  from {
-    transform: translateX(0);
-    opacity: 1;
-  }
-  to {
-    transform: translateX(-100%);
-    opacity: 0;
-  }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
 }
