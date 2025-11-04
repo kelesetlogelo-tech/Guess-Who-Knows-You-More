@@ -102,11 +102,6 @@ function subscribeToGame(code) {
   });
 }
 
-    // normal phase rendering
-    renderPhase(data.phase);
-  });
-}
-
 // ---------------- UPDATE PHASE ----------------
 async function updatePhase(newPhase) {
   if (!gameRef) return;
@@ -139,5 +134,6 @@ $("begin-game-btn").onclick = () => updatePhase("qa");
 $("start-guessing-btn").onclick = () => updatePhase("guessing");
 $("reveal-scores-btn").onclick = () => updatePhase("scoreboard");
 $("play-again-btn").onclick = () => location.reload();
+
 
 
