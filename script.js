@@ -79,7 +79,7 @@ function subscribeToGame(code) {
       beginBtn.onclick = () => {
         window.db.ref(`rooms/${code}/phase`).set("qa");
   };
-}
+
       // Check if all players have joined
       const allPlayersJoined = expected !== "?" && joinedCount >= expected;
 
@@ -99,7 +99,10 @@ function subscribeToGame(code) {
           beginGameTimer = null;
         }
       }
-    
+    } else if (beginBtn) {
+     // Always hide Begin Game button for non-host players
+     beginBtn.classList.add("hidden");
+    }
          // --- AUTO TRANSITION TO PRE-GUESS WAITING ROOM ---
     playersObj = data.players || {};
     const totalPlayers = parseInt(data.numPlayers) || 0;
@@ -311,6 +314,7 @@ $("begin-game-btn").onclick = () => updatePhase("qa");
 $("start-guessing-btn").onclick = () => updatePhase("guessing");
 $("reveal-scores-btn").onclick = () => updatePhase("scoreboard");
 $("play-again-btn").onclick = () => location.reload();
+
 
 
 
