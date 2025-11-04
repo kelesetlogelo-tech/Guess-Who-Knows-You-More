@@ -271,16 +271,32 @@ function markPlayerReady() {
   showSection("pre-guess-waiting");
 }
 
+// ---------------- RENDER PHASE ----------------
+function renderPhase(phase) {
+  const title = $("phase-title");
+
+  // Map phase names to display text
+  const phaseTitles = {
+    waiting: "Waiting for Players...",
+    qa: "Q&A Phase",
+    preGuess: "Pre-Guess Waiting Room",
     guessing: "Guessing Phase",
     scoreboard: "Scoreboard",
-  }[phase] || "Game Phase";
+  };
 
+  // Set the title text
+  if (title) {
+    title.textContent = phaseTitles[phase] || "Game Phase";
+  }
+
+  // Hide all major buttons first
   ["begin-game-btn", "start-guessing-btn", "reveal-scores-btn", "play-again-btn"]
     .forEach(id => $(id).classList.add("hidden"));
 
+  // Host-only button visibility
   if (isHost) {
     if (phase === "waiting") $("begin-game-btn").classList.remove("hidden");
-    if (phase === "qa") $("start-guessing-btn").classList.remove("hidden");
+    if (phase === "preGuess") $("start-guessing-btn").classList.remove("hidden");
     if (phase === "guessing") $("reveal-scores-btn").classList.remove("hidden");
     if (phase === "scoreboard") $("play-again-btn").classList.remove("hidden");
   }
@@ -293,6 +309,7 @@ window.db.ref(`rooms/${roomCode}/phase`).set("qa");
 $("start-guessing-btn").onclick = () => updatePhase("guessing");
 $("reveal-scores-btn").onclick = () => updatePhase("scoreboard");
 $("play-again-btn").onclick = () => location.reload();
+
 
 
 
