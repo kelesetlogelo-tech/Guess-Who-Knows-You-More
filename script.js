@@ -31,6 +31,9 @@ $("create-room-btn").addEventListener("click", async () => {
     phase: "waiting",
     players: { [name]: { score: 0 } }
   });
+  // <--- NEW: show room code + initial player count in the waiting/game UI
+  $("room-code-display-game").textContent = "Room Code: " + code;
+  $("players-count").textContent = `Players joined: 1 / ${count}`;
 
   subscribeToGame(code);
   showSection("game");
@@ -59,6 +62,33 @@ function subscribeToGame(code) {
   ref.on("value", snap => {
     const data = snap.val();
     if (!data) return;
+
+    // Update UI: room code (in case page was reloaded or we moved to game screen)
+    if (data) {
+      $("room-code-display-game").textContent = "Room Code: " + (code || '');
+    }
+
+    // Update players count
+    const playersObj = data.players || {};
+    const joinedCount = Object.keys(playersObj).length;
+    const expected = data.numPlayers || '?';
+    $("players-count").textContent = `Players joined: ${joinedCount} / ${expected}`;
+
+    // Only show Begin Game button to the host and only when enough players have joined
+    // Note: 'isHost' is local (set when this client created the room). We rely on that flag.
+    if (isHost) {
+      const beginBtn = $("begin-game-btn");
+      if (beginBtn) {
+        // show only when joinedCount >= expected and expected is a positive number
+        if (expected !== '?' && joinedCount >= expected) {
+          beginBtn.classList.remove("hidden");
+        } else {
+          beginBtn.classList.add("hidden");
+        }
+      }
+    }
+
+    // normal phase rendering
     renderPhase(data.phase);
   });
 }
@@ -95,3 +125,4 @@ $("begin-game-btn").onclick = () => updatePhase("qa");
 $("start-guessing-btn").onclick = () => updatePhase("guessing");
 $("reveal-scores-btn").onclick = () => updatePhase("scoreboard");
 $("play-again-btn").onclick = () => location.reload();
+
