@@ -130,7 +130,6 @@ function subscribeToGame(code) {
     renderPhase(data.phase);
   });
 }
-
 // ---------------- UPDATE PHASE ----------------
 async function updatePhase(newPhase) {
   if (!gameRef) return;
@@ -140,12 +139,24 @@ async function updatePhase(newPhase) {
 // ---------------- RENDER PHASE ----------------
 function renderPhase(phase) {
   const title = $("phase-title");
-  title.textContent = {
-    waiting: "Waiting for players...",
- if (phase === "qa") startQA();
- if (phase === "pre-guess") showSection("pre-guess-waiting");
 
-    qa: "Q&A Phase",
+  // Update the phase title text
+  if (title) {
+    const titles = {
+      waiting: "Waiting for players...",
+      qa: "Q&A Phase",
+      "pre-guess": "Pre-Guess Waiting Room",
+      guessing: "Guessing Phase"
+    };
+    title.textContent = titles[phase] || "If I Were...";
+  }
+
+  // Handle phase transitions
+  if (phase === "qa") startQA();
+  else if (phase === "pre-guess") showSection("pre-guess-waiting");
+  else if (phase === "guessing") showSection("guessing-phase");
+}
+
 // ---------- Q&A PHASE LOGIC ----------
 const questions = [
   { id: 'q1', text: "If I were a sound effect, I'd be:", options: ['Ka-ching!', 'Dramatic gasp', 'Boing!', 'Evil laugh'] },
@@ -172,49 +183,83 @@ function renderQuestion() {
   const container = $("qa-container");
   container.innerHTML = "";
 
-  if (currentQuestion >= questions.length) {
-    // When done, mark as complete
-    alert("All questions answered! Waiting for others...");
-    // Update Firebase to move to pre-guess phase
-    const room = localStorage.getItem("roomCode");
-    const player = localStorage.getItem("playerName");
-    window.db.ref(`rooms/${room}/players/${player}/answers`).set(answers);
-    // When done, mark as complete
-    alert("All questions answered! Waiting for others...");
-
-   // Update player answers in Firebase
-   const room = localStorage.getItem("roomCode");
-   const player = localStorage.getItem("playerName");
-   window.db.ref(`rooms/${room}/players/${player}`).update({
-    answers,
-    ready: true
-  });
-
-  // Move player to Pre-Guess Waiting Room
-  showSection("pre-guess-waiting");
-
+  const q = questions[currentQuestion];
+  if (!q) {
+    // Player finished all questions
+    markPlayerReady();
+    return;
   }
 
-  const q = questions[currentQuestion];
+  // Create question tile
   const tile = document.createElement("div");
-  tile.className = "qa-tile";
-
+  tile.className = "qa-tile active";
   tile.innerHTML = `
     <h2>${q.text}</h2>
-    ${q.options.map(opt => `<button class="qa-option">${opt}</button>`).join("")}
+    <div class="options">
+      ${q.options
+        .map(opt => `<button class="option-btn">${opt}</button>`)
+        .join("")}
+    </div>
   `;
   container.appendChild(tile);
 
-  tile.querySelectorAll(".qa-option").forEach(btn => {
+  // Attach listeners
+  tile.querySelectorAll(".option-btn").forEach(btn => {
     btn.onclick = () => {
       answers[q.id] = btn.textContent;
       tile.classList.add("slide-out");
       setTimeout(() => {
         currentQuestion++;
-        renderQuestion();
+        renderNextQuestion(container);
       }, 600);
     };
   });
+}
+
+// Helper: Animate next tile sliding in
+function renderNextQuestion(container) {
+  container.innerHTML = "";
+
+  const q = questions[currentQuestion];
+  if (!q) {
+    markPlayerReady();
+    return;
+  }
+
+  const nextTile = document.createElement("div");
+  nextTile.className = "qa-tile slide-in";
+  nextTile.innerHTML = `
+    <h2>${q.text}</h2>
+    <div class="options">
+      ${q.options
+        .map(opt => `<button class="option-btn">${opt}</button>`)
+        .join("")}
+    </div>
+  `;
+  container.appendChild(nextTile);
+
+  // Trigger smooth entry
+  setTimeout(() => nextTile.classList.remove("slide-in"), 50);
+
+  // Handle clicks
+  nextTile.querySelectorAll(".option-btn").forEach(btn => {
+    btn.onclick = () => {
+      answers[q.id] = btn.textContent;
+      nextTile.classList.add("slide-out");
+      setTimeout(() => {
+        currentQuestion++;
+        renderNextQuestion(container);
+      }, 600);
+    };
+  });
+}
+
+// Mark player ready when finished
+function markPlayerReady() {
+  if (!gameRef) return;
+  const playerRef = gameRef.child("ready");
+  playerRef.set(true);
+  showSection("pre-guess-waiting");
 }
 
     guessing: "Guessing Phase",
@@ -239,6 +284,7 @@ window.db.ref(`rooms/${roomCode}/phase`).set("qa");
 $("start-guessing-btn").onclick = () => updatePhase("guessing");
 $("reveal-scores-btn").onclick = () => updatePhase("scoreboard");
 $("play-again-btn").onclick = () => location.reload();
+
 
 
 
