@@ -7,35 +7,45 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div id="app">
+    <!-- LOBBY PHASE -->
+    <section id="lobby" class="active">
+      <h1 class="title">If I Were...</h1>
 
-  <section id="lobby">
-    <h1>If I Were...</h1>
-    <h2>Host a Room</h2>
-    <input id="host-name" type="text" placeholder="Your name" />
-    <input id="player-count" type="number" placeholder="Number of players" min="2" max="8" />
-    <button id="create-room-btn">Create Room</button>
-    <p id="room-code-display"></p>
+      <div class="card">
+        <h2>Host a Room</h2>
+        <input id="host-name" type="text" placeholder="Your name" />
+        <input id="player-count" type="number" placeholder="Number of players" min="2" max="8" />
+        <button id="create-room-btn" class="teal-btn">Create Room</button>
+        <p id="room-code-display" class="room-code"></p>
+      </div>
 
-    <h2>Join a Room</h2>
-    <input id="player-name" type="text" placeholder="Your name" />
-    <input id="join-code" type="text" placeholder="Room code" maxlength="5" />
-    <button id="join-room-btn">Join Room</button>
-  </section>
+      <div class="card">
+        <h2>Join a Room</h2>
+        <input id="player-name" type="text" placeholder="Your name" />
+        <input id="join-code" type="text" placeholder="Room code" maxlength="5" />
+        <button id="join-room-btn" class="teal-btn">Join Room</button>
+      </div>
+    </section>
 
-  <section id="game" class="hidden">
-    <h2 id="phase-title">Waiting for players...</h2>
-    <button id="begin-game-btn" class="hidden teal-btn">Begin Game</button>
-    <button id="start-guessing-btn" class="hidden teal-btn">Start Guessing</button>
-    <button id="reveal-scores-btn" class="hidden teal-btn">Reveal Scores</button>
-    <button id="play-again-btn" class="hidden teal-btn">Play Again</button>
-  </section>
+    <!-- GAME PHASE -->
+    <section id="game" class="hidden">
+      <h2 id="phase-title">Waiting for players...</h2>
+      <div id="phase-controls">
+        <button id="begin-game-btn" class="teal-btn hidden">Begin Game</button>
+        <button id="start-guessing-btn" class="teal-btn hidden">Start Guessing</button>
+        <button id="reveal-scores-btn" class="teal-btn hidden">Reveal Scores</button>
+        <button id="play-again-btn" class="teal-btn hidden">Play Again</button>
+      </div>
+    </section>
+  </div>
 
-  <!-- Firebase -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <script src="firebase-config.js"></script>
 
-  <!-- IMPORTANT FIX: load this as a module -->
-  <script type="module" src="script.js"></script>
+  <!-- Game Logic -->
+  <script src="script.js"></script>
 </body>
 </html>

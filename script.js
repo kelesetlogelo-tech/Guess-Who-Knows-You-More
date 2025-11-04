@@ -1,6 +1,6 @@
 console.log("script.js loaded");
 
-let gameRef;
+let gameRef = null;
 let isHost = false;
 const $ = id => document.getElementById(id);
 
@@ -9,60 +9,53 @@ function showSection(id) {
   $(id).classList.remove("hidden");
 }
 
-// ---------- CREATE ROOM ----------
-$("create-room-btn").onclick = async () => {
-  const playerName = $("host-name").value.trim();
-  const numPlayers = parseInt($("player-count").value);
+// ---------------- CREATE ROOM ----------------
+$("create-room-btn").addEventListener("click", async () => {
+  const name = $("host-name").value.trim();
+  const count = parseInt($("player-count").value.trim());
 
-  if (!playerName || !numPlayers) {
+  if (!name || !count) {
     alert("Enter your name and number of players");
     return;
   }
 
-  const roomCode = Math.random().toString(36).substr(2, 4).toUpperCase();
-  $("room-code-display").textContent = `Room Code: ${roomCode}`;
+  const code = Math.random().toString(36).substring(2, 7).toUpperCase();
+  $("room-code-display").textContent = "Room Code: " + code;
 
   isHost = true;
-  gameRef = window.db.ref("rooms/" + roomCode);
+  gameRef = window.db.ref("rooms/" + code);
+
   await gameRef.set({
-    host: playerName,
-    numPlayers,
+    host: name,
+    numPlayers: count,
     phase: "waiting",
-    players: { [playerName]: { score: 0 } }
+    players: { [name]: { score: 0 } }
   });
 
-  subscribeToGame(roomCode);
+  subscribeToGame(code);
   showSection("game");
-  updatePhase("waiting");
-};
+});
 
-// ---------- JOIN ROOM ----------
-$("join-room-btn").onclick = async () => {
-  const playerName = $("player-name").value.trim();
-  const joinCode = $("join-code").value.trim().toUpperCase();
+// ---------------- JOIN ROOM ----------------
+$("join-room-btn").addEventListener("click", async () => {
+  const name = $("player-name").value.trim();
+  const code = $("join-code").value.trim().toUpperCase();
 
-  if (!playerName || !joinCode) {
+  if (!name || !code) {
     alert("Enter your name and room code");
     return;
   }
 
-  const playerRef = window.db.ref(`rooms/${joinCode}/players/${playerName}`);
-  await playerRef.set({ score: 0 });
+  gameRef = window.db.ref("rooms/" + code);
+  await gameRef.child("players/" + name).set({ score: 0 });
 
-  gameRef = window.db.ref("rooms/" + joinCode);
-  subscribeToGame(joinCode);
+  subscribeToGame(code);
   showSection("game");
-};
+});
 
-// ---------- UPDATE PHASE ----------
-async function updatePhase(newPhase) {
-  if (!gameRef) return;
-  await gameRef.child("phase").set(newPhase);
-}
-
-// ---------- SUBSCRIBE TO GAME ----------
-function subscribeToGame(roomCode) {
-  const ref = window.db.ref("rooms/" + roomCode);
+// ---------------- SUBSCRIBE ----------------
+function subscribeToGame(code) {
+  const ref = window.db.ref("rooms/" + code);
   ref.on("value", snap => {
     const data = snap.val();
     if (!data) return;
@@ -70,14 +63,20 @@ function subscribeToGame(roomCode) {
   });
 }
 
-// ---------- RENDER PHASE ----------
+// ---------------- UPDATE PHASE ----------------
+async function updatePhase(newPhase) {
+  if (!gameRef) return;
+  await gameRef.child("phase").set(newPhase);
+}
+
+// ---------------- RENDER PHASE ----------------
 function renderPhase(phase) {
   const title = $("phase-title");
   title.textContent = {
     waiting: "Waiting for players...",
     qa: "Q&A Phase",
     guessing: "Guessing Phase",
-    scoreboard: "Scoreboard",
+    scoreboard: "Scoreboard"
   }[phase] || "Game Phase";
 
   ["begin-game-btn", "start-guessing-btn", "reveal-scores-btn", "play-again-btn"]
@@ -91,7 +90,7 @@ function renderPhase(phase) {
   }
 }
 
-// ---------- HOST CONTROLS ----------
+// ---------------- HOST CONTROLS ----------------
 $("begin-game-btn").onclick = () => updatePhase("qa");
 $("start-guessing-btn").onclick = () => updatePhase("guessing");
 $("reveal-scores-btn").onclick = () => updatePhase("scoreboard");

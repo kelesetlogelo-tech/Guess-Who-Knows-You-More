@@ -1,143 +1,63 @@
-/* ---------- GLOBAL LAYOUT ---------- */
 body {
-  font-family: 'Segoe UI', Roboto, sans-serif;
   margin: 0;
-  padding: 0;
-  text-align: center;
-  min-height: 100vh;
-  background: linear-gradient(135deg, #4a00e0, #8e2de2);
+  font-family: "Poppins", sans-serif;
   color: #fff;
-  overflow-x: hidden;
+  background: linear-gradient(135deg, #6a11cb, #2575fc);
+  height: 100vh;
   display: flex;
-  flex-direction: column;
+  justify-content: center;
   align-items: center;
+  text-align: center;
 }
 
-h1.game-title {
-  margin-top: 24px;
-  font-size: 2.5rem;
-  text-shadow: 2px 2px 6px rgba(0,0,0,0.25);
+.hidden {
+  display: none !important;
 }
 
-/* ---------- SECTIONS + TRANSITIONS ---------- */
-section {
-  position: absolute;
-  top: 80px;
-  left: 50%;
-  transform: translateX(-50%) translateY(50px);
-  opacity: 0;
-  transition: all 0.7s ease;
-  width: 100%;
-  max-width: 600px;
-  padding: 20px;
-}
-
-section.active {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-  z-index: 5;
-}
-
-section.hidden {
-  opacity: 0;
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* ---------- CARDS ---------- */
 .card {
   background: rgba(255, 255, 255, 0.15);
   border-radius: 20px;
-  padding: 24px;
-  margin-top: 30px;
-  max-width: 400px;
-  width: 90%;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+  padding: 20px;
+  margin: 20px 0;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.title {
+  font-size: 2.4em;
+  margin-bottom: 10px;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
 }
 
 input {
-  padding: 10px 14px;
-  margin: 8px;
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin: 8px 0 16px 0;
+  border-radius: 10px;
   border: none;
-  border-radius: 8px;
-  width: 80%;
-  font-size: 1rem;
-}
-
-/* ---------- BUTTONS ---------- */
-button {
-  padding: 12px 24px;
-  margin: 10px;
-  border: none;
-  border-radius: 25px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-weight: 600;
+  text-align: center;
 }
 
 .teal-btn {
-  background-color: #00bfa6;
-  color: #000;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+  background: linear-gradient(135deg, #20c997, #00bfa6);
+  color: #fff;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 25px;
+  font-size: 1em;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .teal-btn:hover {
-  background-color: #26d8c0;
-  transform: scale(1.07);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
 }
 
-/* ---------- Q&A + GUESS TILES ---------- */
-.qa-stage {
-  margin: 16px auto;
-  max-width: 600px;
-}
-
-.qa-card {
-  background: white;
-  color: #000;
-  padding: 16px;
-  border-radius: 12px;
-  margin: 12px auto;
-  box-shadow: 0 6px 14px rgba(0,0,0,0.2);
-  animation: slideUp 0.4s ease;
-}
-
-.qa-options button {
-  background-color: #00bfa6;
-  color: #000;
-  margin: 8px;
-  border-radius: 18px;
-  padding: 10px 16px;
-  transition: transform 0.2s ease;
-}
-
-.qa-options button:hover {
-  transform: scale(1.1);
-}
-
-/* ---------- SCOREBOARD ---------- */
-#scoreboardList {
-  background: rgba(255,255,255,0.15);
-  border-radius: 16px;
-  padding: 20px;
-  max-width: 400px;
-  margin: auto;
-  text-align: left;
-}
-
-/* ---------- ANIMATIONS ---------- */
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(30px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@media (max-width: 600px) {
-  .qa-card {
-    font-size: 0.9rem;
-    padding: 12px;
-  }
-  button {
-    width: 80%;
-  }
+.room-code {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #ffeb3b;
+  margin-top: 10px;
 }
