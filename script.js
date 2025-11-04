@@ -304,11 +304,10 @@ function renderPhase(phase) {
 
 // ---------------- HOST CONTROLS ----------------
 $("begin-game-btn").onclick = () => updatePhase("qa");
-window.db.ref(`rooms/${roomCode}/phase`).set("qa");
-
 $("start-guessing-btn").onclick = () => updatePhase("guessing");
 $("reveal-scores-btn").onclick = () => updatePhase("scoreboard");
 $("play-again-btn").onclick = () => location.reload();
+
 
 
 
