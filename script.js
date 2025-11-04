@@ -76,6 +76,10 @@ function subscribeToGame(code) {
     // Control the Begin Game button visibility
     const beginBtn = $("begin-game-btn");
     if (isHost && beginBtn) {
+      beginBtn.onclick = () => {
+        window.db.ref(`rooms/${code}/phase`).set("qa");
+  };
+}
       // Check if all players have joined
       const allPlayersJoined = expected !== "?" && joinedCount >= expected;
 
@@ -85,7 +89,7 @@ function subscribeToGame(code) {
           beginGameTimer = setTimeout(() => {
             beginBtn.classList.remove("hidden"); // Show after 3 seconds
             beginGameTimer = null; // Reset timer
-          }, 3000); // 3000ms = 3 seconds
+          }, 15000); // 15000ms = 15 seconds
         }
       } else {
         // If not all players joined, hide button and reset timer
@@ -307,6 +311,7 @@ $("begin-game-btn").onclick = () => updatePhase("qa");
 $("start-guessing-btn").onclick = () => updatePhase("guessing");
 $("reveal-scores-btn").onclick = () => updatePhase("scoreboard");
 $("play-again-btn").onclick = () => location.reload();
+
 
 
 
