@@ -263,7 +263,7 @@ function markPlayerReady() {
 }
 
     guessing: "Guessing Phase",
-    scoreboard: "Scoreboard"
+    scoreboard: "Scoreboard",
   }[phase] || "Game Phase";
 
   ["begin-game-btn", "start-guessing-btn", "reveal-scores-btn", "play-again-btn"]
@@ -284,6 +284,7 @@ window.db.ref(`rooms/${roomCode}/phase`).set("qa");
 $("start-guessing-btn").onclick = () => updatePhase("guessing");
 $("reveal-scores-btn").onclick = () => updatePhase("scoreboard");
 $("play-again-btn").onclick = () => location.reload();
+
 
 
 
