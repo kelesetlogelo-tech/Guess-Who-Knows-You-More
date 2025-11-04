@@ -140,21 +140,30 @@ async function updatePhase(newPhase) {
 function renderPhase(phase) {
   const title = $("phase-title");
 
-  // Update the phase title text
+  // Update title safely
   if (title) {
-    const titles = {
-      waiting: "Waiting for players...",
-      qa: "Q&A Phase",
-      "pre-guess": "Pre-Guess Waiting Room",
-      guessing: "Guessing Phase"
-    };
-    title.textContent = titles[phase] || "If I Were...";
+    switch (phase) {
+      case "waiting":
+        title.textContent = "Waiting for players...";
+        break;
+      case "qa":
+        title.textContent = "Q&A Phase";
+        break;
+      case "pre-guess":
+        title.textContent = "Pre-Guess Waiting Room";
+        break;
+      default:
+        title.textContent = "";
+        break;
+    }
   }
 
-  // Handle phase transitions
-  if (phase === "qa") startQA();
-  else if (phase === "pre-guess") showSection("pre-guess-waiting");
-  else if (phase === "guessing") showSection("guessing-phase");
+  // Phase actions
+  if (phase === "qa") {
+    startQA();
+  } else if (phase === "pre-guess") {
+    showSection("pre-guess-waiting");
+  }
 }
 
 // ---------- Q&A PHASE LOGIC ----------
@@ -284,6 +293,7 @@ window.db.ref(`rooms/${roomCode}/phase`).set("qa");
 $("start-guessing-btn").onclick = () => updatePhase("guessing");
 $("reveal-scores-btn").onclick = () => updatePhase("scoreboard");
 $("play-again-btn").onclick = () => location.reload();
+
 
 
 
