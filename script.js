@@ -95,7 +95,36 @@ function subscribeToGame(code) {
           beginGameTimer = null;
         }
       }
+         // --- AUTO TRANSITION TO PRE-GUESS WAITING ROOM ---
+    const playersObj = data.players || {};
+    const totalPlayers = parseInt(data.numPlayers) || 0;
+    const readyCount = Object.values(playersObj).filter(p => p.ready).length;
+
+    // Update ready status text
+    const readyStatus = $("ready-status");
+    if (readyStatus) {
+      readyStatus.textContent = `Ready: ${readyCount} / ${totalPlayers}`;
     }
+
+    // If everyone has completed Q&A
+    if (data.phase === "qa" && readyCount === totalPlayers && totalPlayers > 0) {
+      // Move the game to pre-guess phase
+      window.db.ref(`rooms/${code}/phase`).set("pre-guess");
+    }
+
+    // --- HANDLE PRE-GUESS PHASE DISPLAY ---
+    if (data.phase === "pre-guess") {
+      showSection("pre-guess-waiting");
+
+      const startBtn = $("start-guessing-btn");
+      if (isHost && startBtn) {
+        startBtn.classList.remove("hidden");
+        startBtn.onclick = () => {
+          window.db.ref(`rooms/${code}/phase`).set("guessing");
+        };
+      }
+    } 
+  }
 
     // Normal phase rendering
     renderPhase(data.phase);
@@ -113,7 +142,81 @@ function renderPhase(phase) {
   const title = $("phase-title");
   title.textContent = {
     waiting: "Waiting for players...",
+ if (phase === "qa") startQA();
+ if (phase === "pre-guess") showSection("pre-guess-waiting");
+
     qa: "Q&A Phase",
+// ---------- Q&A PHASE LOGIC ----------
+const questions = [
+  { id: 'q1', text: "If I were a sound effect, I'd be:", options: ['Ka-ching!', 'Dramatic gasp', 'Boing!', 'Evil laugh'] },
+  { id: 'q2', text: "If I were a weather forecast, I'd be:", options: ['100% chill', 'Partly dramatic with a chance of chaos!', 'Heatwave vibes', 'Sudden tornado of opinions'] },
+  { id: 'q3', text: "If I were a breakfast cereal, I'd be:", options: ['Jungle Oats', 'WeetBix', 'Rice Krispies', 'MorVite', 'That weird healthy one no-one eats'] },
+  { id: 'q4', text: "If I were a bedtime excuse, I'd be...", options: ['I need water', "There's a spider in my room", "I can't sleep without 'Pillow'", 'There are shadows outside my window', 'Just one more episode'] },
+  { id: 'q5', text: "If I were a villain in a movie, I'd be...", options: ['Scarlet Overkill', 'Grinch', 'Thanos', 'A mosquito in your room at night', 'Darth Vader'] },
+  { id: 'q6', text: "If I were a kitchen appliance, I'd be...", options: ['A blender on high speed with no lid', 'A toaster that only pops when no one’s looking', 'Microwave that screams when it’s done', 'A fridge that judges your snack choices'] },
+  { id: 'q7', text: "If I were a dance move, I'd be...", options: ['The awkward shuffle at weddings', 'Kwasakwasa, Ba-baah!', 'The “I thought no one was watching” move', 'The knee-pop followed by a regretful sit-down'] },
+  { id: 'q8', text: "If I were a text message, I'd be...", options: ['A typo-ridden voice-to-text disaster', 'A three-hour late “LOL”', 'A group chat gif spammer', 'A mysterious “K.” with no context'] },
+  { id: 'q9', text: "If I were a warning label, I'd be...", options: ['Caution: May spontaneously break into song', 'Contents may cause uncontrollable giggles', 'Qaphela: Gevaar/Ingozi', 'Warning: Will talk your ear off about random facts', 'May contain traces of impulsive decisions'] },
+  { id: 'q10', text: "If I were a type of chair, I’d be…", options: ['A Phala Phala sofa', 'A creaky antique that screams when you sit', 'One of those folding chairs that attack your fingers', 'A throne made of regrets and snack crumbs'] }
+];
+
+let currentQuestion = 0;
+let answers = {};
+
+function startQA() {
+  showSection("qa-phase");
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const container = $("qa-container");
+  container.innerHTML = "";
+
+  if (currentQuestion >= questions.length) {
+    // When done, mark as complete
+    alert("All questions answered! Waiting for others...");
+    // Update Firebase to move to pre-guess phase
+    const room = localStorage.getItem("roomCode");
+    const player = localStorage.getItem("playerName");
+    window.db.ref(`rooms/${room}/players/${player}/answers`).set(answers);
+    // When done, mark as complete
+    alert("All questions answered! Waiting for others...");
+
+   // Update player answers in Firebase
+   const room = localStorage.getItem("roomCode");
+   const player = localStorage.getItem("playerName");
+   window.db.ref(`rooms/${room}/players/${player}`).update({
+    answers,
+    ready: true
+  });
+
+  // Move player to Pre-Guess Waiting Room
+  showSection("pre-guess-waiting");
+
+  }
+
+  const q = questions[currentQuestion];
+  const tile = document.createElement("div");
+  tile.className = "qa-tile";
+
+  tile.innerHTML = `
+    <h2>${q.text}</h2>
+    ${q.options.map(opt => `<button class="qa-option">${opt}</button>`).join("")}
+  `;
+  container.appendChild(tile);
+
+  tile.querySelectorAll(".qa-option").forEach(btn => {
+    btn.onclick = () => {
+      answers[q.id] = btn.textContent;
+      tile.classList.add("slide-out");
+      setTimeout(() => {
+        currentQuestion++;
+        renderQuestion();
+      }, 600);
+    };
+  });
+}
+
     guessing: "Guessing Phase",
     scoreboard: "Scoreboard"
   }[phase] || "Game Phase";
@@ -131,9 +234,12 @@ function renderPhase(phase) {
 
 // ---------------- HOST CONTROLS ----------------
 $("begin-game-btn").onclick = () => updatePhase("qa");
+window.db.ref(`rooms/${roomCode}/phase`).set("qa");
+
 $("start-guessing-btn").onclick = () => updatePhase("guessing");
 $("reveal-scores-btn").onclick = () => updatePhase("scoreboard");
 $("play-again-btn").onclick = () => location.reload();
+
 
 
 
