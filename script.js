@@ -100,7 +100,7 @@ function subscribeToGame(code) {
         }
       }
          // --- AUTO TRANSITION TO PRE-GUESS WAITING ROOM ---
-    const playersObj = data.players || {};
+    playersObj = data.players || {};
     const totalPlayers = parseInt(data.numPlayers) || 0;
     const readyCount = Object.values(playersObj).filter(p => p.ready).length;
 
@@ -311,6 +311,7 @@ $("begin-game-btn").onclick = () => updatePhase("qa");
 $("start-guessing-btn").onclick = () => updatePhase("guessing");
 $("reveal-scores-btn").onclick = () => updatePhase("scoreboard");
 $("play-again-btn").onclick = () => location.reload();
+
 
 
 
