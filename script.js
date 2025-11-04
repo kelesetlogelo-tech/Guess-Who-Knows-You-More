@@ -57,36 +57,50 @@ $("join-room-btn").addEventListener("click", async () => {
 });
 
 // ---------------- SUBSCRIBE ----------------
+let beginGameTimer = null; // global variable to track the 3-second delay timer
+
 function subscribeToGame(code) {
   const ref = window.db.ref("rooms/" + code);
   ref.on("value", snap => {
     const data = snap.val();
     if (!data) return;
 
-    // Update UI: room code (in case page was reloaded or we moved to game screen)
-    if (data) {
-      $("room-code-display-game").textContent = "Room Code: " + (code || '');
-    }
+    // Update room code and player count
+    $("room-code-display-game").textContent = "Room Code: " + code;
 
-    // Update players count
     const playersObj = data.players || {};
     const joinedCount = Object.keys(playersObj).length;
-    const expected = data.numPlayers || '?';
+    const expected = data.numPlayers || "?";
     $("players-count").textContent = `Players joined: ${joinedCount} / ${expected}`;
 
-    // Only show Begin Game button to the host and only when enough players have joined
-    // Note: 'isHost' is local (set when this client created the room). We rely on that flag.
-    if (isHost) {
-      const beginBtn = $("begin-game-btn");
-      if (beginBtn) {
-        // show only when joinedCount >= expected and expected is a positive number
-        if (expected !== '?' && joinedCount >= expected) {
-          beginBtn.classList.remove("hidden");
-        } else {
-          beginBtn.classList.add("hidden");
+    // Control the Begin Game button visibility
+    const beginBtn = $("begin-game-btn");
+    if (isHost && beginBtn) {
+      // Check if all players have joined
+      const allPlayersJoined = expected !== "?" && joinedCount >= expected;
+
+      if (allPlayersJoined) {
+        // If all players joined, start 3-second countdown (if not already running)
+        if (!beginGameTimer) {
+          beginGameTimer = setTimeout(() => {
+            beginBtn.classList.remove("hidden"); // Show after 3 seconds
+            beginGameTimer = null; // Reset timer
+          }, 3000); // 3000ms = 3 seconds
+        }
+      } else {
+        // If not all players joined, hide button and reset timer
+        beginBtn.classList.add("hidden");
+        if (beginGameTimer) {
+          clearTimeout(beginGameTimer);
+          beginGameTimer = null;
         }
       }
     }
+
+    // Normal phase rendering
+    renderPhase(data.phase);
+  });
+}
 
     // normal phase rendering
     renderPhase(data.phase);
@@ -125,4 +139,5 @@ $("begin-game-btn").onclick = () => updatePhase("qa");
 $("start-guessing-btn").onclick = () => updatePhase("guessing");
 $("reveal-scores-btn").onclick = () => updatePhase("scoreboard");
 $("play-again-btn").onclick = () => location.reload();
+
 
