@@ -35,7 +35,24 @@
       <p id="players-count" class="room-count"></p>
       <div id="phase-controls">
         <button id="begin-game-btn" class="teal-btn hidden">Begin Game</button>
-        <button id="start-guessing-btn" class="teal-btn hidden">Start Guessing</button>
+   <!-- === Q&A PHASE === -->
+   <section id="qa-phase" class="phase hidden">
+     <h1>Q&A PHASE</h1>
+     <p class="instruction">Select the option that best describes you in each “If I were” statement</p>
+
+     <div id="qa-container" class="qa-container"></div>
+   </section>
+  <!-- === PRE-GUESS WAITING ROOM === -->
+  <section id="pre-guess-waiting" class="phase hidden">
+    <h1>Pre-Guess Waiting Room</h1>
+    <p>Waiting for all players to complete the Q&A...</p>
+    <p id="ready-status"></p>
+
+  <!-- Only host sees this button -->
+    <button id="start-guessing-btn" class="teal-btn-hidden">Start Guessing</button>
+  </section>
+
+        
         <button id="reveal-scores-btn" class="teal-btn hidden">Reveal Scores</button>
         <button id="play-again-btn" class="teal-btn hidden">Play Again</button>
       </div>
@@ -51,4 +68,5 @@
   <script src="script.js"></script>
 </body>
 </html>
+
 
