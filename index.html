@@ -5,35 +5,31 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>If I Were...</title>
 
-  <!-- your app stylesheet (make sure style.css exists) -->
   <link rel="stylesheet" href="style.css">
 
   <!-- Firebase (compat) -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-
-  <!-- your firebase-config should set window.db = firebase.database() -->
   <script src="firebase-config.js"></script>
 </head>
 
 <body>
   <header class="app-header">
-    <h1 class="fade-in"> If I Were...</h1>
+    <h1 class="fade-in">If I Were...</h1>
     <p class="subtitle">How well do you know your tribe?</p>
   </header>
 
-  <!-- ========== LOBBY / HOME ========== -->
   <main id="main">
+    <!-- ========== LANDING ========== -->
     <section id="landing" class="page">
       <div class="card">
-        <h2>Create or join a game</h2>
+        <h2>Create or Join a Game</h2>
 
         <div class="form-row">
-          <input id="hostName" placeholder="Host" />
-          <input id="playerCount" placeholder="Number of players (2-8)" type="number" min="2" max="8"/>
+          <input id="hostName" placeholder="Host name" />
+          <input id="playerCount" type="number" placeholder="Players (2–8)" min="2" max="8" />
           <button id="create-room-btn" class="teal-btn">Create Room</button>
         </div>
-        <div id="roomCodeDisplay"></div>
 
         <hr />
 
@@ -45,82 +41,71 @@
       </div>
     </section>
 
-    <!-- ========== Waiting / Lobby (after create/join) ========== -->
+    <!-- ========== WAITING ROOM ========== -->
     <section id="waitingRoom" class="page hidden">
       <div class="card">
-        <h2>Waiting room</h2>
-        <p id="roomCodeDisplay" class="muted">Room code will appear here</p>
-        <p id="playersCount" class="muted">0 / ? joined</p>
+        <h2>Waiting Room</h2>
+        <p id="room-code-display-game" class="muted">Room Code: —</p>
+        <p id="players-count" class="muted">Players joined: 0 / ?</p>
 
         <ul id="playerList"></ul>
 
         <div id="hostControls" class="hidden">
-          <button id="begin-game-btn" class="teal-btn muted" disabled>Begin Game</button>
+          <button id="begin-game-btn" class="teal-btn hidden">Begin Game</button>
         </div>
       </div>
     </section>
 
     <!-- ========== Q&A PHASE ========== -->
     <section id="qa-phase" class="page hidden">
-      <div class="card">
+      <div class="card slide-in">
         <h2 id="phase-title">Q&A Phase</h2>
-        <p class="muted">Select the option that best describes you.</p>
-
-        <div id="questionCard" class="qa-tile">
-          <!-- script will mount question tiles here (qaStageInner) -->
-        </div>
+        <p class="muted">Answer the prompt as if you were...</p>
+        <div id="questionCard" class="qa-tile"></div>
       </div>
     </section>
 
-    <!-- ========== Pre-Guess Waiting Room (after Q&A) ========== -->
-    <section id="pre-guess-waiting class="page hidden">
-      <div class="card">
-        <h2>Waiting for everyone to finish Q&A</h2>
+    <!-- ========== PRE-GUESS WAITING ========== -->
+    <section id="pre-guess-waiting" class="page hidden">
+      <div class="card slide-in">
+        <h2>Waiting for everyone to finish Q&A...</h2>
         <p id="ready-status">Ready: 0 / 0</p>
-
         <ul id="guessPlayerStatusList"></ul>
 
         <div id="hostControls_guess" class="hidden">
-          <button id="start-guessing-btn" class="teal-btn muted" disabled>Begin Guessing (host)</button>
+          <button id="start-guessing-btn" class="teal-btn" disabled>Begin Guessing (Host)</button>
         </div>
       </div>
     </section>
 
-    <!-- ========== Guessing Phase (active guesser sees guess tiles) ========== -->
+    <!-- ========== GUESSING PHASE ========== -->
     <section id="guessing-phase" class="page hidden">
-      <div class="card">
-        <h2 id="active-guesser-label">A player is guessing...</h2>
-        <p>Now try to guess which player gave which answer!</p>
-
-        <div id="guess-card" class="qa-tile">
-          <!-- The active player's guess tiles are rendered here by script -->
-        </div>
-
+      <div class="card slide-in">
+        <h2 id="active-guesser-label">Guessing Time!</h2>
+        <p>Try to match each answer to the right player!</p>
+        <div id="guess-card" class="qa-tile"></div>
         <div class="guess-controls">
           <button id="done-guessing-btn" class="teal-btn hidden">Done Guessing!</button>
         </div>
       </div>
     </section>
 
-    <!-- ========== Post-Guess Waiting Room (after a player finishes guessing) ========== -->
+    <!-- ========== POST-GUESS WAITING ========== -->
     <section id="post-guess-waiting" class="page hidden">
-      <div class="card">
-        <h2>Waiting for other players to finish guessing...</h2>
-        
+      <div class="card slide-in">
+        <h2>Waiting for others to finish guessing...</h2>
         <ul id="postGuessStatusList"></ul>
       </div>
     </section>
 
-    <!-- ========== Final Scoreboard / Reveal ========== -->
+    <!-- ========== SCOREBOARD ========== -->
     <section id="scoreboard" class="page hidden">
-      <div class="card">
-        <h2>Scoreboard</h2>
+      <div class="card slide-in">
+        <h2>Final Scores</h2>
         <div id="score-list"></div>
-
         <div id="hostRevealControls" class="hidden">
-          <button id="reveal-scores-btn" class="teal-btn">Reveal Scores (host)</button>
+          <button id="reveal-scores-btn" class="teal-btn">Reveal Scores</button>
         </div>
-
         <div id="finalControls" class="hidden">
           <button id="play-again-btn" class="teal-btn">Play Again</button>
         </div>
@@ -129,14 +114,9 @@
   </main>
 
   <footer class="app-footer">
-    <small>Built with ❤️ </small>
+    <small>Built with ❤️ by Kelz</small>
   </footer>
 
-  <!-- Your app logic -->
   <script src="script.js"></script>
 </body>
 </html>
-
-
-
-
