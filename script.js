@@ -5,29 +5,25 @@ let isHost = false;
 let playerId = null;
 let beginGameTimer = null;
 
+// Wait until DOM is fully loaded
 document.addEventListener("DOMContentLoaded", () => {
-  // Single $ helper
+
+  // ---------------- DOM HELPER ----------------
   const $ = id => document.getElementById(id);
 
-   // BUTTON LISTENERS
-  $("create-room-btn").addEventListener("click", Create Room);
-  $("join-room-btn").addEventListener("click", Join Room);
+  // ---------------- BUTTON LISTENERS ----------------
+  $("create-room-btn").addEventListener("click", createRoom);
+  $("join-room-btn").addEventListener("click", joinRoom);
   $("begin-game-btn").addEventListener("click", () => {
     if (gameRef) gameRef.child("phase").set("qa");
   });
   $("start-guessing-btn").addEventListener("click", () => {
     if (gameRef) gameRef.child("phase").set("guessing");
   });
-});
 
-function showSection(id) {
-  document.querySelectorAll("section.page").forEach(s => s.classList.remove("active"));
-  const el = document.getElementById(id);
-  if (el) el.classList.add("active");
-}
+  // ---------------- FUNCTIONS ----------------
 
-// ---------------- CREATE ROOM ----------------
-$("create-room-btn").addEventListener("click", async () => {
+  async function createRoom() {
     const name = $("hostName").value.trim();
     const count = parseInt($("playerCount").value.trim());
     if (!name || !count) return alert("Enter your name and number of players");
@@ -42,16 +38,15 @@ $("create-room-btn").addEventListener("click", async () => {
       numPlayers: count,
       phase: "waiting",
       players: { [name]: { score: 0 } }
-  });
+    });
 
-  $("room-code-display-game").textContent = "Room Code: " + code;
-  $("players-count").textContent = `Players joined: 1 / ${count}`;
-  subscribeToGame(code);
-  showSection("waitingRoom");
-});
+    $("room-code-display-game").textContent = "Room Code: " + code;
+    $("players-count").textContent = `Players joined: 1 / ${count}`;
+    subscribeToGame(code);
+    showSection("waitingRoom");
+  }
 
-// ---------------- JOIN ROOM ----------------
-$("join-room-btn").addEventListener("click", async () => {
+  async function joinRoom() {
     const name = $("playerName").value.trim();
     const code = $("roomCode").value.trim().toUpperCase();
     if (!name || !code) return alert("Enter your name and room code");
@@ -62,8 +57,17 @@ $("join-room-btn").addEventListener("click", async () => {
     gameRef = window.db.ref("rooms/" + code);
     await gameRef.child("players/" + name).set({ score: 0 });
 
-  subscribeToGame(code);
-  showSection("waitingRoom");
+    subscribeToGame(code);
+    showSection("waitingRoom");
+  }
+
+  // ---------------- HELPER FUNCTION TO SWITCH SECTIONS ----------------
+  function showSection(id) {
+    document.querySelectorAll("section.page").forEach(s => s.classList.remove("active"));
+    const el = $(id);
+    if (el) el.classList.add("active");
+  }
+
 });
 
 // ---------------- SUBSCRIBE ----------------
@@ -286,5 +290,6 @@ function markPlayerReady() {
   gameRef.child(`players/${playerId}/ready`).set(true);
   showSection("pre-guess-waiting");
 } 
+
 
 
