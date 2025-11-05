@@ -14,21 +14,24 @@ function showSection(id) {
 }
 
 // ---------------- CREATE ROOM ----------------
-$("create-room-btn").addEventListener("click", async () => {
-  const name = $("hostName").value.trim();
-  const count = parseInt($("playerCount").value.trim());
-  if (!name || !count) return alert("Enter your name and number of players");
+document.addEventListener("DOMContentLoaded", () => {
+  const $ = id => document.getElementById(id);
+  
+  $("create-room-btn").addEventListener("click", async () => {
+    const name = $("hostName").value.trim();
+    const count = parseInt($("playerCount").value.trim());
+    if (!name || !count) return alert("Enter your name and number of players");
 
-  const code = Math.random().toString(36).substring(2, 7).toUpperCase();
-  playerId = name;
-  isHost = true;
+    const code = Math.random().toString(36).substring(2, 7).toUpperCase();
+    playerId = name;
+    isHost = true;
 
-  gameRef = window.db.ref("rooms/" + code);
-  await gameRef.set({
-    host: name,
-    numPlayers: count,
-    phase: "waiting",
-    players: { [name]: { score: 0 } }
+    gameRef = window.db.ref("rooms/" + code);
+    await gameRef.set({
+      host: name,
+      numPlayers: count,
+      phase: "waiting",
+      players: { [name]: { score: 0 } }
   });
 
   $("room-code-display-game").textContent = "Room Code: " + code;
@@ -38,16 +41,19 @@ $("create-room-btn").addEventListener("click", async () => {
 });
 
 // ---------------- JOIN ROOM ----------------
-$("join-room-btn").addEventListener("click", async () => {
-  const name = $("playerName").value.trim();
-  const code = $("roomCode").value.trim().toUpperCase();
-  if (!name || !code) return alert("Enter your name and room code");
+document.addEventListener("DOMContentLoaded", () => {
+  const $ = id => document.getElementById(id); 
+  
+  $("join-room-btn").addEventListener("click", async () => {
+    const name = $("playerName").value.trim();
+    const code = $("roomCode").value.trim().toUpperCase();
+    if (!name || !code) return alert("Enter your name and room code");
 
-  playerId = name;
-  isHost = false;
+    playerId = name;
+    isHost = false;
 
-  gameRef = window.db.ref("rooms/" + code);
-  await gameRef.child("players/" + name).set({ score: 0 });
+    gameRef = window.db.ref("rooms/" + code);
+    await gameRef.child("players/" + name).set({ score: 0 });
 
   subscribeToGame(code);
   showSection("waitingRoom");
@@ -273,5 +279,6 @@ function markPlayerReady() {
   gameRef.child(`players/${playerId}/ready`).set(true);
   showSection("pre-guess-waiting");
 }
+
 
 
