@@ -89,23 +89,44 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ====== SUBSCRIBE TO GAME CHANGES ======
   function subscribeToGame(code) {
-    if (!window.db) return;
+  if (!window.db) return;
 
-    const ref = window.db.ref("rooms/" + code + "/players");
-    ref.on("value", snap => {
-      const players = snap.val() || {};
-      const list = $("playerList");
-      list.innerHTML = "";
+  const ref = window.db.ref("rooms/" + code);
 
-      Object.keys(players).forEach(p => {
-        const li = document.createElement("li");
-        li.textContent = p;
-        list.appendChild(li);
-      });
+  // Listen for player list updates
+  ref.child("players").on("value", snap => {
+    const players = snap.val() || {};
+    const list = $("playerList");
+    list.innerHTML = "";
 
-      $("players-count").textContent = `Players joined: ${Object.keys(players).length}`;
+    Object.keys(players).forEach(p => {
+      const li = document.createElement("li");
+      li.textContent = p;
+      list.appendChild(li);
     });
-  }
+
+    $("players-count").textContent = `Players joined: ${Object.keys(players).length}`;
+
+    // Host: show Begin Game button when all players joined
+    ref.child("numPlayers").once("value").then(numSnap => {
+      const total = numSnap.val() || 0;
+      if (isHost && Object.keys(players).length >= total) {
+        $("begin-game-btn").classList.remove("hidden");
+      } else {
+        $("begin-game-btn").classList.add("hidden");
+      }
+    });
+  });
+
+  // Optional: Watch for phase change
+  ref.child("phase").on("value", snap => {
+    const phase = snap.val();
+    if (phase === "qa") {
+      console.log("Game starting — transitioning to Q&A phase...");
+      // Add your Q&A phase UI logic here
+    }
+  });
+}
 
   // ===== BUTTON LISTENERS =====
   $("create-room-btn").addEventListener("click", createRoom);
@@ -291,4 +312,5 @@ function markPlayerReady() {
   gameRef.child(`players/${playerId}/ready`).set(true);
   showSection("pre-guess-waiting");
 }
+
 
