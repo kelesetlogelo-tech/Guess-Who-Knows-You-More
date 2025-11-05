@@ -278,4 +278,6 @@ function markPlayerReady() {
   if (!gameRef || !playerId) return;
   gameRef.child(`players/${playerId}/ready`).set(true);
   showSection("pre-guess-waiting");
-  
+  });
+} 
+
