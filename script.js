@@ -93,7 +93,7 @@ function subscribeToGame(code) {
     // Everyone ready? Move to pre-guess phase
     const readyCount = Object.values(playersObj).filter(p => p.ready).length;
     const totalPlayers = parseInt(data.numPlayers) || 0;
-    if (data.phase === "qa" && readyCount === totalPlayers && totalPlayers > 0) {
+    if (data.phase === "qa-phase" && readyCount === totalPlayers && totalPlayers > 0) {
       window.db.ref(`rooms/${code}/phase`).set("pre-guess");
     }
 
@@ -134,7 +134,7 @@ function renderPhase(phase) {
     if (phase === "scoreboard") $("play-again-btn").classList.remove("hidden");
   }
 
-  if (phase === "qa") startQA();
+  if (phase === "qa-phase") startQA();
   else if (phase === "pre-guess") showSection("pre-guess-waiting");
   else if (phase === "guessing") showSection("guessing-phase");
   else if (phase === "scoreboard") showSection("scoreboard");
@@ -230,7 +230,8 @@ function markPlayerReady() {
 }
 
 // ---------------- HOST BUTTONS ----------------
-$("begin-game-btn").onclick = () => updatePhase("qa");
+$("begin-game-btn").onclick = () => updatePhase("qa-phase");
 $("start-guessing-btn").onclick = () => updatePhase("guessing");
 $("reveal-scores-btn").onclick = () => updatePhase("scoreboard");
 $("play-again-btn").onclick = () => location.reload();
+
