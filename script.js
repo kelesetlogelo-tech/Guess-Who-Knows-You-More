@@ -145,69 +145,64 @@ function showSection(id) {
 
 // ---------------- SUBSCRIBE TO GAME ----------------
 function subscribeToGame(code) {
+  if (!window.db) return;
+
   const ref = window.db.ref("rooms/" + code);
+
+  // 🧩 Track players joining
   ref.on("value", snap => {
     const data = snap.val();
     if (!data) return;
 
+    // --- ROOM CODE & PLAYER COUNTS ---
     $("room-code-display-game").textContent = "Room Code: " + code;
-
     const playersObj = data.players || {};
     const joinedCount = Object.keys(playersObj).length;
     const expected = data.numPlayers || "?";
     $("players-count").textContent = `Players joined: ${joinedCount} / ${expected}`;
 
-    const beginBtn = $("begin-game-btn");
+    // --- UPDATE PLAYER LIST ---
+    const list = $("playerList");
+    list.innerHTML = "";
+    Object.keys(playersObj).forEach(name => {
+      const li = document.createElement("li");
+      li.textContent = name + (playersObj[name].ready ? " ✅" : "");
+      list.appendChild(li);
+    });
 
+    // --- HOST: SHOW BEGIN GAME BUTTON WHEN FULL ---
+    const beginBtn = $("begin-game-btn");
     if (isHost && beginBtn) {
-      const allJoined = expected !== "?" && joinedCount >= expected;
-      if (allJoined) {
-        if (!beginGameTimer) {
-          beginGameTimer = setTimeout(() => {
-            beginBtn.classList.remove("hidden");
-            beginGameTimer = null;
-          }, 8000);
-        }
+      if (joinedCount >= expected) {
+        beginBtn.classList.remove("hidden");
       } else {
         beginBtn.classList.add("hidden");
-        clearTimeout(beginGameTimer);
-        beginGameTimer = null;
       }
-    } else if (beginBtn) {
-      beginBtn.classList.add("hidden");
     }
 
-    // Auto-advance when all ready
-    const readyCount = Object.values(playersObj).filter(p => p.ready).length;
-    const totalPlayers = parseInt(data.numPlayers) || 0;
-    if (data.phase === "qa" && readyCount === totalPlayers && totalPlayers > 0) {
-      window.db.ref(`rooms/${code}/phase`).set("pre-guess");
-    }
-
-    renderPhase(data.phase);
+    // --- HANDLE PHASE CHANGES ---
+    renderPhase(data.phase, code);
   });
 }
 
 // ---------------- RENDER PHASE ----------------
 function renderPhase(phase) {
-  const overlay = $("phase-transition-overlay");
+  const overlay = document.getElementById("phase-transition-overlay");
+  if (!overlay) return;
 
-  // Fade to black
-  overlay?.classList.add("active");
+  overlay.classList.add("active");
 
-  // Wait until fully opaque
   setTimeout(() => {
-    // Remove previous phase classes
+    // Reset phase class
     document.body.className = document.body.className
       .split(" ")
       .filter(c => !c.includes("-phase"))
       .join(" ")
       .trim();
 
-    // Add phase-specific class
     document.body.classList.add(`${phase}-phase`);
 
-    // Show phase-specific section
+    // Switch screens
     switch (phase) {
       case "waiting":
         showSection("waitingRoom");
@@ -232,7 +227,7 @@ function renderPhase(phase) {
     }
 
     // Fade back in
-    setTimeout(() => overlay?.classList.remove("active"), 600);
+    setTimeout(() => overlay.classList.remove("active"), 600);
   }, 600);
 }
 
@@ -312,5 +307,6 @@ function markPlayerReady() {
   gameRef.child(`players/${playerId}/ready`).set(true);
   showSection("pre-guess-waiting");
 }
+
 
 
