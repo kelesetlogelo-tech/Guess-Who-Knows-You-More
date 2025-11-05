@@ -16,7 +16,7 @@ function showSection(id) {
 // ---------------- CREATE ROOM ----------------
 $("create-room-btn").addEventListener("click", async () => {
   const name = $("hostName").value.trim();
-  const count = parseInt($("player-count").value.trim());
+  const count = parseInt($("playerCount").value.trim());
   if (!name || !count) return alert("Enter your name and number of players");
 
   const code = Math.random().toString(36).substring(2, 7).toUpperCase();
@@ -31,8 +31,8 @@ $("create-room-btn").addEventListener("click", async () => {
     players: { [name]: { score: 0 } }
   });
 
-  $("room-code-display-game").textContent = "Room Code: " + code;
-  $("players-count").textContent = `Players joined: 1 / ${count}`;
+  $("roomCodeDisplay").textContent = "Room Code: " + code;
+  $("playersCount").textContent = `Players joined: 1 / ${count}`;
 
   subscribeToGame(code);
   showSection("game");
@@ -40,8 +40,8 @@ $("create-room-btn").addEventListener("click", async () => {
 
 // ---------------- JOIN ROOM ----------------
 $("join-room-btn").addEventListener("click", async () => {
-  const name = $("player-name").value.trim();
-  const code = $("join-code").value.trim().toUpperCase();
+  const name = $("playerName").value.trim();
+  const code = $("roomCode").value.trim().toUpperCase();
   if (!name || !code) return alert("Enter your name and room code");
 
   playerId = name;
@@ -60,12 +60,12 @@ function subscribeToGame(code) {
     const data = snap.val();
     if (!data) return;
 
-    $("room-code-display-game").textContent = "Room Code: " + code;
+    $("roomCodeDisplay").textContent = "Room Code: " + code;
 
     const playersObj = data.players || {};
     const joinedCount = Object.keys(playersObj).length;
     const expected = data.numPlayers || "?";
-    $("players-count").textContent = `Players joined: ${joinedCount} / ${expected}`;
+    $("playersCount").textContent = `Players joined: ${joinedCount} / ${expected}`;
 
     const beginBtn = $("begin-game-btn");
 
@@ -252,6 +252,7 @@ $("begin-game-btn").onclick = () => updatePhase("qa-phase");
 $("start-guessing-btn").onclick = () => updatePhase("guessing");
 $("reveal-scores-btn").onclick = () => updatePhase("scoreboard");
 $("play-again-btn").onclick = () => location.reload();
+
 
 
 
