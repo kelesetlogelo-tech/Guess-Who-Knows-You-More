@@ -1,67 +1,119 @@
 console.log("script.js loaded");
 
-// ---------------- GLOBAL VARIABLES ----------------
-let gameRef = null;
-let isHost = false;
-let playerId = null;
-let beginGameTimer = null;
-
-// ✅ GLOBAL DOM HELPER
-const $ = id => document.getElementById(id);
-
-// ---------------- MAIN INITIALIZATION ----------------
 document.addEventListener("DOMContentLoaded", () => {
+  console.log("DOM fully loaded");
 
-  // ---------------- BUTTON LISTENERS ----------------
-  $("create-room-btn")?.addEventListener("click", createRoom);
-  $("join-room-btn")?.addEventListener("click", joinRoom);
-  $("begin-game-btn")?.addEventListener("click", () => {
+  // ===== Helper =====
+  const $ = id => document.getElementById(id);
+
+  // ===== State =====
+  let gameRef = null;
+  let playerId = null;
+  let isHost = false;
+
+  // ===== UI Switching =====
+  function showSection(id) {
+    document.querySelectorAll("section.page").forEach(s => s.classList.add("hidden"));
+    const el = $(id);
+    if (el) el.classList.remove("hidden");
+  }
+
+  // ====== CREATE ROOM ======
+  async function createRoom() {
+    const name = $("hostName").value.trim();
+    const count = parseInt($("playerCount").value.trim());
+
+    if (!name || !count) {
+      alert("Enter your name and number of players");
+      return;
+    }
+
+    const code = Math.random().toString(36).substring(2, 7).toUpperCase();
+    console.log("Generated Room Code:", code);
+
+    playerId = name;
+    isHost = true;
+
+    // Make sure Firebase is ready
+    if (!window.db) {
+      console.error("Firebase not initialized — window.db missing");
+      alert("Database not ready. Please refresh and try again.");
+      return;
+    }
+
+    gameRef = window.db.ref("rooms/" + code);
+
+    await gameRef.set({
+      host: name,
+      numPlayers: count,
+      phase: "waiting",
+      players: {
+        [name]: { score: 0 }
+      }
+    });
+
+    // Update UI
+    $("room-code-display-game").textContent = "Room Code: " + code;
+    $("players-count").textContent = `Players joined: 1 / ${count}`;
+
+    showSection("waitingRoom");
+    subscribeToGame(code);
+  }
+
+  // ====== JOIN ROOM ======
+  async function joinRoom() {
+    const name = $("playerName").value.trim();
+    const code = $("roomCode").value.trim().toUpperCase();
+
+    if (!name || !code) {
+      alert("Enter your name and room code");
+      return;
+    }
+
+    playerId = name;
+    isHost = false;
+
+    if (!window.db) {
+      console.error("Firebase not initialized — window.db missing");
+      alert("Database not ready. Please refresh and try again.");
+      return;
+    }
+
+    gameRef = window.db.ref("rooms/" + code);
+
+    await gameRef.child("players/" + name).set({ score: 0 });
+
+    showSection("waitingRoom");
+    subscribeToGame(code);
+  }
+
+  // ====== SUBSCRIBE TO GAME CHANGES ======
+  function subscribeToGame(code) {
+    if (!window.db) return;
+
+    const ref = window.db.ref("rooms/" + code + "/players");
+    ref.on("value", snap => {
+      const players = snap.val() || {};
+      const list = $("playerList");
+      list.innerHTML = "";
+
+      Object.keys(players).forEach(p => {
+        const li = document.createElement("li");
+        li.textContent = p;
+        list.appendChild(li);
+      });
+
+      $("players-count").textContent = `Players joined: ${Object.keys(players).length}`;
+    });
+  }
+
+  // ===== BUTTON LISTENERS =====
+  $("create-room-btn").addEventListener("click", createRoom);
+  $("join-room-btn").addEventListener("click", joinRoom);
+  $("begin-game-btn").addEventListener("click", () => {
     if (gameRef) gameRef.child("phase").set("qa");
   });
-  $("start-guessing-btn")?.addEventListener("click", () => {
-    if (gameRef) gameRef.child("phase").set("guessing");
-  });
 });
-
-// ---------------- CREATE ROOM ----------------
-async function createRoom() {
-  const name = $("hostName").value.trim();
-  const count = parseInt($("playerCount").value.trim());
-  if (!name || !count) return alert("Enter your name and number of players");
-
-  const code = Math.random().toString(36).substring(2, 7).toUpperCase();
-  playerId = name;
-  isHost = true;
-
-  gameRef = window.db.ref("rooms/" + code);
-  await gameRef.set({
-    host: name,
-    numPlayers: count,
-    phase: "waiting",
-    players: { [name]: { score: 0 } }
-  });
-
-  $("room-code-display-game").textContent = "Room Code: " + code;
-  $("players-count").textContent = `Players joined: 1 / ${count}`;
-  subscribeToGame(code);
-  showSection("waitingRoom");
-}
-
-// ---------------- JOIN ROOM ----------------
-async function joinRoom() {
-  const name = $("playerName").value.trim();
-  const code = $("roomCode").value.trim().toUpperCase();
-  if (!name || !code) return alert("Enter your name and room code");
-
-  playerId = name;
-  isHost = false;
-
-  gameRef = window.db.ref("rooms/" + code);
-  await gameRef.child("players/" + name).set({ score: 0 });
-
-  subscribeToGame(code);
-  showSection("waitingRoom");
-}
 
 // ---------------- SECTION SWITCHER ----------------
 function showSection(id) {
@@ -239,3 +291,4 @@ function markPlayerReady() {
   gameRef.child(`players/${playerId}/ready`).set(true);
   showSection("pre-guess-waiting");
 }
+
