@@ -162,8 +162,7 @@ const questions = [
   { id: 'q1', text: "If I were a sound effect, I'd be:", options: ['Ka-ching!', 'Dramatic gasp', 'Boing!', 'Evil laugh'] },
   { id: 'q2', text: "If I were a weather forecast, I'd be:", options: ['100% chill', 'Partly dramatic with a chance of chaos!', 'Heatwave vibes', 'Sudden tornado of opinions'] },
   { id: 'q3', text: "If I were a breakfast cereal, I'd be:", options: ['Jungle Oats', 'WeetBix', 'Rice Krispies', 'MorVite', 'That weird healthy one no-one eats'] },
-  { id: 'q4', text: "If I were a bedtime excuse, I'd be...", options: ['I need water', "There's a spider in my room", "I can't sleep without 'Pillow'", 'There are shadows outside my window', 'Just one more episode'] }
-  { id: 'q5', text: "If I were a villain in a movie, I'd be...", options: ['Scarlet Overkill', 'Grinch', 'Thanos', 'A mosquito in your room at night', 'Darth Vader'] }, 
+  { id: 'q4', text: "If I were a bedtime excuse, I'd be...", options: ['I need water', "There's a spider in my room", "I can't sleep without 'Pillow'", 'There are shadows outside my window', 'Just one more episode'] },  { id: 'q5', text: "If I were a villain in a movie, I'd be...", options: ['Scarlet Overkill', 'Grinch', 'Thanos', 'A mosquito in your room at night', 'Darth Vader'] }, 
   { id: 'q6', text: "If I were a kitchen appliance, I'd be...", options: ['A blender on high speed with no lid', 'A toaster that only pops when no one’s looking', 'Microwave that screams when it’s done', 'A fridge that judges your snack choices'] },
   { id: 'q7', text: "If I were a dance move, I'd be...", options: ['The awkward shuffle at weddings', 'Kwasakwasa, Ba-baah!', 'The “I thought no one was watching” move', 'The knee-pop followed by a regretful sit-down'] },
   { id: 'q8', text: "If I were a text message, I'd be...", options: ['A typo-ridden voice-to-text disaster', 'A three-hour late “LOL”', 'A group chat gif spammer', 'A mysterious “K.” with no context'] },
@@ -253,5 +252,6 @@ $("begin-game-btn").onclick = () => updatePhase("qa-phase");
 $("start-guessing-btn").onclick = () => updatePhase("guessing");
 $("reveal-scores-btn").onclick = () => updatePhase("scoreboard");
 $("play-again-btn").onclick = () => location.reload();
+
 
 
