@@ -5,18 +5,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ===== Helper =====
   const $ = id => document.getElementById(id);
+  // ✅ GLOBAL
+function showSection(id) {
+  document.querySelectorAll("section.page").forEach(s => s.classList.add("hidden"));
+  const el = document.getElementById(id);
+  if (el) el.classList.remove("hidden");
+}
+
 
   // ===== State =====
   let gameRef = null;
   let playerId = null;
   let isHost = false;
-
-  // ===== UI Switching =====
-  function showSection(id) {
-    document.querySelectorAll("section.page").forEach(s => s.classList.add("hidden"));
-    const el = $(id);
-    if (el) el.classList.remove("hidden");
-  }
 
   // ====== CREATE ROOM ======
   async function createRoom() {
@@ -89,34 +89,45 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ====== SUBSCRIBE TO GAME CHANGES ======
   function subscribeToGame(code) {
-  if (!window.db) return;
-
   const ref = window.db.ref("rooms/" + code);
 
-  // Listen for player list updates
-  ref.child("players").on("value", snap => {
-    const players = snap.val() || {};
+  // Listen to ALL room changes (players, phase, numPlayers, etc.)
+  ref.on("value", snap => {
+    const data = snap.val();
+    if (!data) return;
+
+    // --- ROOM UI ---
+    $("room-code-display-game").textContent = "Room Code: " + code;
+
+    const players = data.players || {};
+    const joinedCount = Object.keys(players).length;
+    const expected = data.numPlayers || "?";
+
+    $("players-count").textContent = `Players joined: ${joinedCount} / ${expected}`;
+
+    // --- PLAYER LIST ---
     const list = $("playerList");
     list.innerHTML = "";
-
-    Object.keys(players).forEach(p => {
+    Object.keys(players).forEach(name => {
       const li = document.createElement("li");
-      li.textContent = p;
+      li.textContent = name;
       list.appendChild(li);
     });
 
-    $("players-count").textContent = `Players joined: ${Object.keys(players).length}`;
-
-    // Host: show Begin Game button when all players joined
-    ref.child("numPlayers").once("value").then(numSnap => {
-      const total = numSnap.val() || 0;
-      if (isHost && Object.keys(players).length >= total) {
+    // --- SHOW BEGIN BUTTON FOR HOST WHEN ROOM IS FULL ---
+    if (isHost) {
+      if (joinedCount >= expected) {
         $("begin-game-btn").classList.remove("hidden");
       } else {
         $("begin-game-btn").classList.add("hidden");
       }
-    });
+    }
+
+    // ✅ ✅ ✅ THE CRITICAL PART:
+    // When phase changes → update everyone's UI
+    renderPhase(data.phase);
   });
+}
 
   // Optional: Watch for phase change
   ref.child("phase").on("value", snap => {
@@ -305,6 +316,7 @@ function renderPhase(phase) {
     setTimeout(() => overlay.classList.remove("active"), 600);
   }, 600);
 }
+
 
 
 
