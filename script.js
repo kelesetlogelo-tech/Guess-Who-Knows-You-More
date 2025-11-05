@@ -258,9 +258,3 @@ $("play-again-btn").onclick = () => location.reload();
 
 
 
-
-
-
-
-
-
