@@ -273,7 +273,7 @@ function renderNextQuestion(container) {
 // Mark player ready when finished
 function markPlayerReady() {
   if (!gameRef) return;
-  const playerRef = gameRef.child("ready");
+  const playerRef = gameRef.child(`players/${playerId}/ready`);
   playerRef.set(true);
   showSection("pre-guess-waiting");
 }
@@ -286,7 +286,7 @@ function renderPhase(phase) {
   const phaseTitles = {
     waiting: "Waiting for Players...",
     qa: "Q&A Phase",
-    preGuess: "Pre-Guess Waiting Room",
+    "pre-guess": "Pre-Guess Waiting Room",
     guessing: "Guessing Phase",
     scoreboard: "Scoreboard",
   };
@@ -303,9 +303,20 @@ function renderPhase(phase) {
   // Host-only button visibility
   if (isHost) {
     if (phase === "waiting") $("begin-game-btn").classList.remove("hidden");
-    if (phase === "preGuess") $("start-guessing-btn").classList.remove("hidden");
+    if (phase === "pre-guess") $("start-guessing-btn").classList.remove("hidden");
     if (phase === "guessing") $("reveal-scores-btn").classList.remove("hidden");
     if (phase === "scoreboard") $("play-again-btn").classList.remove("hidden");
+  }
+
+  // Trigger UI actions for each phase
+  if (phase === "qa") {
+    startQA();
+  } else if (phase === "pre-guess") {
+    showSection("pre-guess-waiting");
+  } else if (phase === "guessing") {
+    showSection("guessing-phase");
+  } else if (phase === "scoreboard") {
+    showSection("scoreboard");
   }
 }
 
@@ -314,6 +325,7 @@ $("begin-game-btn").onclick = () => updatePhase("qa");
 $("start-guessing-btn").onclick = () => updatePhase("guessing");
 $("reveal-scores-btn").onclick = () => updatePhase("scoreboard");
 $("play-again-btn").onclick = () => location.reload();
+
 
 
 
