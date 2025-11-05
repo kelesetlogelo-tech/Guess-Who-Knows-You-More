@@ -18,8 +18,8 @@
 
 <body>
   <header class="app-header">
-    <h1>If I Were...</h1>
-    <p class="subtitle">A quick, silly party Q&A — guess who said what!</p>
+    <h1 class="fade-in"> If I Were...</h1>
+    <p class="subtitle">How well do you know your tribe?</p>
   </header>
 
   <!-- ========== LOBBY / HOME ========== -->
@@ -29,7 +29,7 @@
         <h2>Create or join a game</h2>
 
         <div class="form-row">
-          <input id="hostName" placeholder="Your name (host)" />
+          <input id="hostName" placeholder="Host" />
           <input id="playerCount" placeholder="Number of players (2-8)" type="number" min="2" max="8"/>
           <button id="createRoomBtn" class="teal-btn">Create Room</button>
         </div>
@@ -54,7 +54,7 @@
         <ul id="playerList"></ul>
 
         <div id="hostControls" class="hidden">
-          <button id="beginBtn" class="teal-btn muted" disabled>Begin Game</button>
+          <button id="begin-btn" class="teal-btn muted" disabled>Begin Game</button>
         </div>
       </div>
     </section>
@@ -128,10 +128,11 @@
   </main>
 
   <footer class="app-footer">
-    <small>Built with ❤️ — If I Were...</small>
+    <small>Built with ❤️ </small>
   </footer>
 
   <!-- Your app logic -->
   <script src="script.js"></script>
 </body>
 </html>
+
