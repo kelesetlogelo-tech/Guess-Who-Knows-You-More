@@ -3,70 +3,165 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>If I Were...</title>
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-  <div id="app">
-    <!-- LOBBY PHASE -->
-    <section id="lobby" class="active">
-      <h1 class="title">If I Were...</h1>
+  <title>Q&A Party Game</title>
+  <style>
+    body {
+      font-family: "Poppins", sans-serif;
+      background: #f9f9ff;
+      color: #333;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+    section {
+      display: none;
+      padding: 40px;
+    }
+    section:not(.hidden) {
+      display: block;
+    }
+    .hidden {
+      display: none !important;
+    }
+    input, button {
+      padding: 10px 15px;
+      margin: 8px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+    button {
+      cursor: pointer;
+      background: #6b5bff;
+      color: white;
+      border: none;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #5848d0;
+    }
 
-      <div class="card">
-        <h2>Host a Room</h2>
-        <input id="host-name" type="text" placeholder="Your name" />
-        <input id="player-count" type="number" placeholder="Number of players" min="2" max="8" />
-        <button id="create-room-btn" class="teal-btn">Create Room</button>
-        <p id="room-code-display" class="room-code"></p>
-      </div>
+    /* Q&A Animation */
+    .qa-tile {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      padding: 25px;
+      max-width: 500px;
+      margin: 40px auto;
+      transition: transform 0.5s ease, opacity 0.5s ease;
+    }
+    .slide-in {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    .slide-in.active, .qa-tile.active {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    .slide-out {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
 
-      <div class="card">
-        <h2>Join a Room</h2>
-        <input id="player-name" type="text" placeholder="Your name" />
-        <input id="join-code" type="text" placeholder="Room code" maxlength="5" />
-        <button id="join-room-btn" class="teal-btn">Join Room</button>
-      </div>
-    </section>
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 20px;
+    }
 
-    <!-- GAME PHASE -->
-    <section id="game" class="hidden">
-      <h2 id="phase-title">Waiting for players...</h2>
-      <p id="room-code-display-game" class="room-code"></p>
-      <p id="players-count" class="room-count"></p>
-      <div id="phase-controls">
-        <button id="begin-game-btn" class="teal-btn hidden">Begin Game</button>
-   <!-- === Q&A PHASE === -->
-   <section id="qa-phase" class="phase hidden">
-     <h1>Q&A PHASE</h1>
-     <p class="instructions">Select the option that best describes you in each “If I were” statement</p>
-     <div id="qa-container" class="qa-container"></div>
-   </section>
-  <!-- === PRE-GUESS WAITING ROOM === -->
-  <section id="pre-guess-waiting" class="phase hidden">
-    <h1>Pre-Guess Waiting Room</h1>
-    <p>Waiting for all players to complete the Q&A...</p>
-    <p id="ready-status"></p>
+    .option-btn {
+      background: #ecebff;
+      color: #333;
+      border: none;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 16px;
+      transition: background 0.3s;
+    }
+    .option-btn:hover {
+      background: #d8d5ff;
+    }
 
-  <!-- Only host sees this button -->
-    <button id="start-guessing-btn" class="teal-btn-hidden">Start Guessing</button>
-  </section>
+    .phase-header {
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
 
-        
-        <button id="reveal-scores-btn" class="teal-btn hidden">Reveal Scores</button>
-        <button id="play-again-btn" class="teal-btn hidden">Play Again</button>
-      </div>
-    </section>
-  </div>
+    #players-count, #ready-status {
+      font-weight: 500;
+      color: #555;
+    }
+  </style>
 
   <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
   <script src="firebase-config.js"></script>
+</head>
 
-  <!-- Game Logic -->
+<body>
+  <h1>🎉 Q&A Party Game</h1>
+
+  <!-- ---------------- HOME SCREEN ---------------- -->
+  <section id="home">
+    <h2>Host or Join a Room</h2>
+    <div>
+      <h3>Host a Game</h3>
+      <input id="host-name" placeholder="Your name" />
+      <input id="player-count" type="number" placeholder="Number of players" />
+      <button id="create-room-btn">Create Room</button>
+    </div>
+
+    <hr style="margin:30px 0;">
+
+    <div>
+      <h3>Join a Game</h3>
+      <input id="player-name" placeholder="Your name" />
+      <input id="join-code" placeholder="Room Code" />
+      <button id="join-room-btn">Join Room</button>
+    </div>
+  </section>
+
+  <!-- ---------------- GAME LOBBY ---------------- -->
+  <section id="game" class="hidden">
+    <h2 id="phase-title" class="phase-header">Waiting for Players...</h2>
+    <p id="room-code-display-game"></p>
+    <p id="players-count"></p>
+
+    <button id="begin-game-btn" class="hidden">Begin Game</button>
+  </section>
+
+  <!-- ---------------- Q&A PHASE ---------------- -->
+  <section id="qa-phase" class="hidden">
+    <h2 class="phase-header">Q&A Phase</h2>
+    <p>Answer each question honestly and quickly! Everyone will see your answers soon...</p>
+    <div id="qa-container"></div>
+  </section>
+
+  <!-- ---------------- PRE-GUESS WAITING ROOM ---------------- -->
+  <section id="pre-guess-waiting" class="hidden">
+    <h2 class="phase-header">Pre-Guess Waiting Room</h2>
+    <p id="ready-status">Ready: 0 / 0</p>
+    <button id="start-guessing-btn" class="hidden">Start Guessing Phase</button>
+  </section>
+
+  <!-- ---------------- GUESSING PHASE ---------------- -->
+  <section id="guessing-phase" class="hidden">
+    <h2 class="phase-header">Guessing Phase</h2>
+    <p>Now try to guess which player gave which answer!</p>
+    <button id="reveal-scores-btn" class="hidden">Reveal Scores</button>
+  </section>
+
+  <!-- ---------------- SCOREBOARD ---------------- -->
+  <section id="scoreboard" class="hidden">
+    <h2 class="phase-header">Scoreboard</h2>
+    <div id="scores"></div>
+    <button id="play-again-btn" class="hidden">Play Again</button>
+  </section>
+
   <script src="script.js"></script>
 </body>
 </html>
-
-
-
