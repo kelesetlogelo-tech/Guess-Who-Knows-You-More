@@ -15,7 +15,7 @@ function showSection(id) {
 
 // ---------------- CREATE ROOM ----------------
 $("create-room-btn").addEventListener("click", async () => {
-  const name = $("host-name").value.trim();
+  const name = $("hostName").value.trim();
   const count = parseInt($("player-count").value.trim());
   if (!name || !count) return alert("Enter your name and number of players");
 
@@ -252,6 +252,7 @@ $("begin-game-btn").onclick = () => updatePhase("qa-phase");
 $("start-guessing-btn").onclick = () => updatePhase("guessing");
 $("reveal-scores-btn").onclick = () => updatePhase("scoreboard");
 $("play-again-btn").onclick = () => location.reload();
+
 
 
 
