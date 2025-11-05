@@ -10,8 +10,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const $ = id => document.getElementById(id);
 
    // BUTTON LISTENERS
-  $("create-room-btn").addEventListener("click", createRoom);
-  $("join-room-btn").addEventListener("click", joinRoom);
+  $("create-room-btn").addEventListener("click", Create Room);
+  $("join-room-btn").addEventListener("click", Join Room);
   $("begin-game-btn").addEventListener("click", () => {
     if (gameRef) gameRef.child("phase").set("qa");
   });
@@ -286,4 +286,5 @@ function markPlayerReady() {
   gameRef.child(`players/${playerId}/ready`).set(true);
   showSection("pre-guess-waiting");
 } 
+
 
