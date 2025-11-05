@@ -109,24 +109,26 @@ async function updatePhase(newPhase) {
 
 // ---------------- RENDER PHASE ----------------
 function renderPhase(phase) {
-  console.log("Rendering phase:", phase);
+  const title = $("phase-title");
 
   const phaseTitles = {
     waiting: "Waiting for Players...",
     qa: "Q&A Phase",
-    "pre-guess": "Pre-Guess Waiting Room",
+    "pre-guess": "Waiting for Everyone to Finish Q&A...",
     guessing: "Guessing Phase",
     scoreboard: "Scoreboard",
   };
 
-  const title = $("phase-title");
-  if (title) title.textContent = phaseTitles[phase] || "Game Phase";
+  // Update phase heading text
+  if (title) {
+    title.textContent = phaseTitles[phase] || "Game Phase";
+  }
 
-  // Hide all host buttons
+  // Hide all major buttons first
   ["begin-game-btn", "start-guessing-btn", "reveal-scores-btn", "play-again-btn"]
     .forEach(id => $(id).classList.add("hidden"));
 
-  // Host-only visibility
+  // Host-only button visibility
   if (isHost) {
     if (phase === "waiting") $("begin-game-btn").classList.remove("hidden");
     if (phase === "pre-guess") $("start-guessing-btn").classList.remove("hidden");
@@ -134,11 +136,25 @@ function renderPhase(phase) {
     if (phase === "scoreboard") $("play-again-btn").classList.remove("hidden");
   }
 
-  if (phase === "qa-phase") startQA();
-  else if (phase === "pre-guess") showSection("pre-guess-waiting");
-  else if (phase === "guessing") showSection("guessing-phase");
-  else if (phase === "scoreboard") showSection("scoreboard");
-  else showSection("game");
+  // Section logic
+  switch (phase) {
+    case "waiting":
+      showSection("waiting-room");
+      break;
+    case "qa":
+      showSection("qa-phase");
+      startQA();
+      break;
+    case "pre-guess":
+      showSection("pre-guess-waiting");
+      break;
+    case "guessing":
+      showSection("guessing-phase");
+      break;
+    case "scoreboard":
+      showSection("scoreboard");
+      break;
+  }
 }
 
 // ---------- Q&A PHASE ----------
@@ -224,9 +240,12 @@ function renderNextQuestion(container) {
 }
 
 function markPlayerReady() {
-  if (!gameRef || !playerId) return;
-  gameRef.child(`players/${playerId}/ready`).set(true);
-  showSection("pre-guess-waiting");
+  if (!gameRef) return;
+  const playerRef = gameRef.child(`players/${playerId}/ready`);
+  playerRef.set(true);
+
+  // ✅ Don't manually switch screens here — let Firebase handle it
+  console.log("Player marked ready for pre-guess phase.");
 }
 
 // ---------------- HOST BUTTONS ----------------
@@ -234,4 +253,5 @@ $("begin-game-btn").onclick = () => updatePhase("qa-phase");
 $("start-guessing-btn").onclick = () => updatePhase("guessing");
 $("reveal-scores-btn").onclick = () => updatePhase("scoreboard");
 $("play-again-btn").onclick = () => location.reload();
+
 
