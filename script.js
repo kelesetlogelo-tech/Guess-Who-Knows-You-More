@@ -279,6 +279,3 @@ function markPlayerReady() {
   gameRef.child(`players/${playerId}/ready`).set(true);
   showSection("pre-guess-waiting");
 }
-
-
-
