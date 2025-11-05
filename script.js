@@ -68,20 +68,20 @@ function subscribeToGame(code) {
     // Update room code and player count
     $("room-code-display-game").textContent = "Room Code: " + code;
 
-    const playersObj = data.players || {};
-    const joinedCount = Object.keys(playersObj).length;
-    const expected = data.numPlayers || "?";
+    let playersObj = data.players || {};
+    let joinedCount = Object.keys(playersObj).length;
+    let expected = data.numPlayers || "?";
     $("players-count").textContent = `Players joined: ${joinedCount} / ${expected}`;
 
     // Control the Begin Game button visibility
-    const beginBtn = $("begin-game-btn");
+    let beginBtn = $("begin-game-btn");
     if (isHost && beginBtn) {
       beginBtn.onclick = () => {
         window.db.ref(`rooms/${code}/phase`).set("qa");
   };
 
       // Check if all players have joined
-      const allPlayersJoined = expected !== "?" && joinedCount >= expected;
+      let allPlayersJoined = expected !== "?" && joinedCount >= expected;
 
       if (allPlayersJoined) {
         // If all players joined, start 3-second countdown (if not already running)
@@ -314,6 +314,7 @@ $("begin-game-btn").onclick = () => updatePhase("qa");
 $("start-guessing-btn").onclick = () => updatePhase("guessing");
 $("reveal-scores-btn").onclick = () => updatePhase("scoreboard");
 $("play-again-btn").onclick = () => location.reload();
+
 
 
 
