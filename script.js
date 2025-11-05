@@ -8,9 +8,9 @@ let beginGameTimer = null;
 const $ = id => document.getElementById(id);
 
 function showSection(id) {
-  document.querySelectorAll("section").forEach(s => s.classList.add("hidden"));
-  const el = $(id);
-  if (el) el.classList.remove("hidden");
+  document.querySelectorAll("section.page").forEach(s => s.classList.remove("active"));
+  const el = document.getElementById(id);
+  if (el) el.classList.add("active");
 }
 
 // ---------------- CREATE ROOM ----------------
@@ -99,25 +99,45 @@ function subscribeToGame(code) {
 }
 
 // ---------------- RENDER PHASE ----------------
-function renderPhase(phase, code) {
-  console.log("Rendering phase:", phase);
+/** Update UI and background when phase changes **/
+function renderPhase(phase) {
+  const title = $("phase-title");
+
+  // Remove all old phase classes from body
+  document.body.className = document.body.className
+    .split(" ")
+    .filter(c => !c.includes("-phase"))
+    .join(" ")
+    .trim();
+
+  // Add the new phase class for color
+  document.body.classList.add(`${phase}-phase`);
+
   switch (phase) {
     case "waiting":
       showSection("waitingRoom");
       break;
+
     case "qa":
       showSection("qa-phase");
-      startQA(code);
+      startQA();
       break;
+
     case "pre-guess":
       showSection("pre-guess-waiting");
-      if (isHost) $("start-guessing-btn").classList.remove("hidden");
       break;
+
     case "guessing":
       showSection("guessing-phase");
+      startGuessing();
       break;
+
     case "scoreboard":
       showSection("scoreboard");
+      break;
+
+    default:
+      showSection("landing");
       break;
   }
 }
@@ -133,9 +153,70 @@ $("start-guessing-btn").addEventListener("click", () => {
 
 // ---------------- Q&A PHASE ----------------
 const questions = [
-  { text: "If I were a sound effect, I'd be:", options: ["Ka-ching!", "Boing!", "Evil laugh", "Dramatic gasp"] },
-  { text: "If I were a weather forecast, I'd be:", options: ["100% chill", "Partly dramatic", "Heatwave vibes"] },
-  { text: "If I were a breakfast cereal, I'd be:", options: ["WeetBix", "Rice Krispies", "Morvite", "Jungle Oats"] },
+  { id: 'q1', text: "If I were a sound effect, I'd be:", options: [
+    "Ka-ching!",
+    "Dramatic gasp",
+    "Boing!",
+    "Evil laugh"
+  ]},
+  { id: 'q2', text: "If I were a weather forecast, I'd be:", options: [
+    "100% chill",
+    "Partly dramatic with a chance of chaos!",
+    "Heatwave vibes",
+    "Sudden tornado of opinions"
+  ]},
+  { id: 'q3', text: "If I were a breakfast cereal, I'd be:", options: [
+    "Jungle Oats",
+    "WeetBix",
+    "Rice Krispies",
+    "MorVite",
+    "That weird healthy one no-one eats"
+  ]},
+  { id: 'q4', text: "If I were a bedtime excuse, I'd be...", options: [
+    "I need water",
+    "There's a spider in my room",
+    "I can't sleep without 'Pillow'",
+    "There see shadows outside my window",
+    "Just one more episode"
+  ]},
+  { id: 'q5', text: "If I were a villain in a movie, I'd be...", options: [
+    "Scarlet Overkill",
+    "Grinch",
+    "Thanos",
+    "A mosquito in your room at night",
+    "Darth Vader"
+  ]},
+  { id: 'q6', text: "If I were a kitchen appliance, I'd be...", options: [
+    "A blender on high speed with no lid",
+    "A toaster that only pops when no one’s looking",
+    "Microwave that screams when it’s done",
+    "A fridge that judges your snack choices"
+  ]},
+  { id: 'q7', text: "If I were a dance move, I'd be...", options: [
+    "The awkward shuffle at weddings",
+    "Kwasakwasa, Ba-baah!",
+    "The “I thought no one was watching” move",
+    "The knee-pop followed by a regretful sit-down"
+  ]},
+  { id: 'q8', text: "If I were a text message, I'd be...", options: [
+    "A typo-ridden voice-to-text disaster",
+    "A three-hour late 'LOL'",
+    "A group chat gif spammer",
+    "A mysterious 'K.' with no context"
+  ]},
+  { id: 'q9', text: "If I were a warning label, I'd be...", options: [
+    "Caution: May spontaneously break into song",
+    "Contents may cause uncontrollable giggles",
+    "Qaphela: Gevaar/Ingozi",
+    "Warning: Will talk your ear off about random facts",
+    "May contain traces of impulsive decisions"
+  ]},
+  { id: 'q10', text: "If I were a type of chair, I’d be…", options: [
+    "A Phala Phala sofa",
+    "A creaky antique that screams when you sit",
+    "One of those folding chairs that attack your fingers",
+    "A throne made of regrets and snack crumbs"
+  ]}
 ];
 
 let currentQuestion = 0;
@@ -180,3 +261,4 @@ function markPlayerReady() {
   gameRef.child(`players/${playerId}/ready`).set(true);
   showSection("pre-guess-waiting");
 }
+
