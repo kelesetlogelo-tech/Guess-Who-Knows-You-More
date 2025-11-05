@@ -35,7 +35,7 @@ $("create-room-btn").addEventListener("click", async () => {
   $("players-count").textContent = `Players joined: 1 / ${count}`;
 
   subscribeToGame(code);
-  showSection("game");
+  showSection("waitingRoom");
 });
 
 // ---------------- JOIN ROOM ----------------
@@ -50,7 +50,7 @@ $("join-room-btn").addEventListener("click", async () => {
   await gameRef.child("players/" + name).set({ score: 0 });
 
   subscribeToGame(code);
-  showSection("game");
+  showSection("waitingRoom");
 });
 
 // ---------------- SUBSCRIBE ----------------
@@ -252,6 +252,7 @@ $("begin-game-btn").onclick = () => updatePhase("qa-phase");
 $("start-guessing-btn").onclick = () => updatePhase("guessing");
 $("reveal-scores-btn").onclick = () => updatePhase("scoreboard");
 $("play-again-btn").onclick = () => location.reload();
+
 
 
 
