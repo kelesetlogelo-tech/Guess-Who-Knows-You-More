@@ -31,8 +31,8 @@ $("create-room-btn").addEventListener("click", async () => {
     players: { [name]: { score: 0 } }
   });
 
-  $("roomCodeDisplay").textContent = "Room Code: " + code;
-  $("playersCount").textContent = `Players joined: 1 / ${count}`;
+  $("room-code-display-game").textContent = "roomCode: " + code;
+  $("players-count").textContent = `Players joined: 1 / ${count}`;
 
   subscribeToGame(code);
   showSection("game");
@@ -60,12 +60,12 @@ function subscribeToGame(code) {
     const data = snap.val();
     if (!data) return;
 
-    $("roomCodeDisplay").textContent = "Room Code: " + code;
+    $("room-code-display-game").textContent = "roomCode: " + code;
 
     const playersObj = data.players || {};
     const joinedCount = Object.keys(playersObj).length;
     const expected = data.numPlayers || "?";
-    $("playersCount").textContent = `Players joined: ${joinedCount} / ${expected}`;
+    $("players-count").textContent = `Players joined: ${joinedCount} / ${expected}`;
 
     const beginBtn = $("begin-game-btn");
 
@@ -94,7 +94,7 @@ function subscribeToGame(code) {
     const readyCount = Object.values(playersObj).filter(p => p.ready).length;
     const totalPlayers = parseInt(data.numPlayers) || 0;
     if (data.phase === "qa-phase" && readyCount === totalPlayers && totalPlayers > 0) {
-      window.db.ref(`rooms/${code}/phase`).set("pre-guess");
+      window.db.ref(`rooms/${code}/phase`).set("pre-guess-waiting");
     }
 
     renderPhase(data.phase);
@@ -252,6 +252,7 @@ $("begin-game-btn").onclick = () => updatePhase("qa-phase");
 $("start-guessing-btn").onclick = () => updatePhase("guessing");
 $("reveal-scores-btn").onclick = () => updatePhase("scoreboard");
 $("play-again-btn").onclick = () => location.reload();
+
 
 
 
