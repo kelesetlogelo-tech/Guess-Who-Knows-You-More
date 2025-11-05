@@ -101,45 +101,57 @@ function subscribeToGame(code) {
 // ---------------- RENDER PHASE ----------------
 /** Update UI and background when phase changes **/
 function renderPhase(phase) {
-  const title = $("phase-title");
+  const overlay = document.getElementById("phase-transition-overlay");
 
-  // Remove all old phase classes from body
-  document.body.className = document.body.className
-    .split(" ")
-    .filter(c => !c.includes("-phase"))
-    .join(" ")
-    .trim();
+  // Start fade-to-black
+  overlay.classList.add("active");
 
-  // Add the new phase class for color
-  document.body.classList.add(`${phase}-phase`);
+  // Wait until fade is fully opaque
+  setTimeout(() => {
+    // Clear previous phase classes from body
+    document.body.className = document.body.className
+      .split(" ")
+      .filter(c => !c.includes("-phase"))
+      .join(" ")
+      .trim();
 
-  switch (phase) {
-    case "waiting":
-      showSection("waitingRoom");
-      break;
+    // Add new phase color class
+    document.body.classList.add(`${phase}-phase`);
 
-    case "qa":
-      showSection("qa-phase");
-      startQA();
-      break;
+    // Show relevant section
+    switch (phase) {
+      case "waiting":
+        showSection("waitingRoom");
+        break;
 
-    case "pre-guess":
-      showSection("pre-guess-waiting");
-      break;
+      case "qa":
+        showSection("qa-phase");
+        startQA();
+        break;
 
-    case "guessing":
-      showSection("guessing-phase");
-      startGuessing();
-      break;
+      case "pre-guess":
+        showSection("pre-guess-waiting");
+        break;
 
-    case "scoreboard":
-      showSection("scoreboard");
-      break;
+      case "guessing":
+        showSection("guessing-phase");
+        startGuessing();
+        break;
 
-    default:
-      showSection("landing");
-      break;
-  }
+      case "scoreboard":
+        showSection("scoreboard");
+        break;
+
+      default:
+        showSection("landing");
+        break;
+    }
+
+    // Fade back in after short delay
+    setTimeout(() => {
+      overlay.classList.remove("active");
+    }, 600);
+  }, 600);
 }
 
 // ---------------- HOST CONTROLS ----------------
@@ -261,4 +273,5 @@ function markPlayerReady() {
   gameRef.child(`players/${playerId}/ready`).set(true);
   showSection("pre-guess-waiting");
 }
+
 
