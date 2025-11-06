@@ -210,9 +210,6 @@ function markPlayerReady() {
   gameRef.child(`players/${playerId}/ready`).set(true);
   showSection("pre-guess-waiting");
 }
-    }
-  });
-}
 
   // ===== BUTTON LISTENERS =====
   $("create-room-btn").addEventListener("click", createRoom);
@@ -316,6 +313,7 @@ function renderPhase(phase) {
     setTimeout(() => overlay.classList.remove("active"), 600);
   }, 600);
 }
+
 
 
 
