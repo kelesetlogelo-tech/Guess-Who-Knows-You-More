@@ -175,4 +175,68 @@ section.page.active {
   opacity: 1;
 }
 
+/* ==== Q&A PHASE STYLING ==== */
+#qa-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1.5rem;
+  padding: 2rem;
+  color: #fff;
+}
 
+.question-counter {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #aee5e5;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.question-text {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: #fff;
+}
+
+/* Two-column layout for answer options */
+.options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  width: 100%;
+  max-width: 600px;
+}
+
+/* Teal pill buttons */
+.option-btn {
+  background: #009688;
+  color: #fff;
+  font-weight: bold;
+  border: none;
+  border-radius: 999px;
+  padding: 0.8rem 1.5rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 6px rgba(0, 150, 136, 0.4);
+}
+
+.option-btn:hover {
+  background: #00bfa5;
+  transform: scale(1.05);
+  box-shadow: 0 4px 10px rgba(0, 191, 165, 0.5);
+}
+
+/* Smooth slide-out for next question */
+.qa-tile {
+  opacity: 1;
+  transition: all 0.5s ease;
+}
+
+.qa-tile.slide-out {
+  opacity: 0;
+  transform: translateX(-20%);
+}
