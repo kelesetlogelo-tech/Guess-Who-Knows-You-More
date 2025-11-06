@@ -80,44 +80,56 @@ document.addEventListener("DOMContentLoaded", () => {
     subscribeToGame(code);
   }
 
-  // ====== SUBSCRIBE TO GAME CHANGES ======
-  function subscribeToGame(code) {
-    const ref = window.db.ref("rooms/" + code);
+// ---------------- SUBSCRIBE TO GAME ----------------
+function subscribeToGame(code) {
+  if (!window.db) return;
 
-    ref.on("value", snap => {
-      const data = snap.val();
-      if (!data) return;
+  const ref = window.db.ref("rooms/" + code);
 
-      $("room-code-display-game").textContent = "Room Code: " + code;
+  ref.on("value", snap => {
+    const data = snap.val();
+    if (!data) return;
 
-      const players = data.players || {};
-      const joinedCount = Object.keys(players).length;
-      const expected = data.numPlayers || "?";
+    // --- ROOM CODE & PLAYER COUNTS ---
+    $("room-code-display-game").textContent = "Room Code: " + code;
+    const playersObj = data.players || {};
+    const joinedCount = Object.keys(playersObj).length;
+    const expected = data.numPlayers || "?";
+    $("players-count").textContent = `Players joined: ${joinedCount} / ${expected}`;
 
-      $("players-count").textContent = `Players joined: ${joinedCount} / ${expected}`;
-
-      // --- PLAYER LIST ---
-      const list = $("playerList");
-      list.innerHTML = "";
-      Object.keys(players).forEach(name => {
-        const li = document.createElement("li");
-        li.textContent = name + (players[name].ready ? " ✅" : "");
-        list.appendChild(li);
-      });
-
-      // --- HOST BUTTON ---
-      const beginBtn = $("begin-game-btn");
-      if (isHost && beginBtn) {
-        if (joinedCount >= expected) {
-          beginBtn.classList.remove("hidden");
-        } else {
-          beginBtn.classList.add("hidden");
-        }
-      }
-
-      renderPhase(data.phase);
+    // --- UPDATE PLAYER LIST ---
+    const list = $("playerList");
+    list.innerHTML = "";
+    Object.keys(playersObj).forEach(name => {
+      const li = document.createElement("li");
+      const ready = playersObj[name].ready ? " ✅" : "";
+      li.textContent = name + ready;
+      list.appendChild(li);
     });
-  }
+
+    // --- HOST: SHOW BEGIN GAME BUTTON WHEN FULL ---
+    const beginBtn = $("begin-game-btn");
+    if (isHost && beginBtn) {
+      if (joinedCount >= expected) beginBtn.classList.remove("hidden");
+      else beginBtn.classList.add("hidden");
+    }
+
+    // --- 🔧 HANDLE PHASE CHANGES SAFELY ---
+    // Prevent re-triggering the QA phase if we’re already in it
+    if (data.phase !== window.currentPhase) {
+      window.currentPhase = data.phase;
+      renderPhase(data.phase, code);
+    }
+
+    // --- 🔧 If all players ready, host moves to guessing ---
+    if (isHost && data.phase === "pre-guess") {
+      const allReady = Object.values(playersObj).every(p => p.ready);
+      if (allReady) {
+        ref.child("phase").set("guessing");
+      }
+    }
+  });
+}
 
   // ====== Q&A ======
   const questions = [
@@ -143,32 +155,43 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderQuestion() {
-    const container = $("qa-container");
-    container.innerHTML = "";
-    const q = questions[currentQuestion];
-    if (!q) return markPlayerReady();
+  const container = $("qa-container");
+  container.innerHTML = "";
 
-    const tile = document.createElement("div");
-    tile.className = "qa-tile active";
-    tile.innerHTML = `
-      <h3>${q.text}</h3>
-      <div class="options">
-        ${q.options.map(opt => `<button class="option-btn">${opt}</button>`).join("")}
-      </div>
-    `;
-    container.appendChild(tile);
+  const q = questions[currentQuestion];
+  if (!q) return markPlayerReady();
 
-    tile.querySelectorAll(".option-btn").forEach(btn => {
-      btn.onclick = () => {
-        answers[q.text] = btn.textContent;
-        tile.classList.add("slide-out");
-        setTimeout(() => {
-          currentQuestion++;
-          renderQuestion();
-        }, 600);
-      };
-    });
-  }
+  // --- Question Counter ---
+  const counter = document.createElement("div");
+  counter.className = "question-counter";
+  counter.textContent = `Question ${currentQuestion + 1} of ${questions.length}`;
+  container.appendChild(counter);
+
+  // --- Question Tile ---
+  const tile = document.createElement("div");
+  tile.className = "qa-tile active";
+  tile.innerHTML = `
+    <h3 class="question-text">${q.text}</h3>
+    <div class="options-grid">
+      ${q.options
+        .map(opt => `<button class="option-btn">${opt}</button>`)
+        .join("")}
+    </div>
+  `;
+  container.appendChild(tile);
+
+  // --- Button Behavior ---
+  tile.querySelectorAll(".option-btn").forEach(btn => {
+    btn.onclick = () => {
+      answers[q.text] = btn.textContent;
+      tile.classList.add("slide-out");
+      setTimeout(() => {
+        currentQuestion++;
+        renderQuestion();
+      }, 600);
+    };
+  });
+}
 
   function markPlayerReady() {
     if (!gameRef || !playerId) return;
@@ -183,47 +206,58 @@ document.addEventListener("DOMContentLoaded", () => {
     if (gameRef) gameRef.child("phase").set("qa");
   });
 
-  // ====== RENDER PHASES ======
-  function renderPhase(phase) {
-    const overlay = document.getElementById("phase-transition-overlay");
-    if (!overlay) return;
+ // ---------------- RENDER PHASE ----------------
+function renderPhase(phase, code) {
+  const overlay = document.getElementById("phase-transition-overlay");
+  if (!overlay) return;
 
-    overlay.classList.add("active");
+  overlay.classList.add("active");
 
-    setTimeout(() => {
-      document.body.className = document.body.className
-        .split(" ")
-        .filter(c => !c.includes("-phase"))
-        .join(" ")
-        .trim();
+  setTimeout(() => {
+    document.body.className = document.body.className
+      .split(" ")
+      .filter(c => !c.includes("-phase"))
+      .join(" ")
+      .trim();
 
-      document.body.classList.add(`${phase}-phase`);
+    document.body.classList.add(`${phase}-phase`);
 
-      switch (phase) {
-        case "waiting":
-          showSection("waitingRoom");
-          break;
-        case "qa":
+    switch (phase) {
+      case "waiting":
+        showSection("waitingRoom");
+        break;
+
+      case "qa":
+        // 🔧 Start QA only once per player
+        if (!window.qaStarted) {
+          window.qaStarted = true;
           showSection("qa-phase");
           startQA();
-          break;
-        case "pre-guess":
-          showSection("pre-guess-waiting");
-          break;
-        case "guessing":
-          showSection("guessing-phase");
-          break;
-        case "scoreboard":
-          showSection("scoreboard");
-          break;
-        default:
-          showSection("landing");
-          break;
-      }
+        }
+        break;
 
-      setTimeout(() => overlay.classList.remove("active"), 600);
-    }, 600);
-  }
+      case "pre-guess":
+        showSection("pre-guess-waiting");
+        break;
+
+      case "guessing":
+        showSection("guessing-phase");
+        startGuessing();
+        break;
+
+      case "scoreboard":
+        showSection("scoreboard");
+        break;
+
+      default:
+        showSection("landing");
+        break;
+    }
+
+    setTimeout(() => overlay.classList.remove("active"), 600);
+  }, 600);
+} 
 
   console.log("✅ script.js fully loaded!");
 });
+
