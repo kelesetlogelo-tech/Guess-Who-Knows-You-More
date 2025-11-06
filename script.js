@@ -312,12 +312,3 @@ function renderPhase(phase) {
     setTimeout(() => overlay.classList.remove("active"), 600);
   }, 600);
 }
-
-
-
-
-
-
-
-
-
