@@ -311,4 +311,4 @@ function renderPhase(phase) {
     // Fade back in
     setTimeout(() => overlay.classList.remove("active"), 600);
   }, 600);
-}
+  console.log("✅ script.js fully loaded!");
