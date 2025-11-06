@@ -217,7 +217,6 @@ function markPlayerReady() {
   $("begin-game-btn").addEventListener("click", () => {
     if (gameRef) gameRef.child("phase").set("qa");
   });
-});
 
 // ---------------- SECTION SWITCHER ----------------
 function showSection(id) {
@@ -313,6 +312,7 @@ function renderPhase(phase) {
     setTimeout(() => overlay.classList.remove("active"), 600);
   }, 600);
 }
+
 
 
 
