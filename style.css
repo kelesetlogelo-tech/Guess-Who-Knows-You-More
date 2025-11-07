@@ -15,7 +15,7 @@ body {
 
 /* === PHASE-BASED BACKGROUNDS (VIBRANT GRADIENTS) === */
 body.landing-phase {
-  background: linear-gradient(135deg, #ff00c8, #ff4dc4, #ff86e0);
+  background: linear-gradient(135deg, #fff700, #ff8a00, #ff00c8);
   background-size: 400% 400%;
   animation: gradientShift 12s ease infinite;
 }
@@ -89,6 +89,65 @@ body.scoreboard-phase {
 }
 #phase-transition-overlay.active {
   opacity: 1;
+}
+
+/* === LANDING PAGE CONTAINER === */
+#landing-page .container,
+section#landing-page .container {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-radius: 2rem;
+  padding: 3rem 2.5rem;
+  max-width: 520px;
+  margin: 5rem auto;
+  box-shadow: 0 8px 30px rgba(255, 0, 180, 0.3), 0 0 40px rgba(255, 230, 0, 0.3);
+  text-align: center;
+  color: #fff;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+#landing-page .container:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 40px rgba(255, 0, 180, 0.4), 0 0 60px rgba(255, 230, 0, 0.4);
+}
+
+/* Headings & subtitle */
+#landing-page h1 {
+  font-size: 2.8rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #ffffff;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  margin-bottom: 0.5rem;
+}
+
+#landing-page h2 {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: #fffaf5;
+  opacity: 0.9;
+  margin-bottom: 2rem;
+}
+
+/* 💡 VIBRANT BUTTONS */
+button {
+  background: #ff4de3;
+  border: none;
+  padding: 0.7rem 1.8rem;
+  border-radius: 2rem;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 10px rgba(255, 77, 227, 0.5);
+}
+
+button:hover {
+  background: #ff78eb;
+  box-shadow: 0 0 20px rgba(255, 120, 235, 0.9);
+  transform: translateY(-2px);
 }
 
 /* === CONTAINERS === */
@@ -291,3 +350,4 @@ footer {
   0%, 100% { opacity: 0.3; }
   50% { opacity: 1; }
 }
+
