@@ -333,7 +333,39 @@ function subscribeToGame(code) {
     } else {
       doSwitch();
     }
-  }
+
+    // ---------------- HOST: ADVANCE TO GUESSING PHASE ----------------
+const beginGuessingBtn = document.getElementById("begin-guessing-btn");
+
+if (beginGuessingBtn) {
+  beginGuessingBtn.addEventListener("click", () => {
+    if (!isHost || !gameRef) return;
+    console.log("🎯 Host advancing to Guessing Phase...");
+    gameRef.child("phase").set("guessing");
+  });
+}
+
+// ---------------- MONITOR PLAYER READINESS IN WAITING ROOM ----------------
+function checkAllPlayersReady(snapshot) {
+  const players = snapshot.val()?.players || {};
+  const allReady = Object.values(players).every(p => p.ready === true);
+
+  if (isHost) {
+    const btn = document.getElementById("begin-guessing-btn");
+    if (btn) {
+      if (allReady) {
+        btn.classList.remove("hidden");
+        document.getElementById("waiting-status").textContent =
+          "Everyone’s done! Ready to begin guessing 🎉";
+      } else {
+        btn.classList.add("hidden");
+        document.getElementById("waiting-status").textContent =
+          "Waiting for all players to finish Q&A...";
+       }
+     }
+   }
+ }
+}
 
   // ====== GUESSING (per-target rounds) ======
   async function startGuessing() {
@@ -482,4 +514,5 @@ function subscribeToGame(code) {
 
   console.log("✅ script.js fully loaded!");
 });
+
 
