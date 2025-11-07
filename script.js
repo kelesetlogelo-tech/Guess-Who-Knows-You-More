@@ -194,10 +194,29 @@ function subscribeToGame(code) {
 }
 
   function markPlayerReady() {
-    if (!gameRef || !playerId) return;
-    gameRef.child(`players/${playerId}/ready`).set(true);
-    showSection("pre-guess-waiting");
-  }
+  if (!gameRef || !playerId) return;
+  gameRef.child(`players/${playerId}/ready`).set(true);
+  showSection("pre-guess-waiting");
+
+  // Host checks if all ready
+  if (isHost) checkAllPlayersReady(gameRef.key);
+}
+
+  function checkAllPlayersReady(code) {
+  const ref = window.db.ref("rooms/" + code + "/players");
+  ref.once("value").then(snap => {
+    const players = snap.val() || {};
+    const allReady = Object.values(players).every(p => p.ready);
+    if (allReady) {
+      // Everyone’s ready → move to guessing phase
+      window.db.ref("rooms/" + code).update({
+        phase: "guessing",
+        guessingIndex: 0, // start with first target
+        scores: players
+      });
+    }
+  });
+}
 
   // ====== BUTTON LISTENERS ======
   $("create-room-btn").addEventListener("click", createRoom);
@@ -258,6 +277,143 @@ function renderPhase(phase, code) {
   }, 600);
 } 
 
+  function startGuessing() {
+  if (!gameRef) return;
+
+  gameRef.once("value").then(snap => {
+    const data = snap.val();
+    if (!data || !data.players) return;
+
+    const players = Object.keys(data.players).sort();
+    const index = data.guessingIndex || 0;
+    const targetPlayer = players[index];
+
+    if (playerId === targetPlayer) {
+      $("guessing-phase").innerHTML = `
+        <div class="judged-view">
+          <h2>Oh my goodness, you're being judged!</h2>
+          <p>Hang tight while everyone guesses your answers...</p>
+        </div>
+      `;
+    } else {
+      renderGuessingRound(targetPlayer, players);
+    }
+  });
+}
+
+function renderGuessingRound(targetPlayer, allPlayers) {
+  const container = $("guessing-phase");
+  container.innerHTML = `
+    <h2 class="guessing-header">Now guessing <span class="target-name">${targetPlayer}</span>!</h2>
+    <div id="guess-container"></div>
+  `;
+
+  const guessContainer = document.getElementById("guess-container");
+  let qIndex = 0;
+  let roundScore = 0;
+
+  function renderGuessQuestion() {
+    const q = questions[qIndex];
+    if (!q) return finishGuessingRound();
+
+    guessContainer.innerHTML = `
+      <div class="question-counter">Question ${qIndex + 1} of ${questions.length}</div>
+      <h3>${q.text}</h3>
+      <div class="options-grid">
+        ${q.options.map(opt => `<button class="option-btn">${opt}</button>`).join("")}
+      </div>
+    `;
+
+    guessContainer.querySelectorAll(".option-btn").forEach(btn => {
+      btn.onclick = async () => {
+        const guess = btn.textContent;
+        const correctAnswerSnap = await gameRef.child(`players/${targetPlayer}/answers/${q.text}`).once("value");
+        const correct = correctAnswerSnap.val();
+
+        if (guess === correct) {
+          btn.classList.add("correct");
+          roundScore++;
+        } else {
+          btn.classList.add("incorrect");
+          roundScore--;
+        }
+
+        guessContainer.querySelectorAll(".option-btn").forEach(b => (b.disabled = true));
+
+        setTimeout(() => {
+          qIndex++;
+          renderGuessQuestion();
+        }, 800);
+      };
+    });
+  }
+
+  renderGuessQuestion();
+
+  // 🎯 FINISHING A GUESS ROUND
+  async function finishGuessingRound() {
+    // Save the player’s result for this target
+    await gameRef.child(`roundScores/${targetPlayer}/${playerId}`).set(roundScore);
+
+    // Also update their total score
+    gameRef.child(`players/${playerId}/score`).transaction(curr => (curr || 0) + roundScore);
+
+    // Switch to temporary scoreboard
+    showSection("scoreboard");
+    renderRoundScoreboard(targetPlayer);
+
+    // Host checks if everyone is done guessing this target
+    if (isHost) {
+      const snap = await gameRef.child("roundScores/" + targetPlayer).once("value");
+      const donePlayers = Object.keys(snap.val() || {});
+      const activePlayers = allPlayers.filter(p => p !== targetPlayer);
+
+      if (donePlayers.length >= activePlayers.length) {
+        // Everyone guessed → move to next target or final scoreboard
+        const currentIndex = allPlayers.indexOf(targetPlayer);
+        const nextIndex = currentIndex + 1;
+
+        if (nextIndex < allPlayers.length) {
+          // Next target
+          setTimeout(() => {
+            gameRef.update({ guessingIndex: nextIndex });
+          }, 4000); // small delay for scoreboard reveal
+        } else {
+          // End of game
+          setTimeout(() => {
+            gameRef.update({ phase: "scoreboard" });
+          }, 4000);
+        }
+      }
+    }
+  }
+}
+
+  function renderRoundScoreboard(targetPlayer) {
+  const board = $("scoreboard");
+  board.innerHTML = `
+    <h2 class="round-title">Who knows ${targetPlayer} best?</h2>
+    <ul id="roundScoresList" class="score-list"></ul>
+    <p class="waiting-msg">(Waiting for others to finish...)</p>
+  `;
+
+  const list = $("roundScoresList");
+
+  const ref = gameRef.child("roundScores/" + targetPlayer);
+  ref.on("value", snap => {
+    const scores = snap.val() || {};
+    list.innerHTML = "";
+
+    const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+    sorted.forEach(([name, sc]) => {
+      const li = document.createElement("li");
+      li.textContent = `${name}: ${sc > 0 ? "+" + sc : sc} pts`;
+      list.appendChild(li);
+    });
+  });
+}
+
   console.log("✅ script.js fully loaded!");
 });
+
 
