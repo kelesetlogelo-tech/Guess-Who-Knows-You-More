@@ -13,39 +13,39 @@ body {
   transition: background 1s ease;
 }
 
-/* === PHASE-BASED BACKGROUNDS === */
+/* === PHASE-BASED BACKGROUNDS (VIBRANT GRADIENTS) === */
 body.landing-phase {
-  background: linear-gradient(135deg, #3a1c71, #d76d77, #ffaf7b);
+  background: linear-gradient(135deg, #ff00c8, #ff4dc4, #ff86e0);
   background-size: 400% 400%;
   animation: gradientShift 12s ease infinite;
 }
 
 body.waiting-phase {
-  background: linear-gradient(135deg, #4b79a1, #283e51);
+  background: linear-gradient(135deg, #001f3f, #004080, #00aaff);
   background-size: 400% 400%;
   animation: gradientShift 10s ease infinite;
 }
 
 body.qa-phase {
-  background: linear-gradient(135deg, #ff9966, #ff5e62);
+  background: linear-gradient(135deg, #ff9966, #ff5e62, #ff7f50);
   background-size: 400% 400%;
   animation: gradientShift 9s ease infinite;
 }
 
 body.pre-guess-phase {
-  background: linear-gradient(135deg, #355c7d, #6c5b7b, #c06c84);
+  background: linear-gradient(135deg, #4e4376, #2b5876, #c06c84);
   background-size: 400% 400%;
   animation: gradientShift 10s ease infinite;
 }
 
 body.guessing-phase {
-  background: linear-gradient(135deg, #00c9ff, #92fe9d);
+  background: linear-gradient(135deg, #00c9ff, #92fe9d, #00e1d9);
   background-size: 400% 400%;
   animation: gradientShift 11s ease infinite;
 }
 
 body.scoreboard-phase {
-  background: linear-gradient(135deg, #654ea3, #eaafc8);
+  background: linear-gradient(135deg, #7f00ff, #e100ff, #eaafc8);
   background-size: 400% 400%;
   animation: gradientShift 12s ease infinite;
 }
@@ -105,19 +105,21 @@ body.scoreboard-phase {
   font-size: 3rem;
   margin-bottom: 0.5rem;
   font-weight: 700;
+  color: #ffffff;
 }
 
 .subtitle {
   font-size: 1.2rem;
   margin-bottom: 1.2rem;
   opacity: 0.9;
+  color: #f8f8f8;
 }
 
 .instruction {
   font-size: 1rem;
   font-style: italic;
   margin-bottom: 1.5rem;
-  color: #ffd7a2;
+  color: #fff4cc;
 }
 
 /* === INPUTS & FORMS === */
@@ -137,17 +139,18 @@ input {
   color: #333;
 }
 
+/* === DIVIDER === */
 .divider {
   margin: 1.5rem 0;
-  opacity: 0.8;
-  font-weight: 500;
+  opacity: 0.85;
+  font-weight: 600;
   color: #f9f9f9;
 }
 
 /* === BUTTONS === */
 .teal-btn,
 .option-btn {
-  background: linear-gradient(135deg, #1abc9c, #16a085);
+  background: linear-gradient(135deg, #1abc9c, #16a085, #20e3b2);
   color: white;
   border: none;
   padding: 0.9rem 1.6rem;
@@ -230,7 +233,7 @@ input {
   padding: 1rem;
   text-align: center;
   border-radius: 999px;
-  background: linear-gradient(135deg, #1abc9c, #16a085);
+  background: linear-gradient(135deg, #1abc9c, #16a085, #20e3b2);
   color: #fff;
   font-weight: 700;
   transition: all 0.25s ease;
@@ -255,7 +258,7 @@ input {
 }
 
 .round-title {
-  color: #6ee7b7;
+  color: #a2facf;
   font-weight: 600;
 }
 
