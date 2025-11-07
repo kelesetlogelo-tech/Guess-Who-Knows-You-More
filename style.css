@@ -251,3 +251,20 @@ body.scoreboard-phase {
   box-shadow: 0 0 25px rgba(0, 204, 255, 0.8);
   transform: scale(1.05);
 }
+
+.vibrant-btn {
+  background: linear-gradient(90deg, #ff6ec4, #7873f5);
+  border: none;
+  color: white;
+  font-weight: bold;
+  padding: 14px 26px;
+  border-radius: 50px;
+  box-shadow: 0 0 12px rgba(255, 110, 196, 0.5);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1.1rem;
+}
+.vibrant-btn:hover {
+  box-shadow: 0 0 20px rgba(255, 110, 196, 0.9);
+  transform: scale(1.05);
+}
