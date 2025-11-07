@@ -163,6 +163,46 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // =========================
+// 🧩 CHECK ALL PLAYERS READY
+// =========================
+function checkAllPlayersReady(snapshot) {
+  const data = snapshot.val() || {};
+  const players = data.players || {};
+  const currentPhase = data.phase;
+  const isHost = localStorage.getItem("isHost") === "true";
+
+  // Only relevant after Q&A phase
+  if (currentPhase === "pre-guess-waiting") {
+    const allAnswered = Object.values(players).every(p => p.completedQA);
+    const beginGuessingBtn = document.getElementById("begin-guessing-btn");
+
+    if (isHost) {
+      // Show button if everyone is ready
+      if (allAnswered) {
+        beginGuessingBtn.classList.remove("hidden");
+      } else {
+        beginGuessingBtn.classList.add("hidden");
+      }
+    }
+  }
+}
+
+// =========================
+// 🎯 HOST: BEGIN GUESSING
+// =========================
+document.getElementById("begin-guessing-btn").addEventListener("click", async () => {
+  const roomCode = localStorage.getItem("roomCode");
+  const isHost = localStorage.getItem("isHost") === "true";
+
+  if (!isHost) return;
+  if (!roomCode || !window.db) return console.error("Missing room code or DB");
+
+  const gameRef = window.db.ref(`rooms/${roomCode}`);
+  await gameRef.update({ phase: "guessing" });
+  console.log("Host advanced game to Guessing phase");
+});
+
   // ===== Q&A =====
   const questions = [
     { id: "q1", text: "If I were a sound effect, I'd be:", options: ["Ka-ching!", "Dramatic gasp", "Boing!", "Evil laugh"] },
@@ -280,3 +320,4 @@ document.addEventListener("DOMContentLoaded", () => {
   // (unchanged guessing & scoreboard code)
   // ... your guessing + scoreboard logic remains here unchanged ...
 });
+
