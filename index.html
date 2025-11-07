@@ -1,103 +1,96 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>If I Were...</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>If I were...</title>
   <link rel="stylesheet" href="style.css" />
-
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
   <script src="firebase-config.js"></script>
 </head>
 
 <body>
-  <header class="app-header">
-    <h1 class="fade-in">If I Were...</h1>
-    <p class="subtitle">How well do you know your tribe?</p>
-  </header>
+  <!-- Overlay for cinematic phase transitions -->
+  <div id="phase-transition-overlay"></div>
 
-  <main>
-    <!-- ========== LANDING ========== -->
-    <section id="landing" class="page">
-      <div class="card">
-        <h2>Create or Join a Game</h2>
+  <!-- ====== LANDING PAGE ====== -->
+  <section id="landing" class="page">
+    <div class="container">
+      <h1 class="title">If I were...</h1>
+      <p class="subtitle">How well do you know your tribe?</p>
+      <p class="instruction">Create a game room or join one — then find out who truly knows who!</p>
 
-        <div class="form-row">
-          <input id="hostName" placeholder="Host name" />
-          <input id="playerCount" placeholder="Number of players (2–8)" type="number" min="2" max="8" />
-          <button id="create-room-btn" class="teal-btn">Create Room</button>
-        </div>
-
-        <hr />
-
-        <div class="form-row">
-          <input id="playerName" placeholder="Your name" />
-          <input id="roomCode" placeholder="Room code" />
-          <button id="join-room-btn" class="teal-btn">Join Room</button>
-        </div>
+      <div class="form-group">
+        <input id="hostName" type="text" placeholder="Your name" />
+        <input id="playerCount" type="number" placeholder="Number of players" />
+        <button id="create-room-btn" class="teal-btn">Create Room</button>
       </div>
-    </section>
 
-    <!-- ========== WAITING ROOM ========== -->
-    <section id="waitingRoom" class="page hidden">
-      <div class="card">
-        <h2>Waiting Room</h2>
-        <p id="room-code-display-game" class="muted">Room Code: —</p>
-        <p id="players-count" class="muted">Players joined: 0 / ?</p>
-        <ul id="playerList"></ul>
-        <button id="begin-game-btn" class="teal-btn hidden">Begin Game</button>
+      <div class="divider">or join an existing room</div>
+
+      <div class="form-group">
+        <input id="playerName" type="text" placeholder="Your name" />
+        <input id="roomCode" type="text" placeholder="Room Code" maxlength="5" />
+        <button id="join-room-btn" class="teal-btn">Join Room</button>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <!-- ========== Q&A PHASE ========== -->
-    <section id="qa-phase" class="page hidden">
-      <div class="card">
-        <h2 id="phase-title">Q&A Phase</h2>
-        <p class="muted">Select the option that best describes you.</p>
-        <div id="qa-container"></div>
-      </div>
-    </section>
+  <!-- ====== WAITING ROOM ====== -->
+  <section id="waitingRoom" class="page hidden">
+    <div class="container">
+      <h2>Waiting Room</h2>
+      <p class="instruction">Hang tight! The tribe’s gathering...</p>
+      <p id="room-code-display-game" class="room-code"></p>
+      <p id="players-count"></p>
 
-    <!-- ========== PRE-GUESS WAITING ========== -->
-    <section id="pre-guess-waiting" class="page hidden">
-      <div class="card">
-        <h2>Waiting for everyone to finish Q&A...</h2>
-        <p id="ready-status">Ready: 0 / 0</p>
-        <button id="start-guessing-btn" class="teal-btn hidden">Start Guessing (Host)</button>
-      </div>
-    </section>
+      <ul id="playerList" class="player-list"></ul>
+      <button id="begin-game-btn" class="teal-btn hidden">Begin Game</button>
+    </div>
+  </section>
 
-    <!-- ========== GUESSING PHASE ========== -->
-    <section id="guessing-phase" class="page hidden">
-      <div class="card">
-        <h2>Guessing Phase</h2>
-        <p>Now, guess which options best desciribe each player in turn!</p>
-        <div id="guess-card"></div>
-        <button id="done-guessing-btn" class="teal-btn hidden">Done Guessing</button>
-      </div>
-    </section>
+  <!-- ====== Q&A PHASE ====== -->
+  <section id="qa-phase" class="page hidden">
+    <div class="container">
+      <p class="instruction">Answer as your truest self. No pressure — just authentic vibes!</p>
+      <div id="qa-container" class="qa-container"></div>
+    </div>
+  </section>
 
-    <!-- ========== SCOREBOARD ========== -->
-    <section id="scoreboard" class="page hidden">
-      <div class="card">
-        <h2>Scoreboard</h2>
-        <div id="score-list"></div>
-        <button id="play-again-btn" class="teal-btn hidden">Play Again</button>
-      </div>
-    </section>
-  </main>
+  <!-- ====== PRE-GUESS WAITING ====== -->
+  <section id="pre-guess-waiting" class="page hidden">
+    <div class="container">
+      <h2>Waiting for the rest of the tribe...</h2>
+      <p class="instruction">Patience, chief! Others are still answering life’s toughest “If I were…” questions.</p>
+      <div class="loading-dots"><span>.</span><span>.</span><span>.</span></div>
+    </div>
+  </section>
 
-  <footer class="app-footer">
-    <small>Built with ❤️ by Kelz</small>
+  <!-- ====== GUESSING PHASE ====== -->
+  <section id="guessing-phase" class="page hidden">
+    <div class="container">
+      <h2>Time to Guess!</h2>
+      <p class="instruction">Whose true nature fits *this* answer? Trust your gut — or pure chaos.</p>
+      <div id="guessing-phase-inner"></div>
+    </div>
+  </section>
+
+  <!-- ====== SCOREBOARD ====== -->
+  <section id="scoreboard" class="page hidden">
+    <div class="container">
+      <h2 class="round-title">Scoreboard</h2>
+      <p class="instruction">See who truly knows the tribe best... or just got lucky!</p>
+      <ul id="roundScoresList" class="score-list"></ul>
+      <p class="waiting-msg">(Waiting for others to finish...)</p>
+    </div>
+  </section>
+
+  <!-- ====== FOOTER ====== -->
+  <footer>
+    Designed with 💗 by Kelz
   </footer>
 
   <script src="script.js"></script>
-  <div id="phase-transition-overlay"></div>
 </body>
 </html>
-
-
-
-
