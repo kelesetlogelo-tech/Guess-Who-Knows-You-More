@@ -1,4 +1,6 @@
 // Firebase Config
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+import { getDatabase } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 const firebaseConfig = {
     apiKey: "AIzaSyCtx_K76mH3agerccTXMc08W8sqKXUI_pA",
     authDomain: "wishing-well-2025.firebaseapp.com",
@@ -11,8 +13,9 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-window.db = firebase.database();
+const app = initializeApp(firebaseConfig);
+window.db = getDatabase(app);
 console.log("Firebase initialized successfully — window.db is set");
+
 
 
