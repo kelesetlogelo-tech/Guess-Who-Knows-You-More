@@ -1,3 +1,4 @@
+// script.js (fixed + hardened)
 console.log("script.js loaded");
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -17,13 +18,17 @@ document.addEventListener("DOMContentLoaded", () => {
   let playerId = null;
   let isHost = false;
 
+  // Global guards stored on window so multiple subscribes play nicely
+  window.currentPhase = window.currentPhase || null;
+  window.qaStarted = window.qaStarted || false;
+
   // ====== CREATE ROOM ======
   async function createRoom() {
-    const name = $("hostName").value.trim();
-    const count = parseInt($("playerCount").value.trim());
+    const name = $("hostName").value?.trim();
+    const count = parseInt($("playerCount").value?.trim(), 10);
 
-    if (!name || !count) {
-      alert("Enter your name and number of players");
+    if (!name || !count || isNaN(count) || count < 2) {
+      alert("Enter your name and number of players (min 2).");
       return;
     }
 
@@ -44,9 +49,10 @@ document.addEventListener("DOMContentLoaded", () => {
       host: name,
       numPlayers: count,
       phase: "waiting",
-      players: { [name]: { score: 0 } }
+      players: { [name]: { score: 0, ready: false } }
     });
 
+    // UI
     $("room-code-display-game").textContent = "Room Code: " + code;
     $("players-count").textContent = `Players joined: 1 / ${count}`;
 
@@ -56,8 +62,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ====== JOIN ROOM ======
   async function joinRoom() {
-    const name = $("playerName").value.trim();
-    const code = $("roomCode").value.trim().toUpperCase();
+    const name = $("playerName").value?.trim();
+    const code = $("roomCode").value?.trim().toUpperCase();
 
     if (!name || !code) {
       alert("Enter your name and room code");
@@ -74,64 +80,76 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     gameRef = window.db.ref("rooms/" + code);
-    await gameRef.child("players/" + name).set({ score: 0 });
+
+    // ensure room exists before writing
+    const snap = await gameRef.once("value");
+    if (!snap.exists()) { alert("Room not found."); return; }
+
+    await gameRef.child("players/" + name).set({ score: 0, ready: false });
 
     showSection("waitingRoom");
     subscribeToGame(code);
   }
 
-// ---------------- SUBSCRIBE TO GAME ----------------
-function subscribeToGame(code) {
-  if (!window.db) return;
+  // ---------------- SUBSCRIBE TO GAME ----------------
+  function subscribeToGame(code) {
+    if (!window.db) return;
 
-  const ref = window.db.ref("rooms/" + code);
+    const ref = window.db.ref("rooms/" + code);
 
-  ref.on("value", snap => {
-    const data = snap.val();
-    if (!data) return;
+    // detach previous to avoid double handlers (defensive)
+    try { ref.off(); } catch (e) {}
 
-    // --- ROOM CODE & PLAYER COUNTS ---
-    $("room-code-display-game").textContent = "Room Code: " + code;
-    const playersObj = data.players || {};
-    const joinedCount = Object.keys(playersObj).length;
-    const expected = data.numPlayers || "?";
-    $("players-count").textContent = `Players joined: ${joinedCount} / ${expected}`;
+    ref.on("value", snap => {
+      const data = snap.val();
+      if (!data) return;
 
-    // --- UPDATE PLAYER LIST ---
-    const list = $("playerList");
-    list.innerHTML = "";
-    Object.keys(playersObj).forEach(name => {
-      const li = document.createElement("li");
-      const ready = playersObj[name].ready ? " ✅" : "";
-      li.textContent = name + ready;
-      list.appendChild(li);
-    });
+      // --- ROOM CODE & PLAYER COUNTS ---
+      $("room-code-display-game").textContent = "Room Code: " + code;
+      const playersObj = data.players || {};
+      const joinedCount = Object.keys(playersObj).length;
+      const expected = data.numPlayers || "?";
+      $("players-count").textContent = `Players joined: ${joinedCount} / ${expected}`;
 
-    // --- HOST: SHOW BEGIN GAME BUTTON WHEN FULL ---
-    const beginBtn = $("begin-game-btn");
-    if (isHost && beginBtn) {
-      if (joinedCount >= expected) beginBtn.classList.remove("hidden");
-      else beginBtn.classList.add("hidden");
-    }
-
-    // --- 🔧 HANDLE PHASE CHANGES SAFELY ---
-    // Prevent re-triggering the QA phase if we’re already in it
-    if (data.phase !== window.currentPhase) {
-      window.currentPhase = data.phase;
-      renderPhase(data.phase, code);
-    }
-
-    // --- 🔧 If all players ready, host moves to guessing ---
-    if (isHost && data.phase === "pre-guess") {
-      const allReady = Object.values(playersObj).every(p => p.ready);
-      if (allReady) {
-        ref.child("phase").set("guessing");
+      // --- UPDATE PLAYER LIST ---
+      const list = $("playerList");
+      if (list) {
+        list.innerHTML = "";
+        Object.keys(playersObj).forEach(name => {
+          const li = document.createElement("li");
+          const ready = playersObj[name].ready ? " ✅" : "";
+          li.textContent = name + ready;
+          list.appendChild(li);
+        });
       }
-    }
-  });
-}
 
-  // ====== Q&A ======
+      // --- HOST: SHOW BEGIN GAME BUTTON WHEN FULL ---
+      const beginBtn = $("begin-game-btn");
+      if (isHost && beginBtn) {
+        if (expected !== "?" && joinedCount >= expected) beginBtn.classList.remove("hidden");
+        else beginBtn.classList.add("hidden");
+      } else if (beginBtn) {
+        // always hide for non-hosts
+        beginBtn.classList.add("hidden");
+      }
+
+      // --- PHASE CHANGE: avoid re-triggering same phase repeatedly ---
+      if (data.phase !== window.currentPhase) {
+        window.currentPhase = data.phase;
+        renderPhase(data.phase, code);
+      }
+
+      // If host and everyone ready in pre-guess, advance to guessing (defensive)
+      if (isHost && data.phase === "pre-guess") {
+        const allReady = Object.values(playersObj).length > 0 && Object.values(playersObj).every(p => p.ready);
+        if (allReady) {
+          ref.update({ phase: "guessing", guessingIndex: 0 });
+        }
+      }
+    });
+  }
+
+  // ====== Q&A QUESTIONS (10) ======
   const questions = [
     { id: 'q1', text: "If I were a sound effect, I'd be:", options: ["Ka-ching!", "Dramatic gasp", "Boing!", "Evil laugh"] },
     { id: 'q2', text: "If I were a weather forecast, I'd be:", options: ["100% chill", "Partly dramatic with a chance of chaos!", "Heatwave vibes", "Sudden tornado of opinions"] },
@@ -149,271 +167,293 @@ function subscribeToGame(code) {
   let answers = {};
 
   function startQA() {
+    // each player must start QA exactly once when phase changes to 'qa'
+    if (!gameRef) { console.warn("startQA: no gameRef"); return; }
+    window.qaStarted = true;
     currentQuestion = 0;
     answers = {};
+    showSection("qa-phase");
     renderQuestion();
   }
 
   function renderQuestion() {
-  const container = $("qa-container");
-  container.innerHTML = "";
+    const container = $("qa-container");
+    if (!container) return console.warn("renderQuestion: missing #qa-container");
 
-  const q = questions[currentQuestion];
-  if (!q) return markPlayerReady();
+    container.innerHTML = "";
 
-  // --- Question Counter ---
-  const counter = document.createElement("div");
-  counter.className = "question-counter";
-  counter.textContent = `Question ${currentQuestion + 1} of ${questions.length}`;
-  container.appendChild(counter);
-
-  // --- Question Tile ---
-  const tile = document.createElement("div");
-  tile.className = "qa-tile active";
-  tile.innerHTML = `
-    <h3 class="question-text">${q.text}</h3>
-    <div class="options-grid">
-      ${q.options
-        .map(opt => `<button class="option-btn">${opt}</button>`)
-        .join("")}
-    </div>
-  `;
-  container.appendChild(tile);
-
-  // --- Button Behavior ---
-  tile.querySelectorAll(".option-btn").forEach(btn => {
-    btn.onclick = () => {
-      answers[q.text] = btn.textContent;
-      tile.classList.add("slide-out");
-      setTimeout(() => {
-        currentQuestion++;
-        renderQuestion();
-      }, 600);
-    };
-  });
-}
-
-  function markPlayerReady() {
-  if (!gameRef || !playerId) return;
-  gameRef.child(`players/${playerId}/ready`).set(true);
-  showSection("pre-guess-waiting");
-
-  // Host checks if all ready
-  if (isHost) checkAllPlayersReady(gameRef.key);
-}
-
-  function checkAllPlayersReady(code) {
-  const ref = window.db.ref("rooms/" + code + "/players");
-  ref.once("value").then(snap => {
-    const players = snap.val() || {};
-    const allReady = Object.values(players).every(p => p.ready);
-    if (allReady) {
-      // Everyone’s ready → move to guessing phase
-      window.db.ref("rooms/" + code).update({
-        phase: "guessing",
-        guessingIndex: 0, // start with first target
-        scores: players
-      });
+    const q = questions[currentQuestion];
+    if (!q) {
+      // finished Q&A locally — save answers to DB and mark ready
+      saveAnswersAndMarkReady();
+      return;
     }
-  });
-}
+
+    // Question counter
+    const counter = document.createElement("div");
+    counter.className = "question-counter";
+    counter.textContent = `Question ${currentQuestion + 1} of ${questions.length}`;
+    container.appendChild(counter);
+
+    // Tile
+    const tile = document.createElement("div");
+    tile.className = "qa-tile active";
+    tile.innerHTML = `
+      <h3 class="question-text">${q.text}</h3>
+      <div class="options-grid">
+        ${q.options.map((opt, idx) => `<button class="option-btn" data-opt-index="${idx}">${opt}</button>`).join("")}
+      </div>
+    `;
+    container.appendChild(tile);
+
+    // Wire options — save the selected answer immediately to DB (per-question)
+    tile.querySelectorAll(".option-btn").forEach(btn => {
+      btn.onclick = async () => {
+        const chosenText = btn.textContent;
+        // Save per-question answer to DB under players/{playerId}/answers/{q.id}
+        if (gameRef && playerId) {
+          try {
+            await gameRef.child(`players/${playerId}/answers/${q.id}`).set({
+              optionText: chosenText,
+              optionIndex: parseInt(btn.dataset.optIndex, 10) || 0,
+              ts: Date.now()
+            });
+          } catch (e) {
+            console.warn("Failed to write answer:", e);
+          }
+        }
+        // local copy too
+        answers[q.id] = chosenText;
+
+        // animate out then next
+        tile.classList.add("slide-out");
+        setTimeout(() => {
+          currentQuestion++;
+          renderQuestion();
+        }, 400);
+      };
+    });
+  }
+
+  async function saveAnswersAndMarkReady() {
+    // mark ready in DB (answers already saved per-question; this is a final flag)
+    if (!gameRef || !playerId) { console.warn("saveAnswersAndMarkReady: missing refs"); return; }
+    try {
+      await gameRef.child(`players/${playerId}/ready`).set(true);
+      showSection("pre-guess-waiting");
+    } catch (e) {
+      console.warn("Could not mark ready:", e);
+    }
+  }
 
   // ====== BUTTON LISTENERS ======
-  $("create-room-btn").addEventListener("click", createRoom);
-  $("join-room-btn").addEventListener("click", joinRoom);
-  $("begin-game-btn").addEventListener("click", () => {
+  $("create-room-btn")?.addEventListener("click", createRoom);
+  $("join-room-btn")?.addEventListener("click", joinRoom);
+  $("begin-game-btn")?.addEventListener("click", () => {
     if (gameRef) gameRef.child("phase").set("qa");
   });
 
- // ---------------- RENDER PHASE ----------------
-function renderPhase(phase, code) {
-  const overlay = document.getElementById("phase-transition-overlay");
-  if (!overlay) return;
+  // ---------------- RENDER PHASE ----------------
+  function renderPhase(phase, code) {
+    // If overlay exists, use cinematic; otherwise just switch immediately
+    const overlay = document.getElementById("phase-transition-overlay");
 
-  overlay.classList.add("active");
+    const doSwitch = () => {
+      // remove existing phase-* classes
+      document.body.className = document.body.className
+        .split(" ")
+        .filter(c => !c.includes("-phase"))
+        .join(" ")
+        .trim();
 
-  setTimeout(() => {
-    document.body.className = document.body.className
-      .split(" ")
-      .filter(c => !c.includes("-phase"))
-      .join(" ")
-      .trim();
+      if (phase) document.body.classList.add(`${phase}-phase`);
 
-    document.body.classList.add(`${phase}-phase`);
+      switch (phase) {
+        case "waiting":
+          window.qaStarted = false; // reset local QA guard when returning to waiting
+          showSection("waitingRoom");
+          break;
 
-    switch (phase) {
-      case "waiting":
-        showSection("waitingRoom");
-        break;
+        case "qa":
+          // start QA for this client (only once)
+          if (!window.qaStarted) startQA();
+          else showSection("qa-phase");
+          break;
 
-      case "qa":
-        // 🔧 Start QA only once per player
-        if (!window.qaStarted) {
-          window.qaStarted = true;
-          showSection("qa-phase");
-          startQA();
-        }
-        break;
+        case "pre-guess":
+          showSection("pre-guess-waiting");
+          break;
 
-      case "pre-guess":
-        showSection("pre-guess-waiting");
-        break;
+        case "guessing":
+          showSection("guessing-phase");
+          startGuessing();
+          break;
 
-      case "guessing":
-        showSection("guessing-phase");
-        startGuessing();
-        break;
+        case "scoreboard":
+          showSection("scoreboard");
+          break;
 
-      case "scoreboard":
-        showSection("scoreboard");
-        break;
+        default:
+          showSection("landing");
+          break;
+      }
+    };
 
-      default:
-        showSection("landing");
-        break;
+    if (overlay) {
+      overlay.classList.add("active");
+      setTimeout(() => {
+        doSwitch();
+        setTimeout(() => overlay.classList.remove("active"), 500);
+      }, 400);
+    } else {
+      doSwitch();
     }
+  }
 
-    setTimeout(() => overlay.classList.remove("active"), 600);
-  }, 600);
-} 
-
-  function startGuessing() {
-  if (!gameRef) return;
-
-  gameRef.once("value").then(snap => {
+  // ====== GUESSING (per-target rounds) ======
+  async function startGuessing() {
+    if (!gameRef) return;
+    const snap = await gameRef.once("value");
     const data = snap.val();
     if (!data || !data.players) return;
 
     const players = Object.keys(data.players).sort();
-    const index = data.guessingIndex || 0;
+    const index = (data.guessingIndex || 0);
     const targetPlayer = players[index];
 
+    if (!targetPlayer) {
+      console.warn("startGuessing: no target found");
+      return;
+    }
+
     if (playerId === targetPlayer) {
-      $("guessing-phase").innerHTML = `
+      // Show judged view to the target player
+      const container = $("guessing-phase");
+      container.innerHTML = `
         <div class="judged-view">
           <h2>Oh my goodness, you're being judged!</h2>
           <p>Hang tight while everyone guesses your answers...</p>
         </div>
       `;
-    } else {
-      renderGuessingRound(targetPlayer, players);
+      return;
     }
-  });
-}
 
-function renderGuessingRound(targetPlayer, allPlayers) {
-  const container = $("guessing-phase");
-  container.innerHTML = `
-    <h2 class="guessing-header">Now guessing <span class="target-name">${targetPlayer}</span>!</h2>
-    <div id="guess-container"></div>
-  `;
-
-  const guessContainer = document.getElementById("guess-container");
-  let qIndex = 0;
-  let roundScore = 0;
-
-  function renderGuessQuestion() {
-    const q = questions[qIndex];
-    if (!q) return finishGuessingRound();
-
-    guessContainer.innerHTML = `
-      <div class="question-counter">Question ${qIndex + 1} of ${questions.length}</div>
-      <h3>${q.text}</h3>
-      <div class="options-grid">
-        ${q.options.map(opt => `<button class="option-btn">${opt}</button>`).join("")}
-      </div>
-    `;
-
-    guessContainer.querySelectorAll(".option-btn").forEach(btn => {
-      btn.onclick = async () => {
-        const guess = btn.textContent;
-        const correctAnswerSnap = await gameRef.child(`players/${targetPlayer}/answers/${q.text}`).once("value");
-        const correct = correctAnswerSnap.val();
-
-        if (guess === correct) {
-          btn.classList.add("correct");
-          roundScore++;
-        } else {
-          btn.classList.add("incorrect");
-          roundScore--;
-        }
-
-        guessContainer.querySelectorAll(".option-btn").forEach(b => (b.disabled = true));
-
-        setTimeout(() => {
-          qIndex++;
-          renderGuessQuestion();
-        }, 800);
-      };
-    });
+    // Non-target players render the guessing round
+    renderGuessingRound(targetPlayer, players);
   }
 
-  renderGuessQuestion();
+  function renderGuessingRound(targetPlayer, allPlayers) {
+    const container = $("guessing-phase");
+    if (!container) return;
+    container.innerHTML = `
+      <h2 class="guessing-header">Now guessing <span class="target-name">${targetPlayer}</span>!</h2>
+      <div id="guess-container" class="qa-container"></div>
+    `;
 
-  // 🎯 FINISHING A GUESS ROUND
-  async function finishGuessingRound() {
-    // Save the player’s result for this target
-    await gameRef.child(`roundScores/${targetPlayer}/${playerId}`).set(roundScore);
+    const guessContainer = $("guess-container");
+    let qIndex = 0;
+    let roundScore = 0;
 
-    // Also update their total score
-    gameRef.child(`players/${playerId}/score`).transaction(curr => (curr || 0) + roundScore);
+    async function renderGuessQuestion() {
+      const q = questions[qIndex];
+      if (!q) return finishGuessingRound();
 
-    // Switch to temporary scoreboard
-    showSection("scoreboard");
-    renderRoundScoreboard(targetPlayer);
+      // read correct answer for this q from DB
+      const ansSnap = await gameRef.child(`players/${targetPlayer}/answers/${q.id}`).once("value");
+      const correctObj = ansSnap.val(); // { optionText, optionIndex, ts } or null
+      const correctText = correctObj ? (correctObj.optionText || "") : null;
 
-    // Host checks if everyone is done guessing this target
-    if (isHost) {
-      const snap = await gameRef.child("roundScores/" + targetPlayer).once("value");
-      const donePlayers = Object.keys(snap.val() || {});
-      const activePlayers = allPlayers.filter(p => p !== targetPlayer);
+      guessContainer.innerHTML = `
+        <div class="question-counter">Question ${qIndex + 1} of ${questions.length}</div>
+        <h3 class="question-text">${q.text}</h3>
+        <div class="options-grid">
+          ${q.options.map((opt, idx) => `<button class="option-btn" data-opt-index="${idx}">${opt}</button>`).join("")}
+        </div>
+      `;
 
-      if (donePlayers.length >= activePlayers.length) {
-        // Everyone guessed → move to next target or final scoreboard
-        const currentIndex = allPlayers.indexOf(targetPlayer);
-        const nextIndex = currentIndex + 1;
+      guessContainer.querySelectorAll(".option-btn").forEach(btn => {
+        btn.onclick = async () => {
+          const guess = btn.textContent;
+          const correct = (guess === correctText);
 
-        if (nextIndex < allPlayers.length) {
-          // Next target
+          if (correct) {
+            btn.classList.add("correct");
+            roundScore += 1;
+          } else {
+            btn.classList.add("incorrect");
+            roundScore -= 1;
+          }
+
+          // disable options
+          guessContainer.querySelectorAll(".option-btn").forEach(b => b.disabled = true);
+
           setTimeout(() => {
-            gameRef.update({ guessingIndex: nextIndex });
-          }, 4000); // small delay for scoreboard reveal
-        } else {
-          // End of game
-          setTimeout(() => {
-            gameRef.update({ phase: "scoreboard" });
-          }, 4000);
+            qIndex++;
+            renderGuessQuestion();
+          }, 600);
+        };
+      });
+    }
+
+    renderGuessQuestion();
+
+    async function finishGuessingRound() {
+      // Save the player’s result for this target
+      await gameRef.child(`roundScores/${targetPlayer}/${playerId}`).set(roundScore).catch(e => console.warn(e));
+
+      // Also update their total score transactionally
+      gameRef.child(`players/${playerId}/score`).transaction(curr => (curr || 0) + roundScore);
+
+      // Switch to temporary scoreboard (round scoreboard)
+      showSection("scoreboard");
+      renderRoundScoreboard(targetPlayer);
+
+      // Host checks whether everyone completed this target and advances index
+      if (isHost) {
+        const snap = await gameRef.child(`roundScores/${targetPlayer}`).once("value");
+        const donePlayers = Object.keys(snap.val() || {});
+        const activePlayers = allPlayers.filter(p => p !== targetPlayer);
+        if (donePlayers.length >= activePlayers.length) {
+          const currentIndex = allPlayers.indexOf(targetPlayer);
+          const nextIndex = currentIndex + 1;
+          if (nextIndex < allPlayers.length) {
+            // advance to next target (small delay so players see the round scoreboard)
+            setTimeout(() => gameRef.update({ guessingIndex: nextIndex }), 2000);
+          } else {
+            setTimeout(() => gameRef.update({ phase: "scoreboard" }), 2000);
+          }
         }
       }
     }
   }
-}
 
+  // Round scoreboard for a single target
   function renderRoundScoreboard(targetPlayer) {
-  const board = $("scoreboard");
-  board.innerHTML = `
-    <h2 class="round-title">Who knows ${targetPlayer} best?</h2>
-    <ul id="roundScoresList" class="score-list"></ul>
-    <p class="waiting-msg">(Waiting for others to finish...)</p>
-  `;
+    const board = $("scoreboard");
+    if (!board) return;
+    board.innerHTML = `
+      <h2 class="round-title">Who knows ${targetPlayer} best?</h2>
+      <ul id="roundScoresList" class="score-list"></ul>
+      <p class="waiting-msg">(Waiting for others to finish...)</p>
+    `;
 
-  const list = $("roundScoresList");
+    const list = $("roundScoresList");
+    const ref = gameRef.child("roundScores/" + targetPlayer);
 
-  const ref = gameRef.child("roundScores/" + targetPlayer);
-  ref.on("value", snap => {
-    const scores = snap.val() || {};
-    list.innerHTML = "";
+    // detach previous handler to avoid duplicates
+    try { ref.off(); } catch (e) {}
 
-    const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
-    sorted.forEach(([name, sc]) => {
-      const li = document.createElement("li");
-      li.textContent = `${name}: ${sc > 0 ? "+" + sc : sc} pts`;
-      list.appendChild(li);
+    ref.on("value", snap => {
+      const scores = snap.val() || {};
+      list.innerHTML = "";
+      const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+      sorted.forEach(([name, sc]) => {
+        const li = document.createElement("li");
+        li.textContent = `${name}: ${sc > 0 ? "+" + sc : sc} pts`;
+        list.appendChild(li);
+      });
     });
-  });
-}
+  }
 
   console.log("✅ script.js fully loaded!");
 });
-
-
