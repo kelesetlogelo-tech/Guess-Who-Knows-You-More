@@ -240,3 +240,72 @@ section.page.active {
   opacity: 0;
   transform: translateX(-20%);
 }
+
+/* ==== Guessing Phase ==== */
+#guessing-phase {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+  color: #fff;
+  text-align: center;
+}
+
+.guessing-header {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.target-name {
+  color: #00bfa5;
+  font-weight: 800;
+}
+
+.option-btn.correct {
+  background-color: #4caf50 !important;
+  color: #fff;
+}
+
+.option-btn.incorrect {
+  background-color: #e53935 !important;
+  color: #fff;
+}
+
+.judged-view {
+  text-align: center;
+  padding: 4rem;
+  color: #ffe082;
+  font-size: 1.3rem;
+}
+
+/* ROUND SCOREBOARD */
+.round-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #00bfa5;
+  margin-bottom: 1rem;
+}
+
+.score-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 auto;
+  max-width: 300px;
+  text-align: left;
+}
+
+.score-list li {
+  background: rgba(255,255,255,0.1);
+  border-radius: 1rem;
+  padding: 0.5rem 1rem;
+  margin: 0.4rem 0;
+  font-weight: 600;
+}
+
+.waiting-msg {
+  opacity: 0.8;
+  margin-top: 1rem;
+  font-style: italic;
+}
+
