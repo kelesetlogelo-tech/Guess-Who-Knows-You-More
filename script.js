@@ -91,63 +91,88 @@ document.addEventListener("DOMContentLoaded", () => {
     subscribeToGame(code);
   }
 
-  // ---------------- SUBSCRIBE TO GAME ----------------
-  function subscribeToGame(code) {
-    if (!window.db) return;
+  function markPlayerReady() {
+  if (!gameRef || !playerId) return;
 
-    const ref = window.db.ref("rooms/" + code);
+  // ✅ Save player answers before marking ready
+  gameRef.child(`players/${playerId}/answers`).set(answers);
 
-    // detach previous to avoid double handlers (defensive)
-    try { ref.off(); } catch (e) {}
+  // ✅ Mark player ready
+  gameRef.child(`players/${playerId}/ready`).set(true);
 
-    ref.on("value", snap => {
-      const data = snap.val();
-      if (!data) return;
+  showSection("pre-guess-waiting");
 
-      // --- ROOM CODE & PLAYER COUNTS ---
-      $("room-code-display-game").textContent = "Room Code: " + code;
-      const playersObj = data.players || {};
-      const joinedCount = Object.keys(playersObj).length;
-      const expected = data.numPlayers || "?";
-      $("players-count").textContent = `Players joined: ${joinedCount} / ${expected}`;
-
-      // --- UPDATE PLAYER LIST ---
-      const list = $("playerList");
-      if (list) {
-        list.innerHTML = "";
-        Object.keys(playersObj).forEach(name => {
-          const li = document.createElement("li");
-          const ready = playersObj[name].ready ? " ✅" : "";
-          li.textContent = name + ready;
-          list.appendChild(li);
-        });
-      }
-
-      // --- HOST: SHOW BEGIN GAME BUTTON WHEN FULL ---
-      const beginBtn = $("begin-game-btn");
-      if (isHost && beginBtn) {
-        if (expected !== "?" && joinedCount >= expected) beginBtn.classList.remove("hidden");
-        else beginBtn.classList.add("hidden");
-      } else if (beginBtn) {
-        // always hide for non-hosts
-        beginBtn.classList.add("hidden");
-      }
-
-      // --- PHASE CHANGE: avoid re-triggering same phase repeatedly ---
-      if (data.phase !== window.currentPhase) {
-        window.currentPhase = data.phase;
-        renderPhase(data.phase, code);
-      }
-
-      // If host and everyone ready in pre-guess, advance to guessing (defensive)
-      if (isHost && data.phase === "pre-guess") {
-        const allReady = Object.values(playersObj).length > 0 && Object.values(playersObj).every(p => p.ready);
-        if (allReady) {
-          ref.update({ phase: "guessing", guessingIndex: 0 });
-        }
-      }
-    });
+  // ✅ Host checks if all ready after a short delay
+  if (isHost) {
+    setTimeout(() => checkAllPlayersReady(gameRef.key), 800);
   }
+}
+
+function checkAllPlayersReady(code) {
+  const ref = window.db.ref("rooms/" + code + "/players");
+  ref.once("value").then(snap => {
+    const players = snap.val() || {};
+    const allReady = Object.values(players).every(p => p.ready);
+
+    if (allReady) {
+      console.log("🎯 All players finished Q&A — moving to pre-guess phase");
+      // ✅ Move to PRE-GUESS first (not directly to guessing)
+      window.db.ref("rooms/" + code).update({
+        phase: "pre-guess",
+        guessingIndex: 0
+      });
+    }
+  });
+}
+  // ---------------- SUBSCRIBE TO GAME ----------------
+function subscribeToGame(code) {
+  if (!window.db) return;
+
+  const ref = window.db.ref("rooms/" + code);
+
+  ref.on("value", snap => {
+    const data = snap.val();
+    if (!data) return;
+
+    $("room-code-display-game").textContent = "Room Code: " + code;
+    const playersObj = data.players || {};
+    const joinedCount = Object.keys(playersObj).length;
+    const expected = data.numPlayers || "?";
+    $("players-count").textContent = `Players joined: ${joinedCount} / ${expected}`;
+
+    // --- Player List ---
+    const list = $("playerList");
+    list.innerHTML = "";
+    Object.keys(playersObj).forEach(name => {
+      const li = document.createElement("li");
+      const ready = playersObj[name].ready ? " ✅" : "";
+      li.textContent = name + ready;
+      list.appendChild(li);
+    });
+
+    // --- Host shows Begin Game button ---
+    const beginBtn = $("begin-game-btn");
+    if (isHost && beginBtn) {
+      if (joinedCount >= expected) beginBtn.classList.remove("hidden");
+      else beginBtn.classList.add("hidden");
+    }
+
+    // --- Only react to new phases ---
+    if (data.phase !== window.currentPhase) {
+      window.currentPhase = data.phase;
+      renderPhase(data.phase, code);
+    }
+
+    // ✅ Host automatically moves from PRE-GUESS → GUESSING
+    if (isHost && data.phase === "pre-guess") {
+      const allReady = Object.values(playersObj).every(p => p.ready);
+      if (allReady) {
+        console.log("🚀 Everyone ready in pre-guess, moving to guessing phase");
+        ref.child("phase").set("guessing");
+      }
+    }
+  });
+}
 
   // ====== Q&A QUESTIONS (10) ======
   const questions = [
@@ -457,3 +482,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
   console.log("✅ script.js fully loaded!");
 });
+
