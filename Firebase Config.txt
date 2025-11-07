@@ -11,7 +11,8 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = firebase.initializeApp(firebaseConfig);
+firebase.initializeApp(firebaseConfig);
 window.db = firebase.database();
 console.log("Firebase initialized successfully — window.db is set");
+
 
