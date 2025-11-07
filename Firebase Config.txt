@@ -15,7 +15,14 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 window.db = getDatabase(app);
+if (window.db) {
+  // safe to use Firebase
+}
+
+
+console.log("window.db:", window.db);
 console.log("Firebase initialized successfully — window.db is set");
+
 
 
 
