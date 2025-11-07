@@ -1,4 +1,4 @@
-/* === GLOBAL RESET === */
+/* 🌈 UNIVERSAL STYLES */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -7,127 +7,80 @@
 }
 
 body {
-  min-height: 100vh;
   color: #fff;
+  min-height: 100vh;
   overflow: hidden;
-  transition: background 1s ease;
+  transition: background 0.8s ease;
 }
 
-/* === PHASE-BASED BACKGROUNDS (VIBRANT GRADIENTS) === */
-body.landing-phase {
-  background: linear-gradient(135deg, #fff700, #ff8a00, #ff00c8);
-  background-size: 400% 400%;
-  animation: gradientShift 12s ease infinite;
+h1, h2, h3 {
+  text-align: center;
+  margin-bottom: 0.6rem;
 }
 
-body.waiting-phase {
-  background: linear-gradient(135deg, #001f3f, #004080, #00aaff);
-  background-size: 400% 400%;
-  animation: gradientShift 10s ease infinite;
-}
-
-body.qa-phase {
-  background: linear-gradient(135deg, #ff9966, #ff5e62, #ff7f50);
-  background-size: 400% 400%;
-  animation: gradientShift 9s ease infinite;
-}
-
-body.pre-guess-phase {
-  background: linear-gradient(135deg, #4e4376, #2b5876, #c06c84);
-  background-size: 400% 400%;
-  animation: gradientShift 10s ease infinite;
-}
-
-body.guessing-phase {
-  background: linear-gradient(135deg, #00c9ff, #92fe9d, #00e1d9);
-  background-size: 400% 400%;
-  animation: gradientShift 11s ease infinite;
-}
-
-body.scoreboard-phase {
-  background: linear-gradient(135deg, #7f00ff, #e100ff, #eaafc8);
-  background-size: 400% 400%;
-  animation: gradientShift 12s ease infinite;
-}
-
-@keyframes gradientShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-/* === PAGES === */
 .page {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: calc(100vh - 40px);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.6s ease;
+  height: 100vh;
+  padding: 2rem;
+  text-align: center;
 }
 
 .hidden {
   display: none !important;
 }
 
-/* === CINEMATIC OVERLAY === */
+/* 🌀 Transition Overlay */
 #phase-transition-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   background: black;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.8s ease;
-  z-index: 999;
+  transition: opacity 0.6s ease;
+  z-index: 1000;
 }
 #phase-transition-overlay.active {
   opacity: 1;
 }
 
-/* === LANDING PAGE CONTAINER === */
-#landing-page .container,
-section#landing-page .container {
-  background: rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(10px);
-  border: 2px solid rgba(255, 255, 255, 0.4);
+/* 🌟 LANDING PAGE */
+body.landing-phase {
+  background: linear-gradient(135deg, #ff007f, #ffe259);
+}
+
+#landing-page .container {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+  padding: 2rem 3rem;
   border-radius: 2rem;
-  padding: 3rem 2.5rem;
-  max-width: 520px;
-  margin: 5rem auto;
-  box-shadow: 0 8px 30px rgba(255, 0, 180, 0.3), 0 0 40px rgba(255, 230, 0, 0.3);
+  box-shadow: 0 0 25px rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
   text-align: center;
-  color: #fff;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  max-width: 400px;
 }
 
-#landing-page .container:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 40px rgba(255, 0, 180, 0.4), 0 0 60px rgba(255, 230, 0, 0.4);
+.input-block {
+  margin-top: 1.5rem;
 }
 
-/* Headings & subtitle */
-#landing-page h1 {
-  font-size: 2.8rem;
-  font-weight: 800;
-  letter-spacing: 1px;
-  color: #ffffff;
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-  margin-bottom: 0.5rem;
+.input-block input {
+  width: 100%;
+  margin-bottom: 0.7rem;
+  padding: 0.6rem 1rem;
+  border: none;
+  border-radius: 1.5rem;
+  text-align: center;
+  font-size: 1rem;
+  outline: none;
+  color: #333;
 }
 
-#landing-page h2 {
-  font-size: 1.2rem;
-  font-weight: 500;
-  color: #fffaf5;
-  opacity: 0.9;
-  margin-bottom: 2rem;
+.divider {
+  margin: 1.5rem 0;
+  font-weight: bold;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 /* 💡 VIBRANT BUTTONS */
@@ -150,184 +103,38 @@ button:hover {
   transform: translateY(-2px);
 }
 
-/* === CONTAINERS === */
-.container {
-  text-align: center;
-  max-width: 520px;
-  padding: 2rem;
-  background: rgba(0, 0, 0, 0.35);
-  border-radius: 24px;
-  box-shadow: 0 0 25px rgba(0, 0, 0, 0.25);
-}
-
-.title {
-  font-size: 3rem;
-  margin-bottom: 0.5rem;
-  font-weight: 700;
-  color: #ffffff;
-}
-
-.subtitle {
-  font-size: 1.2rem;
-  margin-bottom: 1.2rem;
-  opacity: 0.9;
-  color: #f8f8f8;
-}
-
-.instruction {
-  font-size: 1rem;
-  font-style: italic;
-  margin-bottom: 1.5rem;
-  color: #fff4cc;
-}
-
-/* === INPUTS & FORMS === */
-.form-group {
-  margin: 1rem 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-}
-
-input {
-  padding: 0.7rem 1rem;
-  border: none;
-  border-radius: 30px;
-  outline: none;
-  font-size: 1rem;
-  color: #333;
-}
-
-/* === DIVIDER === */
-.divider {
-  margin: 1.5rem 0;
-  opacity: 0.85;
-  font-weight: 600;
-  color: #f9f9f9;
-}
-
-/* === BUTTONS === */
-.teal-btn,
-.option-btn {
-  background: linear-gradient(135deg, #1abc9c, #16a085, #20e3b2);
-  color: white;
-  border: none;
-  padding: 0.9rem 1.6rem;
-  border-radius: 999px;
-  font-weight: 700;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
-}
-
-.teal-btn:hover,
-.option-btn:hover {
-  transform: scale(1.07);
-  background: linear-gradient(135deg, #20e3b2, #0d9f8a);
-}
-
-/* === WAITING ROOM === */
-.room-code {
-  font-size: 1.4rem;
-  margin: 1rem 0;
-  color: #0fd4c0;
-  font-weight: bold;
-  letter-spacing: 1px;
-}
-
-.player-list {
-  list-style: none;
-  margin-top: 1rem;
-  font-size: 1.1rem;
-  color: #fff;
-}
-
-/* === Q&A PHASE === */
-.qa-container {
-  text-align: center;
-  padding: 2rem;
-  max-width: 600px;
-}
-
-.question-counter {
-  font-weight: bold;
-  margin-bottom: 1rem;
-  color: #6ee7b7;
-  font-size: 1.1rem;
-}
-
-.qa-tile {
-  background: rgba(0, 0, 0, 0.45);
-  border-radius: 1.5rem;
-  padding: 2rem;
-  box-shadow: 0 0 25px rgba(0, 0, 0, 0.25);
-  animation: slideIn 0.6s ease;
-}
-
-.qa-tile.slide-out {
-  animation: slideOut 0.6s forwards ease;
-}
-
-@keyframes slideIn {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
-}
-
-@keyframes slideOut {
-  from { transform: translateX(0); opacity: 1; }
-  to { transform: translateX(-100%); opacity: 0; }
-}
-
-/* === OPTION BUTTONS (2 COLUMNS, PILL SHAPE) === */
-.options-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
-  margin-top: 1.5rem;
-}
-
-.option-btn {
-  font-size: 1rem;
-  padding: 1rem;
-  text-align: center;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #1abc9c, #16a085, #20e3b2);
-  color: #fff;
-  font-weight: 700;
-  transition: all 0.25s ease;
-}
-
-.option-btn.correct {
-  background: linear-gradient(135deg, #1dd1a1, #10ac84);
-}
-.option-btn.incorrect {
-  background: linear-gradient(135deg, #ff6b6b, #ee5253);
-}
-
-/* === SCOREBOARD === */
-.score-list {
-  list-style: none;
-  font-size: 1.2rem;
-  margin-top: 1.5rem;
-}
-
-.score-list li {
-  margin: 0.4rem 0;
-}
-
-.round-title {
-  color: #a2facf;
-  font-weight: 600;
-}
-
-.waiting-msg {
-  opacity: 0.8;
+footer {
+  margin-top: 2rem;
   font-size: 0.9rem;
-  margin-top: 0.6rem;
+  color: rgba(255, 255, 255, 0.9);
 }
 
-* 🤪 Scene Taglines */
+/* 🧡 WAITING ROOM */
+body.waiting-phase {
+  background: linear-gradient(135deg, #ff8a00, #e52e71);
+}
+
+/* 🎭 Q&A PHASE */
+body.qa-phase {
+  background: linear-gradient(135deg, #ffb347, #ffcc33);
+}
+
+/* 🧘 PRE-GUESS WAITING */
+body.pre-guess-phase {
+  background: linear-gradient(135deg, #30cfd0, #330867);
+}
+
+/* 💎 GUESSING PHASE */
+body.guessing-phase {
+  background: linear-gradient(135deg, #11998e, #38ef7d);
+}
+
+/* 💜 SCOREBOARD */
+body.scoreboard-phase {
+  background: linear-gradient(135deg, #8e2de2, #4a00e0);
+}
+
+/* 🤪 Scene Taglines */
 .scene-tagline {
   font-style: italic;
   font-size: 1rem;
@@ -335,28 +142,93 @@ input {
   margin-bottom: 1rem;
 }
 
-/* === FOOTER === */
-footer {
-  position: fixed;
-  bottom: 0;
-  width: 100%;
-  text-align: center;
-  font-size: 0.9rem;
-  color: #fff;
-  opacity: 0.8;
-  padding: 0.5rem;
-}
-
-/* === LOADING DOTS === */
-.loading-dots {
-  font-size: 2rem;
-  color: #6ee7b7;
+/* 💬 Room Info */
+#room-code-display-game, #players-count {
   margin-top: 1rem;
-  animation: pulse 1.5s infinite;
-}
-@keyframes pulse {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 1; }
+  font-weight: bold;
 }
 
+/* ❓ Q&A Styles */
+#qa-container {
+  max-width: 500px;
+  margin: 0 auto;
+  text-align: center;
+}
 
+.question-counter {
+  margin-bottom: 1rem;
+  font-weight: bold;
+  color: #fff;
+  opacity: 0.9;
+}
+
+.qa-tile {
+  transition: all 0.6s ease;
+}
+
+.qa-tile.slide-out {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+
+.question-text {
+  margin-bottom: 1.2rem;
+}
+
+/* 💬 Options grid (two columns, pill buttons) */
+.options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+}
+
+.option-btn {
+  background: #009688;
+  border: none;
+  border-radius: 2rem;
+  padding: 0.8rem 1rem;
+  font-weight: bold;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 8px rgba(0, 150, 136, 0.5);
+}
+
+.option-btn:hover {
+  background: #00bfa5;
+  box-shadow: 0 0 15px rgba(0, 191, 165, 0.8);
+  transform: translateY(-2px);
+}
+
+.option-btn.correct {
+  background: #4caf50;
+  box-shadow: 0 0 15px rgba(76, 175, 80, 0.9);
+}
+
+.option-btn.incorrect {
+  background: #e53935;
+  box-shadow: 0 0 15px rgba(229, 57, 53, 0.9);
+}
+
+/* 🏆 Scoreboard */
+.score-list {
+  list-style: none;
+  padding: 0;
+  margin-top: 1rem;
+}
+
+.score-list li {
+  margin: 0.4rem 0;
+  font-weight: bold;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+}
+
+.round-title {
+  margin-bottom: 1rem;
+}
+
+.waiting-msg {
+  margin-top: 0.8rem;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
