@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>If I Were... | How well do you know your tribe?</title>
   <link rel="stylesheet" href="style.css" />
+  <script defer src="firebase-config.js"></script>
+  <script defer src="script.js"></script>
 </head>
 <body class="landing-phase">
 
@@ -71,13 +73,18 @@
   <section id="guessing-phase" class="page hidden">
     <h2>Guessing Phase 🔮</h2>
     <p class="scene-tagline">“Now’s your chance to expose how well you really know them.”</p>
+    <div id="guessing-phase-content">
+    <div id="guess-container" class="qa-container"></div>
+    </div>
   </section>
 
   <!-- 🏆 SCOREBOARD -->
   <section id="scoreboard" class="page hidden">
     <h2>Scoreboard 🏆</h2>
-    <p class="scene-tagline">“The truth comes out — and so do the bragging rights.”</p>
+    <div class="scene-tagline">“Bragging rights loading... please wait 🤓”</div>
     <div id="scoreboard-container"></div>
+    <ul id="roundScoresList" class="score-list"></ul>
+    <p class="waiting-msg">(Waiting for others to finish...)</p>
   </section>
 
 <!-- ✅ Firebase Core + Database SDK -->
@@ -90,6 +97,7 @@
   
 </body>
 </html>
+
 
 
 
