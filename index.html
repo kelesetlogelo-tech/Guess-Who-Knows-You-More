@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>If I Were... | How well do you know your tribe?</title>
   <link rel="stylesheet" href="style.css" />
+
+  <!-- ✅ Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <!-- ✅ Config + Game Logic -->
   <script defer src="firebase-config.js"></script>
   <script defer src="script.js"></script>
 </head>
@@ -23,7 +29,7 @@
         <h3>Create a Room</h3>
         <input type="text" id="hostName" placeholder="Your name" />
         <input type="number" id="playerCount" placeholder="Number of players" />
-        <button id="create-room-btn">Create Room</button>
+        <button id="create-room-btn" class="vibrant-btn">Create Room</button>
       </div>
 
       <div class="divider">— or —</div>
@@ -32,7 +38,7 @@
         <h3>Join a Room</h3>
         <input type="text" id="playerName" placeholder="Your name" />
         <input type="text" id="roomCode" placeholder="Room code" />
-        <button id="join-room-btn">Join Room</button>
+        <button id="join-room-btn" class="vibrant-btn">Join Room</button>
       </div>
 
       <footer>Designed with 💗 by Kelz</footer>
@@ -46,7 +52,7 @@
     <div id="room-code-display-game" class="info"></div>
     <div id="players-count"></div>
     <ul id="playerList"></ul>
-    <button id="begin-game-btn" class="hidden">Begin Game</button>
+    <button id="begin-game-btn" class="vibrant-btn hidden">Begin Game</button>
   </section>
 
   <!-- ❓ Q&A PHASE -->
@@ -60,47 +66,29 @@
   <section id="pre-guess-waiting" class="page hidden">
     <h2>Waiting for the tribe... ⏳</h2>
     <p class="scene-tagline">“Breathe in. Judgement approaches.”</p>
-    <p>Hang tight while everyone finishes their Q&A’s!</p>
-    
-    <!-- Host-only control -->
+    <p id="waiting-status">Hang tight while everyone finishes their Q&A’s!</p>
+
+    <!-- 🧭 Host-only control -->
     <button id="begin-guessing-btn" class="vibrant-btn hidden">
       Begin Guessing Phase 🎯
     </button>
-  <ul id="playerList"></ul>
-</section>
+  </section>
 
   <!-- 🔮 GUESSING PHASE -->
   <section id="guessing-phase" class="page hidden">
     <h2>Guessing Phase 🔮</h2>
     <p class="scene-tagline">“Now’s your chance to expose how well you really know them.”</p>
-    <div id="guessing-phase-content">
     <div id="guess-container" class="qa-container"></div>
-    </div>
   </section>
 
   <!-- 🏆 SCOREBOARD -->
   <section id="scoreboard" class="page hidden">
     <h2>Scoreboard 🏆</h2>
-    <div class="scene-tagline">“Bragging rights loading... please wait 🤓”</div>
+    <p class="scene-tagline">“Bragging rights loading... please wait 🤓”</p>
     <div id="scoreboard-container"></div>
     <ul id="roundScoresList" class="score-list"></ul>
     <p class="waiting-msg">(Waiting for others to finish...)</p>
   </section>
 
-<!-- ✅ Firebase Core + Database SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-<!-- ✅ Your config and main logic -->
-<script type="module" src="firebase-config.js"></script>
-<script src="script.js"></script>
-  
 </body>
 </html>
-
-
-
-
-
-
-
