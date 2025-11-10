@@ -632,39 +632,3 @@ document.addEventListener("DOMContentLoaded", () => {
                         }
                     });
                 }
-
-                function showScoreboard(data) {
-                    const container = document.getElementById("game-area");
-                    const roundScores = data.roundScores || {};
-                    const players = data.players || {};
-
-                    let html = `<div class="scoreboard fade-in"><h2>🏆 Round Results</h2>`;
-
-                    Object.entries(roundScores).forEach(([target, results]) => {
-                        html += `<div class="round-block"><h3>🎯 ${target}'s Round</h3><ul>`;
-                        Object.entries(results).forEach(([player, score]) => {
-                            html += `<li>${player}: <strong>${score}</strong> pts</li>`;
-                        });
-                        html += `</ul></div>`;
-                    });
-
-                    html += `<h2>🔥 Total Scores</h2><ul>`;
-                    Object.entries(players).forEach(([player, obj]) => {
-                        html += `<li>${player}: <strong>${obj.score || 0}</strong></li>`;
-                    });
-                    html += `</ul></div>`;
-
-                    if (isHost) {
-                        html += `<button id="reveal-winner" class="vibrant-btn">Reveal Winner 🎉</button>`;
-                    }
-
-                    container.innerHTML = html;
-
-                    if (isHost) {
-                        document.getElementById("reveal-winner").onclick = () => {
-                            gameRef.update({
-                                phase: "reveal"
-                            });
-                        };
-                    }
-                }
