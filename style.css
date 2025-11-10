@@ -210,11 +210,29 @@ body.scoreboard-phase {
   box-shadow: 0 0 15px rgba(229, 57, 53, 0.9);
 }
 
+.fade-in {
+  animation: fadeIn 0.8s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .guessing-intro {
   text-align: center;
   color: white;
   padding: 2rem;
 }
+
+.guessing-hint {
+  margin-top: 1rem;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 1rem;
+  border-radius: 1rem;
+  font-style: italic;
+}
+
 
 .guess-question-card {
   background: rgba(255, 255, 255, 0.15);
@@ -370,3 +388,4 @@ body.scoreboard-phase {
 .primary-btn:hover {
   box-shadow: 0 0 15px #ff00aa;
 }
+
