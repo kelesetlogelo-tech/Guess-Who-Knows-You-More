@@ -320,6 +320,14 @@ function startGuessing() {
     const currentUserId = sessionStorage.getItem("playerId");
     const isTarget = currentUserId === targetPlayer[0];
 
+    const hostBtn = document.getElementById("next-target-btn");
+    if (isHost) {
+      hostBtn.classList.remove("hidden");
+      hostBtn.onclick = () => advanceToNextTarget(currentRoomCode);
+    } else {
+      hostBtn.classList.add("hidden");
+    }
+
     // === 🎯 If YOU are being judged ===
     if (isTarget) {
       container.innerHTML = `
@@ -409,6 +417,7 @@ async function advanceToNextTarget(roomCode) {
 }
 
 });
+
 
 
 
