@@ -299,10 +299,117 @@ document.addEventListener("DOMContentLoaded", () => {
     } else doSwitch();
   }
 
-  // ===== GUESSING =====
-  // (unchanged guessing & scoreboard code)
-  // ... your guessing + scoreboard logic remains here unchanged ...
+// =========================
+// 🎯 GUESSING PHASE LOGIC
+// =========================
+function startGuessing() {
+  const container = document.getElementById("guess-container");
+  if (!container || !gameRef) return;
+
+  // Listen for real-time guessing state
+  gameRef.on("value", (snapshot) => {
+    const data = snapshot.val() || {};
+    const players = data.players ? Object.entries(data.players) : [];
+    const currentTargetIndex = data.currentTargetIndex || 0;
+    const targetPlayer = players.sort((a, b) =>
+      a[1].name.localeCompare(b[1].name)
+    )[currentTargetIndex];
+
+    if (!targetPlayer) return;
+
+    const currentUserId = sessionStorage.getItem("playerId");
+    const isTarget = currentUserId === targetPlayer[0];
+
+    // === 🎯 If YOU are being judged ===
+    if (isTarget) {
+      container.innerHTML = `
+        <div class="guessing-intro fade-in">
+          <h2>🎯 ${targetPlayer[1].name}, you're being judged!</h2>
+          <p class="scene-tagline">“Sit back and brace yourself…”</p>
+          <div class="waiting-bubble">Waiting for everyone’s guesses...</div>
+        </div>
+      `;
+      return;
+    }
+
+    // === 🤔 If you are a guesser ===
+    container.innerHTML = `
+      <div class="guessing-intro fade-in">
+        <h2>🤔 Guessing Time!</h2>
+        <p class="scene-tagline">“What would ${targetPlayer[1].name} say?”</p>
+        <div id="guess-questions"></div>
+        <button id="submit-guesses" class="primary-btn">Submit Guesses ✅</button>
+      </div>
+    `;
+
+    const questionContainer = document.getElementById("guess-questions");
+    const questions = data.questions || [
+        { id: "q1", text: "If I were a sound effect, I'd be:", options: ["Ka-ching!", "Dramatic gasp", "Boing!", "Evil laugh"] },
+        { id: "q2", text: "If I were a weather forecast, I'd be:", options: ["100% chill", "Partly dramatic with a chance of chaos!", "Heatwave vibes", "Sudden tornado of opinions"] },
+        { id: "q3", text: "If I were a breakfast cereal, I'd be:", options: ["Jungle Oats", "WeetBix", "Rice Krispies", "MorVite", "That weird healthy one no-one eats"] },
+        { id: "q4", text: "If I were a bedtime excuse, I'd be...", options: ["I need water", "There's a spider in my room", "I can't sleep without 'Pillow'", "There see shadows outside my window", "Just one more episode"] },
+        { id: "q5", text: "If I were a villain in a movie, I'd be...", options: ["Scarlet Overkill", "Grinch", "Thanos", "A mosquito in your room at night", "Darth Vader"] },
+        { id: "q6", text: "If I were a kitchen appliance, I'd be...", options: ["A blender on high speed with no lid", "A toaster that only pops when no one’s looking", "Microwave that screams when it’s done", "A fridge that judges your snack choices"] },
+        { id: "q7", text: "If I were a dance move, I'd be...", options: ["The awkward shuffle at weddings", "Kwasakwasa, Ba-baah!", "The 'I thought no one was watching' move", "The knee-pop followed by a regretful sit-down"] },
+        { id: "q8", text: "If I were a text message, I'd be...", options: ["A typo-ridden voice-to-text disaster", "A three-hour late 'LOL'", "A group chat gif spammer", "A mysterious 'K.' with no context"] },
+        { id: "q9", text: "If I were a warning label, I'd be...", options: ["Caution: May spontaneously break into song", "Contents may cause uncontrollable giggles", "Qaphela: Gevaar/Ingozi", "Warning: Will talk your ear off about random facts", "May contain traces of impulsive decisions"] },
+        { id: "q10", text: "If I were a type of chair, I’d be…", options: ["A Phala Phala sofa", "A creaky antique that screams when you sit", "One of those folding chairs that attack your fingers", "A throne made of regrets and snack crumbs"] }
+    ];
+
+    // Generate 10 pill-style guessing options
+    questions.forEach((q, idx) => {
+      const div = document.createElement("div");
+      div.className = "guess-question-card";
+      div.innerHTML = `
+        <p>${idx + 1}. ${q}</p>
+        <input type="text" placeholder="Your guess for ${targetPlayer[1].name}..." data-q="${idx}">
+      `;
+      questionContainer.appendChild(div);
+    });
+
+    // On submit
+    document.getElementById("submit-guesses").onclick = async () => {
+      const guesses = {};
+      document.querySelectorAll("#guess-questions input").forEach((input) => {
+        guesses[input.dataset.q] = input.value || "—";
+      });
+
+      await gameRef
+        .child("guesses")
+        .child(targetPlayer[0])
+        .child(currentUserId)
+        .set(guesses);
+
+      container.innerHTML = `
+        <div class="fade-in guessing-intro">
+          <h3>✅ Guesses submitted!</h3>
+          <p class="scene-tagline">“Now let's see how right (or wrong) you were...”</p>
+        </div>
+      `;
+    };
+  });
+}
+
+// === HOST ADVANCES TO NEXT TARGET ===
+async function advanceToNextTarget(roomCode) {
+  const snapshot = await window.db.ref("games/" + roomCode).once("value");
+  const data = snapshot.val();
+  const players = Object.keys(data.players || {});
+  const nextIndex = (data.currentTargetIndex || 0) + 1;
+
+  if (nextIndex < players.length) {
+    await window.db.ref("games/" + roomCode).update({
+      currentTargetIndex: nextIndex
+    });
+  } else {
+    await window.db.ref("games/" + roomCode).update({
+      phase: "scoreboard"
+    });
+  }
+}
+
 });
+
 
 
 
