@@ -584,7 +584,8 @@ function launchConfetti() {
   confettiCanvas.style.height = "100vh";
   confettiCanvas.style.pointerEvents = "none";
   document.body.appendChild(confettiCanvas);
-
+}
+    
   const ctx = confettiCanvas.getContext("2d");
   const pieces = Array.from({ length: 150 }, () => ({
     x: Math.random() * window.innerWidth,
@@ -612,3 +613,4 @@ function launchConfetti() {
   draw();
   // Remove after 10 seconds
   setTimeout(() => confettiCanvas.remove(), 10000);
+}
