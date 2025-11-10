@@ -300,33 +300,54 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
 // =========================
-// 🎯 GUESSING PHASE LOGIC
+// 🎯 GUESSING PHASE LOGIC (FIXED)
 // =========================
 function startGuessing() {
   const container = document.getElementById("guess-container");
   if (!container || !gameRef) return;
 
-  // Listen for real-time guessing state
+  console.log("Guessing phase started — setting up listener...");
+
   gameRef.on("value", (snapshot) => {
     const data = snapshot.val() || {};
-    const players = data.players ? Object.entries(data.players) : [];
-    const currentTargetIndex = data.currentTargetIndex || 0;
-    const targetPlayer = players.sort((a, b) =>
-      a[1].name.localeCompare(b[1].name)
-    )[currentTargetIndex];
+    if (!data.players) {
+      console.warn("No players found yet — waiting...");
+      return;
+    }
 
-    if (!targetPlayer) return;
+    const players = Object.entries(data.players);
+    if (players.length === 0) return;
+
+    // Sort alphabetically by player name
+    const sortedPlayers = players.sort((a, b) =>
+      a[1].name.localeCompare(b[1].name)
+    );
+
+    // If no index yet, host initializes it
+    if (data.currentTargetIndex === undefined) {
+      const isHost = sessionStorage.getItem("isHost") === "true";
+      const roomCode = data.roomCode;
+      if (isHost && roomCode) {
+        console.log("Initializing first target index...");
+        window.db.ref(`games/${roomCode}`).update({ currentTargetIndex: 0 });
+      }
+      return; // Wait until index exists
+    }
+
+    const currentTargetIndex = data.currentTargetIndex;
+    const targetPlayer = sortedPlayers[currentTargetIndex];
+    if (!targetPlayer) {
+      console.warn("Target player not found yet — waiting...");
+      return;
+    }
 
     const currentUserId = sessionStorage.getItem("playerId");
     const isTarget = currentUserId === targetPlayer[0];
+    const isHost = sessionStorage.getItem("isHost") === "true";
 
-    const hostBtn = document.getElementById("next-target-btn");
-    if (isHost) {
-      hostBtn.classList.remove("hidden");
-      hostBtn.onclick = () => advanceToNextTarget(currentRoomCode);
-    } else {
-      hostBtn.classList.add("hidden");
-    }
+    console.log(
+      `Rendering guessing screen: target=${targetPlayer[1].name}, isTarget=${isTarget}`
+    );
 
     // === 🎯 If YOU are being judged ===
     if (isTarget) {
@@ -337,6 +358,7 @@ function startGuessing() {
           <div class="waiting-bubble">Waiting for everyone’s guesses...</div>
         </div>
       `;
+      document.getElementById("next-target-btn")?.classList.add("hidden");
       return;
     }
 
@@ -365,7 +387,7 @@ function startGuessing() {
     ];
 
     // Generate 10 pill-style guessing options
-    questions.forEach((q, idx) => {
+   questions.forEach((q, idx) => {
       const div = document.createElement("div");
       div.className = "guess-question-card";
       div.innerHTML = `
@@ -375,7 +397,6 @@ function startGuessing() {
       questionContainer.appendChild(div);
     });
 
-    // On submit
     document.getElementById("submit-guesses").onclick = async () => {
       const guesses = {};
       document.querySelectorAll("#guess-questions input").forEach((input) => {
@@ -395,9 +416,22 @@ function startGuessing() {
         </div>
       `;
     };
+
+    // === HOST CONTROL: SHOW "NEXT PLAYER" BUTTON ===
+    const hostBtn = document.getElementById("next-target-btn");
+    if (hostBtn) {
+      if (isHost) {
+        hostBtn.classList.remove("hidden");
+        hostBtn.onclick = () => {
+          const roomCode = data.roomCode;
+          if (roomCode) advanceToNextTarget(roomCode);
+        };
+      } else {
+        hostBtn.classList.add("hidden");
+      }
+    }
   });
 }
-
 // === HOST ADVANCES TO NEXT TARGET ===
 async function advanceToNextTarget(roomCode) {
   const snapshot = await window.db.ref("games/" + roomCode).once("value");
@@ -417,6 +451,7 @@ async function advanceToNextTarget(roomCode) {
 }
 
 });
+
 
 
 
