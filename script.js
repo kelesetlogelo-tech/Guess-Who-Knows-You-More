@@ -94,60 +94,65 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ===== SUBSCRIBE TO GAME =====
+    // ===== SUBSCRIBE TO GAME =====
   function subscribeToGame(code) {
     if (!window.db) return;
     const ref = window.db.ref("rooms/" + code);
     gameRef = ref;
 
     // ✅ Master listener — updates UI + readiness checks
-   ref.on("value", snapshot => {
-  const data = snapshot.val();
-  if (!data) return;
+    ref.on("value", snapshot => {
+      const data = snapshot.val();
+      if (!data) return;
 
-  updateRoomUI(data, code);
-  checkAllPlayersReady(snapshot); // <-- ensure this is here
-  });
-}
-// =========================
-// 🧩 CHECK ALL PLAYERS READY
-// =========================
-function checkAllPlayersReady(snapshot) {
-  const data = snapshot.val() || {};
-  const players = data.players || {};
-  const currentPhase = data.phase;
+      updateRoomUI(data, code);
+      checkAllPlayersReady(snapshot, code); // unified check
+    });
+  }
 
-  // host logic only
-  if (!isHost) return;
+  // =========================
+  // 🧩 CHECK ALL PLAYERS READY (Unified)
+  // =========================
+  function checkAllPlayersReady(snapshot, code) {
+    const data = snapshot.val() || {};
+    const players = data.players || {};
+    const phase = data.phase;
+    if (!isHost) return; // Only host runs this logic
 
-  const beginGuessingBtn = document.getElementById("begin-guessing-btn");
-  const waitingStatus = document.getElementById("waiting-status");
+    const beginGuessingBtn = document.getElementById("begin-guessing-btn");
+    const waitingStatus = document.getElementById("waiting-status");
 
-  // when everyone finished Q&A, phase already set to pre-guess
-  if (currentPhase === "pre-guess") {
     const allReady = Object.values(players).every(p => p.ready);
 
-    if (allReady) {
-      // show host control to begin guessing
-      beginGuessingBtn?.classList.remove("hidden");
-      if (waitingStatus)
-        waitingStatus.textContent = "Everyone’s done! Begin guessing 🎉";
-    } else {
-      beginGuessingBtn?.classList.add("hidden");
-      if (waitingStatus)
-        waitingStatus.textContent = "Waiting for all players to finish Q&A...";
+    // ✅ If all players finished Q&A, advance to pre-guess automatically
+    if (phase === "qa" && allReady) {
+      window.db.ref("rooms/" + code).update({ phase: "pre-guess" });
+      console.log("✅ All players ready — advancing to PRE-GUESS phase");
+      return;
+    }
+
+    // ✅ If in pre-guess, show host control to begin guessing
+    if (phase === "pre-guess") {
+      if (allReady) {
+        beginGuessingBtn?.classList.remove("hidden");
+        if (waitingStatus)
+          waitingStatus.textContent = "Everyone’s done! Begin guessing 🎉";
+      } else {
+        beginGuessingBtn?.classList.add("hidden");
+        if (waitingStatus)
+          waitingStatus.textContent = "Waiting for all players to finish Q&A...";
+      }
     }
   }
-}
 
-// =========================
-// 🎯 HOST: BEGIN GUESSING
-// =========================
-document.getElementById("begin-guessing-btn")?.addEventListener("click", async () => {
-  if (!isHost || !gameRef) return;
-  await gameRef.update({ phase: "guessing" });
-  console.log("✅ Host advanced to Guessing Phase");
-});
+  // =========================
+  // 🎯 HOST: BEGIN GUESSING
+  // =========================
+  document.getElementById("begin-guessing-btn")?.addEventListener("click", async () => {
+    if (!isHost || !gameRef) return;
+    await gameRef.update({ phase: "guessing" });
+    console.log("✅ Host advanced to Guessing Phase");
+  });
 
   // --- Update Waiting Room ---
   function updateRoomUI(data, code) {
@@ -298,5 +303,6 @@ document.getElementById("begin-guessing-btn")?.addEventListener("click", async (
   // (unchanged guessing & scoreboard code)
   // ... your guessing + scoreboard logic remains here unchanged ...
 });
+
 
 
