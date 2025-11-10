@@ -613,15 +613,5 @@ function launchConfetti() {
 
   // Remove after 10 seconds
   setTimeout(() => confettiCanvas.remove(), 10000);
-}
-  
-
-
-
-
-
-
-
-
-
-
+  }
+}  
