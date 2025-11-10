@@ -102,13 +102,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ✅ Master listener — updates UI + readiness checks
     ref.on("value", snapshot => {
-      const data = snapshot.val();
-      if (!data) return;
+  const data = snapshot.val();
+  if (!data) return;
 
-      updateRoomUI(data, code);
-      checkAllPlayersReady(snapshot, code); // unified check
-    });
+  updateRoomUI(data, code);
+  checkAllPlayersReady(snapshot);
+
+  // ✅ Detect and render current phase
+  const phase = data.phase;
+
+  if (phase === "scoreboard") {
+    showScoreboard(data); // already part of your guessing loop
+  } else if (phase === "reveal") {
+    showRevealPhase(data); // 🎉 final winner animation
   }
+});
 
   // =========================
   // 🧩 CHECK ALL PLAYERS READY (Unified)
@@ -312,50 +320,70 @@ function startGuessing() {
     const data = snapshot.val() || {};
     const playersObj = data.players || {};
     const players = Object.keys(playersObj);
+    if (players.length === 0) return;
 
-    if (players.length === 0) {
-      console.warn("⚠️ No players found yet.");
-      return;
-    }
-
-    console.log("🧩 Player list:", players);
-
-    // ✅ Sort alphabetically by key (since key = player name)
     const sortedPlayers = players.sort((a, b) => a.localeCompare(b));
-
-    // 🧠 Initialize target index if needed
     if (data.currentTargetIndex === undefined) {
-      if (isHost) {
-        console.log("Initializing first target index...");
-        gameRef.update({ currentTargetIndex: 0 });
-      }
+      if (isHost) gameRef.update({ currentTargetIndex: 0 });
       return;
     }
 
     const currentTargetIndex = data.currentTargetIndex;
     const targetName = sortedPlayers[currentTargetIndex];
-    if (!targetName) {
-      console.warn("⚠️ Target name not found — waiting...");
-      return;
-    }
-
     const isTarget = playerId === targetName;
 
-    console.log(`🎯 Rendering guessing screen: target=${targetName}, isTarget=${isTarget}`);
-
-    // === 🎯 Target player's view ===
+    // 🟣 --- Target’s Screen ---
     if (isTarget) {
       container.innerHTML = `
         <div class="guessing-intro fade-in">
           <h2>🎯 ${targetName}, you’re being judged!</h2>
           <p class="scene-tagline">“Sit back and brace yourself…”</p>
-          <div class="waiting-bubble">Waiting for everyone’s guesses...</div>
+          <div id="answer-area">
+            <h3>Enter your real answers 👇</h3>
+            <div id="answer-list"></div>
+            <button id="submit-answers" class="vibrant-btn">Submit Answers ✅</button>
+          </div>
         </div>
       `;
+
+      const questionContainer = document.getElementById("answer-list");
+      const questions = [
+        { id: "q1", text: "If I were a sound effect, I'd be:", options: ["Ka-ching!", "Dramatic gasp", "Boing!", "Evil laugh"] },
+        { id: "q2", text: "If I were a weather forecast, I'd be:", options: ["100% chill", "Partly dramatic with a chance of chaos!", "Heatwave vibes", "Sudden tornado of opinions"] },
+        { id: "q3", text: "If I were a breakfast cereal, I'd be:", options: ["Jungle Oats", "WeetBix", "Rice Krispies", "MorVite", "That weird healthy one no-one eats"] },
+        { id: "q4", text: "If I were a bedtime excuse, I'd be...", options: ["I need water", "There's a spider in my room", "I can't sleep without 'Pillow'", "There see shadows outside my window", "Just one more episode"] },
+        { id: "q5", text: "If I were a villain in a movie, I'd be...", options: ["Scarlet Overkill", "Grinch", "Thanos", "A mosquito in your room at night", "Darth Vader"] },
+        { id: "q6", text: "If I were a kitchen appliance, I'd be...", options: ["A blender on high speed with no lid", "A toaster that only pops when no one’s looking", "Microwave that screams when it’s done", "A fridge that judges your snack choices"] },
+        { id: "q7", text: "If I were a dance move, I'd be...", options: ["The awkward shuffle at weddings", "Kwasakwasa, Ba-baah!", "The 'I thought no one was watching' move", "The knee-pop followed by a regretful sit-down"] },
+        { id: "q8", text: "If I were a text message, I'd be...", options: ["A typo-ridden voice-to-text disaster", "A three-hour late 'LOL'", "A group chat gif spammer", "A mysterious 'K.' with no context"] },
+        { id: "q9", text: "If I were a warning label, I'd be...", options: ["Caution: May spontaneously break into song", "Contents may cause uncontrollable giggles", "Qaphela: Gevaar/Ingozi", "Warning: Will talk your ear off about random facts", "May contain traces of impulsive decisions"] },
+        { id: "q10", text: "If I were a type of chair, I’d be…", options: ["A Phala Phala sofa", "A creaky antique that screams when you sit", "One of those folding chairs that attack your fingers", "A throne made of regrets and snack crumbs"] }
+      ];
+
+      questions.forEach((q, idx) => {
+        const div = document.createElement("div");
+        div.className = "guess-question-card";
+        div.innerHTML = `
+          <p>${idx + 1}. ${q}</p>
+          <input type="text" placeholder="Your real answer..." data-q="${idx}">
+        `;
+        questionContainer.appendChild(div);
+      });
+
+      document.getElementById("submit-answers").onclick = async () => {
+        const answers = {};
+        document.querySelectorAll("#answer-list input").forEach((input) => {
+          answers[input.dataset.q] = input.value || "—";
+        });
+        await gameRef.child("answers").child(targetName).set(answers);
+        document.getElementById("answer-area").innerHTML = `
+          <h3>✅ Answers submitted! Waiting for everyone’s guesses...</h3>
+        `;
+      };
       return;
     }
 
-    // === 🧠 Guessers' view ===
+    // 🧩 --- Guessers’ Screen ---
     container.innerHTML = `
       <div class="guessing-intro fade-in">
         <h2>🤔 Guessing Time!</h2>
@@ -364,6 +392,7 @@ function startGuessing() {
         <button id="submit-guesses" class="primary-btn">Submit Guesses ✅</button>
       </div>
     `;
+
 
     const questionContainer = document.getElementById("guess-questions");
     const questions = data.questions || [
@@ -380,8 +409,7 @@ function startGuessing() {
     ];
 
     // Generate 10 pill-style guessing options
-   // render input boxes
-    questions.forEach((q, idx) => {
+   questions.forEach((q, idx) => {
       const div = document.createElement("div");
       div.className = "guess-question-card";
       div.innerHTML = `
@@ -391,13 +419,11 @@ function startGuessing() {
       questionContainer.appendChild(div);
     });
 
-    // submit guesses
     document.getElementById("submit-guesses").onclick = async () => {
       const guesses = {};
       document.querySelectorAll("#guess-questions input").forEach((input) => {
         guesses[input.dataset.q] = input.value || "—";
       });
-
       await gameRef.child("guesses").child(targetName).child(playerId).set(guesses);
 
       container.innerHTML = `
@@ -408,7 +434,7 @@ function startGuessing() {
       `;
     };
 
-    // === HOST: Advance to next target ===
+    // 🟢 --- Host: Proceed to scoring ---
     if (isHost) {
       let nextBtn = document.getElementById("next-target-btn");
       if (!nextBtn) {
@@ -420,18 +446,177 @@ function startGuessing() {
       }
 
       nextBtn.onclick = async () => {
-        const nextIndex = (currentTargetIndex + 1) % sortedPlayers.length;
-        await gameRef.update({ currentTargetIndex: nextIndex });
+        const answers = data.answers?.[targetName];
+        const guesses = data.guesses?.[targetName];
+        if (!answers || !guesses) {
+          alert("⏳ Wait for all submissions before scoring!");
+          return;
+        }
 
-        // if we looped back to 0, all rounds done
-        if (nextIndex === 0) {
+        const scores = {};
+        Object.entries(guesses).forEach(([guesser, guessObj]) => {
+          let score = 0;
+          Object.keys(answers).forEach((i) => {
+            const a = answers[i]?.toLowerCase() || "";
+            const g = guessObj[i]?.toLowerCase() || "";
+            if (a && g && a[0] === g[0]) score += 1; // fun simple scoring rule
+          });
+          scores[guesser] = score;
+        });
+
+        await gameRef.child("roundScores").child(targetName).set(scores);
+
+        // update total player scores
+        Object.entries(scores).forEach(([guesser, s]) => {
+          const current = playersObj[guesser]?.score || 0;
+          gameRef.child("players").child(guesser).update({ score: current + s });
+        });
+
+        // next round or scoreboard
+        const nextIndex = (currentTargetIndex + 1);
+        if (nextIndex < sortedPlayers.length) {
+          await gameRef.update({ currentTargetIndex: nextIndex });
+        } else {
           await gameRef.update({ phase: "scoreboard" });
-          console.log("🏁 All rounds complete — moving to scoreboard!");
         }
       };
     }
   });
 }
+
+  function showScoreboard(data) {
+  const container = document.getElementById("game-area");
+  const roundScores = data.roundScores || {};
+  const players = data.players || {};
+
+  let html = `<div class="scoreboard fade-in"><h2>🏆 Round Results</h2>`;
+
+  Object.entries(roundScores).forEach(([target, results]) => {
+    html += `<div class="round-block"><h3>🎯 ${target}'s Round</h3><ul>`;
+    Object.entries(results).forEach(([player, score]) => {
+      html += `<li>${player}: <strong>${score}</strong> pts</li>`;
+    });
+    html += `</ul></div>`;
+  });
+
+  html += `<h2>🔥 Total Scores</h2><ul>`;
+  Object.entries(players).forEach(([player, obj]) => {
+    html += `<li>${player}: <strong>${obj.score || 0}</strong></li>`;
+  });
+  html += `</ul></div>`;
+
+  if (isHost) {
+    html += `<button id="reveal-winner" class="vibrant-btn">Reveal Winner 🎉</button>`;
+  }
+
+  container.innerHTML = html;
+
+  if (isHost) {
+    document.getElementById("reveal-winner").onclick = () => {
+      gameRef.update({ phase: "reveal" });
+    };
+  }
+}
+
+function showRevealPhase(data) {
+  const container = document.getElementById("game-area");
+  const players = data.players || {};
+
+  // Sort players by score (descending)
+  const sorted = Object.entries(players)
+    .map(([name, obj]) => ({ name, score: obj.score || 0 }))
+    .sort((a, b) => b.score - a.score);
+
+  const winner = sorted[0]?.name || "Someone";
+  const highScore = sorted[0]?.score || 0;
+
+  // Confetti function 🎊
+  launchConfetti();
+
+  container.innerHTML = `
+    <div class="reveal-phase fade-in pastel-bg">
+      <h1 class="grand-title">🎉 The DoodleDazzle Champion Is...</h1>
+      <h2 class="winner-name">${winner}</h2>
+      <p class="scene-tagline">“All hail the master of mind-melding guesses!”</p>
+
+      <div class="podium-container">
+        <div class="podium second">
+          <div class="podium-rank">2️⃣</div>
+          <div class="player-name">${sorted[1]?.name || "—"}</div>
+          <div class="score">${sorted[1]?.score || 0} pts</div>
+        </div>
+        <div class="podium first">
+          <div class="podium-rank">🏆</div>
+          <div class="player-name">${winner}</div>
+          <div class="score">${highScore} pts</div>
+        </div>
+        <div class="podium third">
+          <div class="podium-rank">3️⃣</div>
+          <div class="player-name">${sorted[2]?.name || "—"}</div>
+          <div class="score">${sorted[2]?.score || 0} pts</div>
+        </div>
+      </div>
+
+      <h3>Final Scores:</h3>
+      <ul class="final-score-list">
+        ${sorted
+          .map(
+            (p, i) => `
+            <li class="fade-in-delay" style="animation-delay:${i * 0.2}s">
+              ${i + 1}. ${p.name} — <strong>${p.score}</strong> pts
+            </li>`
+          )
+          .join("")}
+      </ul>
+
+      <button class="vibrant-btn" onclick="location.reload()">Play Again 🔁</button>
+    </div>
+  `;
+}
+
+/* 🎊 Simple confetti burst animation using canvas */
+function launchConfetti() {
+  const confettiCanvas = document.createElement("canvas");
+  confettiCanvas.id = "confetti-canvas";
+  confettiCanvas.style.position = "fixed";
+  confettiCanvas.style.top = "0";
+  confettiCanvas.style.left = "0";
+  confettiCanvas.style.width = "100vw";
+  confettiCanvas.style.height = "100vh";
+  confettiCanvas.style.pointerEvents = "none";
+  document.body.appendChild(confettiCanvas);
+
+  const ctx = confettiCanvas.getContext("2d");
+  const pieces = Array.from({ length: 150 }, () => ({
+    x: Math.random() * window.innerWidth,
+    y: Math.random() * window.innerHeight - window.innerHeight,
+    size: Math.random() * 8 + 4,
+    color: `hsl(${Math.random() * 360}, 80%, 70%)`,
+    speed: Math.random() * 4 + 2,
+    rotation: Math.random() * 360,
+  }));
+
+  function draw() {
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    pieces.forEach((p) => {
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.rect(p.x, p.y, p.size, p.size);
+      ctx.fill();
+      p.y += p.speed;
+      p.rotation += 3;
+      if (p.y > window.innerHeight) p.y = -10;
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+
+  // Remove after 10 seconds
+  setTimeout(() => confettiCanvas.remove(), 10000);
+}
+  
+
+
 
 
 
