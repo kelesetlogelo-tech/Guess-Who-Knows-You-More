@@ -562,22 +562,4 @@ document.addEventListener("DOMContentLoaded", () => {
                             questionContainer.appendChild(div);
                         });
 
-                        document.getElementById("submit-guesses").onclick = async () => {
-                            const guesses = {};
-                            document.querySelectorAll("#guess-questions input").forEach((input) => {
-                                guesses[input.dataset.q] = input.value || "—";
-                            });
-                            await gameRef.child("guesses").child(targetName).child(playerId).set(guesses);
-
-                            container.innerHTML = `
-        <div class="fade-in guessing-intro">
-          <h3>✅ Guesses submitted!</h3>
-          <p class="scene-tagline">“Now let’s see how right (or wrong) you were...”</p>
-        </div>
-      `;
-                        };
-                    }
-                       
-
-                               });
-
+                        
