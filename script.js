@@ -398,6 +398,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         const targetName = sortedPlayers[currentTargetIndex];
                         const isTarget = playerId === targetName;
 
-                 });
+                  });
                 }
               }
+});
