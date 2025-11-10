@@ -592,7 +592,7 @@ function launchConfetti() {
     size: Math.random() * 8 + 4,
     color: `hsl(${Math.random() * 360}, 80%, 70%)`,
     speed: Math.random() * 4 + 2,
-    rotation: Math.random() * 360
+    rotation: Math.random() * 360,
   }));
 
   function draw() {
@@ -612,5 +612,3 @@ function launchConfetti() {
   draw();
   // Remove after 10 seconds
   setTimeout(() => confettiCanvas.remove(), 10000);
- }
-
