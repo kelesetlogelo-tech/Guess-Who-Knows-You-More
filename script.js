@@ -300,7 +300,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
 // =========================
-// 🎯 GUESSING PHASE LOGIC (FIXED)
+// 🎯 GUESSING PHASE LOGIC (HARDENED)
 // =========================
 function startGuessing() {
   const container = document.getElementById("guess-container");
@@ -311,19 +311,27 @@ function startGuessing() {
   gameRef.on("value", (snapshot) => {
     const data = snapshot.val() || {};
     if (!data.players) {
-      console.warn("No players found yet — waiting...");
+      console.warn("⚠️ No players found yet — waiting...");
       return;
     }
 
     const players = Object.entries(data.players);
-    if (players.length === 0) return;
+    if (players.length === 0) {
+      console.warn("⚠️ Player list empty — waiting...");
+      return;
+    }
 
-    // Sort alphabetically by player name
-    const sortedPlayers = players.sort((a, b) =>
-      a[1].name.localeCompare(b[1].name)
-    );
+    // 🔍 Debug: log the raw player data
+    console.log("🧩 Raw players data:", players);
 
-    // If no index yet, host initializes it
+    // ✅ Sort safely by name — fallback to ID if missing
+    const sortedPlayers = players.sort((a, b) => {
+      const nameA = (a[1].name || a[1].playerName || "").toString().trim().toLowerCase();
+      const nameB = (b[1].name || b[1].playerName || "").toString().trim().toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
+
+    // 🧠 If no index yet, host initializes it
     if (data.currentTargetIndex === undefined) {
       const isHost = sessionStorage.getItem("isHost") === "true";
       const roomCode = data.roomCode;
@@ -331,42 +339,40 @@ function startGuessing() {
         console.log("Initializing first target index...");
         window.db.ref(`games/${roomCode}`).update({ currentTargetIndex: 0 });
       }
-      return; // Wait until index exists
+      return;
     }
 
     const currentTargetIndex = data.currentTargetIndex;
     const targetPlayer = sortedPlayers[currentTargetIndex];
-    if (!targetPlayer) {
-      console.warn("Target player not found yet — waiting...");
+    if (!targetPlayer || !targetPlayer[1]) {
+      console.warn("⚠️ Target player not found yet — waiting...");
       return;
     }
 
+    const targetName = targetPlayer[1].name || targetPlayer[1].playerName || "Unknown Player";
     const currentUserId = sessionStorage.getItem("playerId");
     const isTarget = currentUserId === targetPlayer[0];
     const isHost = sessionStorage.getItem("isHost") === "true";
 
-    console.log(
-      `Rendering guessing screen: target=${targetPlayer[1].name}, isTarget=${isTarget}`
-    );
+    console.log(`🎯 Rendering guessing screen: target=${targetName}, isTarget=${isTarget}`);
 
-    // === 🎯 If YOU are being judged ===
+    // === 🎯 Target view ===
     if (isTarget) {
       container.innerHTML = `
         <div class="guessing-intro fade-in">
-          <h2>🎯 ${targetPlayer[1].name}, you're being judged!</h2>
+          <h2>🎯 ${targetName}, you’re being judged!</h2>
           <p class="scene-tagline">“Sit back and brace yourself…”</p>
           <div class="waiting-bubble">Waiting for everyone’s guesses...</div>
         </div>
       `;
-      document.getElementById("next-target-btn")?.classList.add("hidden");
       return;
     }
 
-    // === 🤔 If you are a guesser ===
+    // === 🧠 Guessers view ===
     container.innerHTML = `
       <div class="guessing-intro fade-in">
         <h2>🤔 Guessing Time!</h2>
-        <p class="scene-tagline">“What would ${targetPlayer[1].name} say?”</p>
+        <p class="scene-tagline">“What would ${targetName} say?”</p>
         <div id="guess-questions"></div>
         <button id="submit-guesses" class="primary-btn">Submit Guesses ✅</button>
       </div>
@@ -387,12 +393,12 @@ function startGuessing() {
     ];
 
     // Generate 10 pill-style guessing options
-   questions.forEach((q, idx) => {
+    questions.forEach((q, idx) => {
       const div = document.createElement("div");
       div.className = "guess-question-card";
       div.innerHTML = `
         <p>${idx + 1}. ${q}</p>
-        <input type="text" placeholder="Your guess for ${targetPlayer[1].name}..." data-q="${idx}">
+        <input type="text" placeholder="Your guess for ${targetName}..." data-q="${idx}">
       `;
       questionContainer.appendChild(div);
     });
@@ -412,12 +418,12 @@ function startGuessing() {
       container.innerHTML = `
         <div class="fade-in guessing-intro">
           <h3>✅ Guesses submitted!</h3>
-          <p class="scene-tagline">“Now let's see how right (or wrong) you were...”</p>
+          <p class="scene-tagline">“Now let’s see how right (or wrong) you were...”</p>
         </div>
       `;
     };
 
-    // === HOST CONTROL: SHOW "NEXT PLAYER" BUTTON ===
+    // === HOST: Show next target button ===
     const hostBtn = document.getElementById("next-target-btn");
     if (hostBtn) {
       if (isHost) {
@@ -451,6 +457,7 @@ async function advanceToNextTarget(roomCode) {
 }
 
 });
+
 
 
 
