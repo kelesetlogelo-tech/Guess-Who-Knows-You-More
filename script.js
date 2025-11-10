@@ -393,7 +393,6 @@ function startGuessing() {
       </div>
     `;
 
-
     const questionContainer = document.getElementById("guess-questions");
     const questions = data.questions || [
         { id: "q1", text: "If I were a sound effect, I'd be:", options: ["Ka-ching!", "Dramatic gasp", "Boing!", "Evil laugh"] },
@@ -451,7 +450,7 @@ function startGuessing() {
         if (!answers || !guesses) {
           alert("⏳ Wait for all submissions before scoring!");
           return;
-        }
+      }
 
         const scores = {};
         Object.entries(guesses).forEach(([guesser, guessObj]) => {
@@ -593,7 +592,7 @@ function launchConfetti() {
     size: Math.random() * 8 + 4,
     color: `hsl(${Math.random() * 360}, 80%, 70%)`,
     speed: Math.random() * 4 + 2,
-    rotation: Math.random() * 360,
+    rotation: Math.random() * 360
   }));
 
   function draw() {
@@ -614,3 +613,4 @@ function launchConfetti() {
   // Remove after 10 seconds
   setTimeout(() => confettiCanvas.remove(), 10000);
  }
+
