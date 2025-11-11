@@ -353,7 +353,8 @@ function transitionToPhase(phaseId) {
   // === EVENT BINDINGS ===
   $("createRoomBtn")?.addEventListener("click", createRoom);
   $("joinRoomBtn")?.addEventListener("click", joinRoom);
-});
+
+
 
 
 
