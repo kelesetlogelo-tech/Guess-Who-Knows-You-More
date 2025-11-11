@@ -64,7 +64,17 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!snap.exists()) return alert("Room not found.");
 
     await gameRef.child("players/" + name).set({ score: 0, ready: false });
-    showSection("waitingRoom");
+    function showSection(id) {
+      document.querySelectorAll("section.page").forEach(s => {
+        s.classList.remove("active");
+        s.classList.add("fade-out");
+        setTimeout(() => s.classList.add("hidden"), 400);
+  });
+
+  const next = document.getElementById(id);
+  next.classList.remove("hidden", "fade-out");
+  next.classList.add("fade-in", "active");
+}
     subscribeToGame(code);
   }
 
@@ -298,3 +308,4 @@ document.addEventListener("DOMContentLoaded", () => {
   $("createRoomBtn")?.addEventListener("click", createRoom);
   $("joinRoomBtn")?.addEventListener("click", joinRoom);
 });
+
