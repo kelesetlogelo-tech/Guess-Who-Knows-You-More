@@ -259,4 +259,18 @@ function showRevealPhase(data) {
   container.innerHTML = `<h1>🎉 ${winner} wins!</h1>`;
 }
 
+// 🔍 DEBUG LOGS — trace all phase transitions and DOM updates
+window.addEventListener("error", e => console.error("⚠️ JS ERROR:", e.message, e.filename, e.lineno));
+window.addEventListener("unhandledrejection", e => console.error("⚠️ PROMISE ERROR:", e.reason));
+
+const originalTransition = transitionToPhase;
+transitionToPhase = function (phase) {
+  console.log("🌀 TRANSITION DEBUG: Attempting to switch to", phase);
+  const sec = document.querySelectorAll("section.page");
+  console.log("Found sections:", Array.from(sec).map(s => s.id));
+  originalTransition(phase);
+  console.log("✅ After transition:", phase);
+};
+
 console.log("%c✅ Game script ready!", "color:#fff;background:linear-gradient(90deg,#ff00cc,#ffdd00);padding:4px 8px;border-radius:4px");
+
