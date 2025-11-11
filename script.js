@@ -3,10 +3,12 @@ console.log("script.js loaded");
 document.addEventListener("DOMContentLoaded", () => {
   console.log("DOM fully loaded");
 
-  // 👇 Show the home page on load
-  const firstPage = document.querySelector(".page");
-  if (firstPage) firstPage.classList.add("active");
-  const $ = (id) => document.getElementById(id);
+  function showSection(id) {
+  document.querySelectorAll("section.page").forEach(s => s.classList.add("hidden"));
+  const el = document.getElementById(id);
+  if (el) el.classList.remove("hidden");
+}
+
   // Attach listeners
   $("createRoomBtn").onclick = createRoom;
   $("joinRoomBtn").onclick = joinRoom;
@@ -82,29 +84,55 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = snapshot.val();
       if (!data) return;
 
-      updateRoomUI(data, code);
-      const phase = data.phase;
-
-      if (phase === "qa") showQA(data);
-      else if (phase === "guessing") showGuessing(data);
-      else if (phase === "scoreboard") showScoreboard(data);
-      else if (phase === "reveal") showRevealPhase(data);
-    });
-  }
-
-  // === UPDATE WAITING ROOM ===
   function updateRoomUI(data, code) {
-    const players = data.players || {};
-    $("players-count").textContent = `Players joined: ${Object.keys(players).length} / ${data.numPlayers}`;
-    $("player-list").innerHTML = Object.keys(players)
-      .map((p) => `<li>${p}${p === data.host ? " 👑" : ""}</li>`)
-      .join("");
+  if (!data) return;
 
-    if (isHost && Object.keys(players).length === data.numPlayers && data.phase === "waiting") {
-      // move to Q&A
-      gameRef.update({ phase: "qa" });
-    }
+  const phase = data.phase || "waiting";
+  const players = data.players || {};
+  const numPlayers = Object.keys(players).length;
+  const total = data.numPlayers || 0;
+
+  console.log("🧩 updateRoomUI called for phase:", data.phase, "with players:", Object.keys(players));
+ 
+  // 🟣 Update waiting room info safely
+  const roomCodeEl = document.getElementById("room-code-display-game");
+  const countEl = document.getElementById("players-count");
+  if (roomCodeEl) roomCodeEl.textContent = "Room Code: " + code;
+  if (countEl) countEl.textContent = `Players joined: ${numPlayers} / ${total}`;
+
+  // 🟢 Update player list if exists
+  const playerListEl = document.getElementById("players-list");
+  if (playerListEl) {
+    playerListEl.innerHTML = Object.keys(players)
+      .map(p => `<li>${p}</li>`)
+      .join("");
   }
+
+  // 🌀 Update body gradient (only if helper exists)
+  if (typeof updateBodyGradient === "function") updateBodyGradient(phase);
+
+  // 🧭 Handle phase view
+  switch (phase) {
+    case "waiting":
+      showSection("waitingRoom");
+      break;
+    case "pre-guess":
+      showSection("preGuessPhase");
+      break;
+    case "qa":
+      showSection("qaPhase");
+      break;
+    case "scoreboard":
+      showScoreboard(data);
+      break;
+    case "reveal":
+      showRevealPhase(data);
+      break;
+    default:
+      console.warn("Unknown phase:", phase);
+      showSection("createJoin");
+  }
+}
 
   // === Q&A PHASE ===
   function showQA(data) {
@@ -334,6 +362,7 @@ function transitionToPhase(phaseId) {
     updateBackgroundForPhase(phaseId);
    }
 }
+
 
 
 
