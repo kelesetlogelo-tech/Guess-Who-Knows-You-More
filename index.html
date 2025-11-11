@@ -35,44 +35,52 @@
 
   <!-- 🕺 WAITING ROOM -->
   <section id="waitingRoom" class="page hidden">
+    <div class="container">
     <h2>Gather your tribe 🪶</h2>
     <p class="scene-tagline">“Someone’s already side-eyeing the scoreboard.”</p>
-
     <div id="room-code-display-game" class="info"></div>
     <div id="players-count"></div>
     <ul id="players-list"></ul>
-
     <button id="begin-game-btn" class="vibrant-btn hidden">Begin Game</button>
+    </div>
   </section>
 
   <!-- 🎭 Q&A PHASE -->
   <section id="qaPhase" class="page hidden">
+    <div class="container">
     <h2>Q&A Time 🎭</h2>
     <p class="scene-tagline">“Think fast! The tribe is watching your vibe.”</p>
     <div id="qa-questions"></div>
     <button id="submitAnswersBtn" class="vibrant-btn">Submit Answers</button>
+    </div>
   </section>
 
   <!-- 🔮 GUESSING PHASE -->
   <section id="guessingPhase" class="page hidden">
+    <div class="container">
     <h2>Guessing Phase 🔮</h2>
     <p class="scene-tagline">“Now’s your chance to expose how well you really know them.”</p>
     <div id="guessing-content"></div>
+    </div>
   </section>
 
   <!-- 🏆 SCOREBOARD -->
   <section id="scoreboardPhase" class="page hidden">
+    <div class="container">
     <h2>Scoreboard 🏆</h2>
     <p class="scene-tagline">“Bragging rights loading... please wait 🤓”</p>
     <div id="scoreboard"></div>
     <button id="revealWinnerBtn" class="vibrant-btn hidden">Reveal Winner 👑</button>
+    </div>
   </section>
 
   <!-- 🎉 REVEAL PHASE -->
   <section id="revealPhase" class="page hidden">
+    <div class="container">
     <h2>The Final Reveal 🎉</h2>
     <p class="scene-tagline">“Only one can reign supreme…”</p>
-    <div id="revealPhase"></div>
+    <div id="revealPhaseContainer"></div>
+    </div>
   </section>
 
   <!-- ✅ Firebase SDKs -->
@@ -86,3 +94,4 @@
   <script src="script.js"></script>
 </body>
 </html>
+
