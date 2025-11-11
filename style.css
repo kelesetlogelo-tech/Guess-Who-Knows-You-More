@@ -136,3 +136,117 @@ footer {
   transition: opacity 0.8s ease-in;
 }
 
+/* ===========================================================
+   🌈 PHASE-SPECIFIC BACKGROUND GRADIENTS
+   These work with updateBackgroundForPhase(phaseId)
+   =========================================================== */
+
+body {
+  transition: background 1.2s ease, color 0.6s ease;
+  color: #fff;
+}
+
+/* === LANDING (CREATE / JOIN) === */
+body.landing-phase {
+  background: linear-gradient(135deg, #ff00cc 0%, #ffcc00 100%);
+}
+
+/* === WAITING ROOM === */
+body.waitingRoom-phase {
+  background: linear-gradient(135deg, #ff6a00 0%, #ee0979 100%);
+}
+
+/* === Q&A PHASE === */
+body.qaPhase-phase {
+  background: linear-gradient(135deg, #7928ca 0%, #ff0080 100%);
+}
+
+/* === GUESSING PHASE === */
+body.guessingPhase-phase {
+  background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
+}
+
+/* === SCOREBOARD === */
+body.scoreboardPhase-phase {
+  background: linear-gradient(135deg, #ff512f 0%, #dd2476 100%);
+}
+
+/* === REVEAL PHASE === */
+body.revealPhase-phase {
+  background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%);
+}
+
+/* ===========================================================
+   🎛️ GENERAL ELEMENT STYLES THAT COMPLEMENT THE GRADIENTS
+   =========================================================== */
+
+.vibrant-btn {
+  background: rgba(255, 255, 255, 0.15);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  padding: 0.6em 1.2em;
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.vibrant-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+
+input, 
+input[type="text"], 
+input[type="number"] {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  padding: 0.6em;
+  border-radius: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 1rem;
+}
+
+input::placeholder {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.hidden {
+  display: none !important;
+}
+
+.page {
+  transition: opacity 0.6s ease;
+}
+
+.page.active {
+  opacity: 1;
+}
+
+.page.fade-out {
+  opacity: 0;
+}
+
+.page.fade-in {
+  opacity: 1;
+}
+
+/* Center content */
+.container {
+  max-width: 600px;
+  margin: 3em auto;
+  text-align: center;
+}
+
+h1, h2, h3 {
+  text-shadow: 1px 1px 4px rgba(0,0,0,0.4);
+}
+
+footer {
+  margin-top: 2em;
+  opacity: 0.8;
+  font-size: 0.9em;
+}
+
