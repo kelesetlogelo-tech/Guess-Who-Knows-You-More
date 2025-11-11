@@ -18,6 +18,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let isHost = false;
 
   // === CREATE ROOM ===
+  const $ = (id) => document.getElementById(id);
+
   async function createRoom() {
     const name = $("hostName").value.trim();
     const count = parseInt($("playerCount").value.trim(), 10);
@@ -332,6 +334,7 @@ function transitionToPhase(phaseId) {
     updateBackgroundForPhase(phaseId);
    }
 }
+
 
 
 
