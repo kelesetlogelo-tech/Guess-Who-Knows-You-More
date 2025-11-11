@@ -35,14 +35,12 @@
 
   <!-- 🕺 WAITING ROOM -->
   <section id="waitingRoom" class="page hidden">
-    <div class="container">
     <h2>Gather your tribe 🪶</h2>
     <p class="scene-tagline">“Someone’s already side-eyeing the scoreboard.”</p>
     <div id="room-code-display-game" class="info"></div>
-    <div id="players-count"></div>
+    <p id="players-count" class="info"></p>
     <ul id="players-list"></ul>
     <button id="begin-game-btn" class="vibrant-btn hidden">Begin Game</button>
-    </div>
   </section>
 
   <!-- 🎭 Q&A PHASE -->
@@ -87,12 +85,11 @@
   <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-  <!-- ✅ Firebase Config -->
+  <!-- ✅ Firebase Config and main scripts -->
   <script defer src="firebase-config.js"></script>
-
-  <!-- ✅ Main Script -->
   <script defer src="script.js"></script>
 </body>
 </html>
+
 
 
