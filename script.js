@@ -73,15 +73,13 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!snap.exists()) return alert("Room not found.");
 
     await gameRef.child("players/" + name).set({ score: 0, ready: false });
-    
-  }
 
-  const next = document.getElementById(id);
+  const next = document.getElementById("next-section");
   next.classList.remove("hidden", "fade-out");
   next.classList.add("fade-in", "active");
-});
-    subscribeToGame(code);
 
+  subscribeToGame(code);
+}
   // === SUBSCRIBE TO GAME ===
   function subscribeToGame(code) {
     const ref = window.db.ref("rooms/" + code);
@@ -353,6 +351,7 @@ function transitionToPhase(phaseId) {
   // === EVENT BINDINGS ===
   $("createRoomBtn")?.addEventListener("click", createRoom);
   $("joinRoomBtn")?.addEventListener("click", joinRoom);
+
 
 
 
