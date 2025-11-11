@@ -7,6 +7,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const firstPage = document.querySelector(".page");
   if (firstPage) firstPage.classList.add("active");
   const $ = (id) => document.getElementById(id);
+  // Attach listeners
+  $("createRoomBtn").onclick = createRoom;
+  $("joinRoomBtn").onclick = joinRoom;
 
   function showSection(id) {
     document.querySelectorAll("section.page").forEach((s) => s.classList.add("hidden"));
@@ -49,7 +52,9 @@ document.addEventListener("DOMContentLoaded", () => {
     transitionToPhase("waitingRoom");
 
     subscribeToGame(code);
-  }
+    console.log("✅ Room created with code:", code);
+   }
+
 
   // === JOIN ROOM ===
   async function joinRoom() {
@@ -353,6 +358,7 @@ function transitionToPhase(phaseId) {
   $("createRoomBtn")?.addEventListener("click", createRoom);
   $("joinRoomBtn")?.addEventListener("click", joinRoom);
 });
+
 
 
 
