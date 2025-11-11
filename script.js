@@ -339,15 +339,6 @@ function transitionToPhase(phaseId) {
     next.classList.remove("hidden");
     next.classList.add("active");
     updateBackgroundForPhase(phaseId);
+   }
   }
-}
-
-// Similarly:
-// transitionToPhase("qa-phase");
-// transitionToPhase("scoreboard");
-// transitionToPhase("reveal-phase");
-
-  // === EVENT BINDINGS ===
-  $("createRoomBtn")?.addEventListener("click", createRoom);
-  $("joinRoomBtn")?.addEventListener("click", joinRoom);
 });
