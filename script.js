@@ -74,7 +74,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     await gameRef.child("players/" + name).set({ score: 0, ready: false });
     
-  });
+  }
 
   const next = document.getElementById(id);
   next.classList.remove("hidden", "fade-out");
@@ -355,6 +355,7 @@ function transitionToPhase(phaseId) {
   $("createRoomBtn")?.addEventListener("click", createRoom);
   $("joinRoomBtn")?.addEventListener("click", joinRoom);
 });
+
 
 
 
