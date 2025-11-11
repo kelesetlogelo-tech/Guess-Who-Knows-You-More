@@ -81,7 +81,6 @@ document.addEventListener("DOMContentLoaded", () => {
   next.classList.add("fade-in", "active");
 });
     subscribeToGame(code);
-  }
 
   // === SUBSCRIBE TO GAME ===
   function subscribeToGame(code) {
@@ -355,6 +354,7 @@ function transitionToPhase(phaseId) {
   $("createRoomBtn")?.addEventListener("click", createRoom);
   $("joinRoomBtn")?.addEventListener("click", joinRoom);
 });
+
 
 
 
