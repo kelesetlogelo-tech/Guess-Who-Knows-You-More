@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
         s.classList.add("fade-out");
         setTimeout(() => s.classList.add("hidden"), 400);
   }
-
+}
   let gameRef = null;
   let playerId = null;
   let isHost = false;
@@ -355,6 +355,7 @@ function transitionToPhase(phaseId) {
   $("createRoomBtn")?.addEventListener("click", createRoom);
   $("joinRoomBtn")?.addEventListener("click", joinRoom);
 });
+
 
 
 
