@@ -1,4 +1,4 @@
-/* 🌈 UNIVERSAL STYLES */
+/* 🌸 Global Reset & Base */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -7,500 +7,243 @@
 }
 
 body {
-  color: #fff;
+  background: linear-gradient(135deg, #ffe9ec, #e8faff, #fff4d9);
   min-height: 100vh;
-  overflow: hidden;
-  transition: background 0.8s ease;
-}
-
-h1, h2, h3 {
-  text-align: center;
-  margin-bottom: 0.6rem;
-}
-
-.page {
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  height: 100vh;
-  padding: 2rem;
   text-align: center;
+  color: #444;
+  overflow-x: hidden;
+  transition: background 1s ease-in-out;
 }
 
-.hidden {
+/* 🌈 Headings */
+h1, h2, h3 {
+  font-weight: 700;
+  margin-bottom: 10px;
+  background: linear-gradient(90deg, #ff9aa2, #ffd6a5, #caffbf, #9bf6ff, #a0c4ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* 🌸 Sections */
+.page {
+  width: 100%;
+  max-width: 600px;
+  padding: 30px 20px;
+  margin: 40px auto;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 20px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+  opacity: 0;
+  transform: translateY(20px);
+  pointer-events: none;
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+.page.active {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* Hide instantly when switching */
+.page.hidden {
   display: none !important;
 }
 
-/* 🌀 Transition Overlay */
-#phase-transition-overlay {
-  position: fixed;
-  inset: 0;
-  background: black;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.6s ease;
-  z-index: 1000;
-}
-#phase-transition-overlay.active {
-  opacity: 1;
+/* 🌼 Cards */
+.card {
+  background: #ffffffd9;
+  border-radius: 15px;
+  padding: 20px;
+  margin: 15px 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease;
 }
 
-/* 🌟 LANDING PAGE */
-body.landing-phase {
-  background: linear-gradient(135deg, #ff007f, #ffe259);
+.card:hover {
+  transform: scale(1.02);
 }
 
-#landing-page .container {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
-  padding: 2rem 3rem;
-  border-radius: 2rem;
-  box-shadow: 0 0 25px rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(8px);
-  text-align: center;
-  max-width: 400px;
-}
-
-.input-block {
-  margin-top: 1.5rem;
-}
-
-.input-block input {
-  width: 100%;
-  margin-bottom: 0.7rem;
-  padding: 0.6rem 1rem;
-  border: none;
-  border-radius: 1.5rem;
-  text-align: center;
+/* 🩷 Inputs */
+input {
+  display: block;
+  width: 90%;
+  margin: 10px auto;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
   font-size: 1rem;
-  outline: none;
-  color: #333;
-}
-
-.divider {
-  margin: 1.5rem 0;
-  font-weight: bold;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-/* 💡 VIBRANT BUTTONS */
-button {
-  background: #ff4de3;
-  border: none;
-  padding: 0.7rem 1.8rem;
-  border-radius: 2rem;
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: all 0.3s ease;
-  box-shadow: 0 0 10px rgba(255, 77, 227, 0.5);
-}
-
-button:hover {
-  background: #ff78eb;
-  box-shadow: 0 0 20px rgba(255, 120, 235, 0.9);
-  transform: translateY(-2px);
-}
-
-footer {
-  margin-top: 2rem;
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-/* 🧡 WAITING ROOM */
-body.waiting-phase {
-  background: linear-gradient(135deg, #ff8a00, #e52e71);
-}
-
-/* 🎭 Q&A PHASE */
-body.qa-phase {
-  background: linear-gradient(135deg, #ffb347, #ffcc33);
-}
-
-/* 🧘 PRE-GUESS WAITING */
-body.pre-guess-phase {
-  background: linear-gradient(135deg, #30cfd0, #330867);
-}
-
-/* 💎 GUESSING PHASE */
-body.guessing-phase {
-  background: linear-gradient(135deg, #11998e, #38ef7d);
-}
-
-/* 💜 SCOREBOARD */
-body.scoreboard-phase {
-  background: linear-gradient(135deg, #8e2de2, #4a00e0);
-}
-
-/* 🤪 Scene Taglines */
-.scene-tagline {
-  font-style: italic;
-  font-size: 1rem;
-  opacity: 0.9;
-  margin-bottom: 1rem;
-}
-
-/* 💬 Room Info */
-#room-code-display-game, #players-count {
-  margin-top: 1rem;
-  font-weight: bold;
-}
-
-/* ❓ Q&A Styles */
-#qa-container {
-  max-width: 500px;
-  margin: 0 auto;
   text-align: center;
 }
 
-.question-counter {
-  margin-bottom: 1rem;
-  font-weight: bold;
+/* 🌟 Vibrant Button */
+.vibrant-btn {
+  background: linear-gradient(135deg, #ffb3c6, #ffc6ff, #bdb2ff);
   color: #fff;
-  opacity: 0.9;
-}
-
-.qa-tile {
-  transition: all 0.6s ease;
-}
-
-.qa-tile.slide-out {
-  transform: translateX(-100%);
-  opacity: 0;
-}
-
-.question-text {
-  margin-bottom: 1.2rem;
-}
-
-/* 💬 Options grid (two columns, pill buttons) */
-.options-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.8rem;
-}
-
-.option-btn {
-  background: #009688;
   border: none;
-  border-radius: 2rem;
-  padding: 0.8rem 1rem;
-  font-weight: bold;
-  color: white;
+  border-radius: 25px;
+  padding: 12px 25px;
   cursor: pointer;
+  font-weight: 600;
+  font-size: 1rem;
+  margin-top: 10px;
   transition: all 0.3s ease;
-  box-shadow: 0 0 8px rgba(0, 150, 136, 0.5);
+  box-shadow: 0 4px 10px rgba(255, 183, 197, 0.4);
 }
 
-.option-btn:hover {
-  background: #00bfa5;
-  box-shadow: 0 0 15px rgba(0, 191, 165, 0.8);
-  transform: translateY(-2px);
+.vibrant-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(255, 183, 197, 0.6);
+  background: linear-gradient(135deg, #bdb2ff, #ffc6ff, #ffb3c6);
 }
 
-.option-btn.correct {
-  background: #4caf50;
-  box-shadow: 0 0 15px rgba(76, 175, 80, 0.9);
-}
-
-.option-btn.incorrect {
-  background: #e53935;
-  box-shadow: 0 0 15px rgba(229, 57, 53, 0.9);
-}
-
+/* 🌤 Fade Animation for Content */
 .fade-in {
-  animation: fadeIn 0.8s ease-out;
+  animation: fadeIn 0.8s ease forwards;
+}
+.fade-out {
+  animation: fadeOut 0.5s ease forwards;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(15px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.guessing-intro {
-  text-align: center;
-  color: white;
-  padding: 2rem;
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(15px);
+  }
 }
 
-.guessing-hint {
-  margin-top: 1rem;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 1rem;
-  border-radius: 1rem;
-  font-style: italic;
+/* 🌈 Pastel Reveal Phase */
+.pastel-bg {
+  background: linear-gradient(180deg, #e8faff, #ffe9ec, #fff4d9);
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 4px 30px rgba(255, 192, 203, 0.4);
 }
 
-
-.guess-question-card {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 1.5rem;
-  padding: 1rem;
-  margin: 1rem 0;
-}
-
-.guess-question-card p {
-  font-weight: 500;
-  margin-bottom: 0.5rem;
-}
-
-.guess-question-card input {
-  width: 80%;
-  padding: 0.5rem 1rem;
-  border-radius: 9999px;
-  border: none;
-  outline: none;
-  background: white;
-  color: #333;
-}
-
-.waiting-bubble {
-  background: rgba(255, 255, 255, 0.2);
-  padding: 1rem;
-  margin-top: 1.5rem;
-  border-radius: 1.5rem;
-  font-style: italic;
-}
-
-.primary-btn {
-  background: #ff00aa;
-  border: none;
-  color: white;
-  padding: 0.75rem 2rem;
-  border-radius: 9999px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: 0.3s;
-}
-
-.primary-btn:hover {
-  box-shadow: 0 0 15px #ff00aa;
-}
-
-/* 🏆 Scoreboard */
-.score-list {
-  list-style: none;
-  padding: 0;
-  margin-top: 1rem;
-}
-
-.score-list li {
-  margin: 0.4rem 0;
-  font-weight: bold;
-  text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
-}
-
-.round-title {
-  margin-bottom: 1rem;
-}
-
-.waiting-msg {
-  margin-top: 0.8rem;
-  font-size: 0.9rem;
-  opacity: 0.8;
-}
-
-#begin-guessing-btn {
-  background: linear-gradient(90deg, #00c6ff, #0072ff);
-  border: none;
-  padding: 14px 28px;
-  border-radius: 999px;
-  font-size: 1.2rem;
-  font-weight: bold;
-  color: white;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  margin-top: 1.5rem;
-  box-shadow: 0 0 10px rgba(0, 204, 255, 0.5);
-}
-
-#begin-guessing-btn:hover {
-  box-shadow: 0 0 25px rgba(0, 204, 255, 0.8);
-  transform: scale(1.05);
-}
-
-.vibrant-btn {
-  background: linear-gradient(90deg, #ff6ec4, #7873f5);
-  border: none;
-  color: white;
-  font-weight: bold;
-  padding: 14px 26px;
-  border-radius: 50px;
-  box-shadow: 0 0 12px rgba(255, 110, 196, 0.5);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 1.1rem;
-}
-.vibrant-btn:hover {
-  box-shadow: 0 0 20px rgba(255, 110, 196, 0.9);
-  transform: scale(1.05);
-}
-
-.guessing-intro {
-  text-align: center;
-  color: white;
-  padding: 2rem;
-}
-
-.guess-question-card {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 1.5rem;
-  padding: 1rem;
-  margin: 1rem 0;
-}
-
-.guess-question-card p {
-  font-weight: 500;
-  margin-bottom: 0.5rem;
-}
-
-.guess-question-card input {
-  width: 80%;
-  padding: 0.5rem 1rem;
-  border-radius: 9999px;
-  border: none;
-  outline: none;
-  background: white;
-  color: #333;
-}
-
-.waiting-bubble {
-  background: rgba(255, 255, 255, 0.2);
-  padding: 1rem;
-  margin-top: 1.5rem;
-  border-radius: 1.5rem;
-  font-style: italic;
-}
-
-.primary-btn {
-  background: #ff00aa;
-  border: none;
-  color: white;
-  padding: 0.75rem 2rem;
-  border-radius: 9999px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: 0.3s;
-}
-
-.primary-btn:hover {
-  box-shadow: 0 0 15px #ff00aa;
-}
-
-/* 🌈 Pastel Reveal Background */
-.reveal-phase.pastel-bg {
-  background: linear-gradient(135deg, #ffe5ec, #e3f2fd, #e8f5e9);
-  padding: 2rem;
-  text-align: center;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
-
-/* 🏆 Podium Layout */
+/* 🏆 Podium Animation */
 .podium-container {
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  gap: 1rem;
-  margin: 2rem 0;
+  margin: 40px auto;
+  gap: 25px;
+  animation: slideUp 1s ease forwards;
 }
 
 .podium {
-  width: 120px;
-  padding: 1rem;
-  border-radius: 1rem;
-  background: #ffffffaa;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-  animation: floatIn 0.8s ease forwards;
-  opacity: 0;
-  transform: translateY(50px);
+  width: 100px;
+  background: #ffe5ec;
+  border-radius: 15px 15px 0 0;
+  position: relative;
+  padding: 15px;
+  box-shadow: 0 5px 15px rgba(255, 182, 193, 0.3);
 }
 
-.podium.first { 
-  height: 180px; 
-  background: linear-gradient(180deg, #ffe082, #fff3e0);
-  animation-delay: 0.2s;
+.podium.first {
+  height: 160px;
+  background: #ffb3c6;
 }
-.podium.second { 
-  height: 140px; 
-  background: linear-gradient(180deg, #b3e5fc, #e1f5fe);
-  animation-delay: 0.4s;
+.podium.second {
+  height: 130px;
+  background: #ffc6ff;
 }
-.podium.third { 
-  height: 120px; 
-  background: linear-gradient(180deg, #ce93d8, #f3e5f5);
-  animation-delay: 0.6s;
+.podium.third {
+  height: 100px;
+  background: #bdb2ff;
 }
 
-@keyframes floatIn {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* ✨ Podium Text Styling */
 .podium-rank {
-  font-size: 2rem;
+  font-size: 1.6rem;
   font-weight: bold;
+  margin-bottom: 10px;
 }
+
 .player-name {
-  font-weight: bold;
-  margin-top: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
 }
+
 .score {
-  font-size: 1.2rem;
+  font-size: 0.9rem;
+  color: #555;
 }
 
-/* 🎇 Fade-in effect for score list */
-.fade-in-delay {
-  opacity: 0;
-  transform: translateY(20px);
-  animation: fadeInSlide 0.6s ease forwards;
-}
-
-@keyframes fadeInSlide {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.final-score-list {
-  list-style: none;
-  padding: 0;
-  margin: 1rem auto 2rem;
-  text-align: left;
-}
-
-.final-score-list li {
-  margin: 0.3rem 0;
-  font-weight: 500;
-}
-
-/* 🌟 Winner name styling */
-.winner-name {
-  font-size: 2.5rem;
-  font-weight: 800;
-  background: linear-gradient(90deg, #ff80ab, #ffd54f, #81c784);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: shimmer 3s infinite linear;
-}
-
-@keyframes shimmer {
-  0% { background-position: 0% }
-  100% { background-position: 200% }
-}
-
+/* 🎉 Grand Reveal Animation */
 .grand-title {
   font-size: 1.8rem;
-  margin-bottom: 0.5rem;
-  color: #444;
+  margin-bottom: 15px;
 }
 
+.winner-name {
+  font-size: 2.3rem;
+  font-weight: 800;
+  color: #ff6392;
+  animation: pulse 1.5s infinite alternate;
+}
+
+@keyframes pulse {
+  from { transform: scale(1); opacity: 0.9; }
+  to { transform: scale(1.05); opacity: 1; }
+}
+
+/* ✨ SlideUp for Podium */
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 💖 Footer */
+footer {
+  width: 100%;
+  padding: 15px 0;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+  color: #666;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+footer p {
+  letter-spacing: 0.5px;
+}
+
+/* 📱 Responsive */
+@media (max-width: 600px) {
+  .page {
+    padding: 20px;
+    margin: 20px auto;
+  }
+
+  .podium {
+    width: 80px;
+  }
+
+  .winner-name {
+    font-size: 1.8rem;
+  }
+}
