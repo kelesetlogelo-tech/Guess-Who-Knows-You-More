@@ -3,97 +3,71 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>If I Were... | How well do you know your tribe?</title>
+  <title>DoodleDazzle | How well do you know your tribe?</title>
   <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- 🎨 LOBBY SECTION -->
+  <section id="createRoomSection" class="page">
+    <h1>DoodleDazzle</h1>
+    <p>Create a new game or join one.</p>
+
+    <div class="card">
+      <h2>Create Room</h2>
+      <input type="text" id="hostName" placeholder="Your name" />
+      <input type="number" id="playerCount" placeholder="Number of players" min="2" />
+      <button id="createRoomBtn" class="vibrant-btn">Create Room</button>
+    </div>
+
+    <div class="card">
+      <h2>Join Room</h2>
+      <input type="text" id="playerName" placeholder="Your name" />
+      <input type="text" id="roomCode" placeholder="Room code" maxlength="5" />
+      <button id="joinRoomBtn" class="vibrant-btn">Join Room</button>
+    </div>
+  </section>
+
+  <!-- 🎯 WAITING ROOM -->
+  <section id="waitingRoom" class="page hidden">
+    <h2>Waiting Room</h2>
+    <p id="room-code-display-game">Room Code:</p>
+    <p id="players-count"></p>
+    <ul id="player-list"></ul>
+    <p class="info-text">Waiting for all players to join...</p>
+  </section>
+
+  <!-- 🧠 Q&A PHASE -->
+  <section id="qaPhase" class="page hidden">
+    <h2>Question & Answer Phase</h2>
+    <div id="qa-questions"></div>
+    <button id="submitAnswersBtn" class="vibrant-btn">Submit Answers</button>
+  </section>
+
+  <!-- 🔍 GUESSING PHASE -->
+  <section id="guessingPhase" class="page hidden">
+    <h2 id="guessing-header">Guessing Time!</h2>
+    <div id="guessing-content"></div>
+  </section>
+
+  <!-- 📊 SCOREBOARD -->
+  <section id="scoreboardPhase" class="page hidden">
+    <h2>🏆 Round Results</h2>
+    <div id="scoreboard"></div>
+    <button id="revealWinnerBtn" class="vibrant-btn hidden">Reveal Winner 🎉</button>
+  </section>
+
+  <!-- 🎉 REVEAL PHASE -->
+  <section id="revealPhase" class="page hidden"></section>
+
+  <!-- 💖 FOOTER -->
+  <footer>
+    <p>Made with ❤️ by Kelz</p>
+  </footer>
 
   <!-- ✅ Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-  <!-- ✅ Config + Game Logic -->
-  <script defer src="firebase-config.js"></script>
-  <script defer src="script.js"></script>
-</head>
-<body class="landing-phase">
-
-  <!-- 🔥 Fade Transition Overlay -->
-  <div id="phase-transition-overlay"></div>
-
-  <!-- 🎬 LANDING PAGE -->
-  <section id="landing-page" class="page">
-    <div class="container">
-      <h1>If I were...</h1>
-      <h2>How well do you know your tribe?</h2>
-
-      <section id="createRoomSection" class="page">
-      <div class="input-block">
-        <h3>Create a Room</h3>
-        <input type="text" id="hostName" placeholder="Your name" />
-        <input type="number" id="playerCount" placeholder="Number of players" />
-        <button id="create-room-btn" class="vibrant-btn">Create Room</button>
-      </div>
-      </section>
-        
-      <div class="divider">— or —</div>
-
-      <div class="input-block">
-        <h3>Join a Room</h3>
-        <input type="text" id="playerName" placeholder="Your name" />
-        <input type="text" id="roomCode" placeholder="Room code" />
-        <button id="join-room-btn" class="vibrant-btn">Join Room</button>
-      </div>
-
-      <footer>Designed with 💗 by Kelz</footer>
-    </div>
-  </section>
-
-  <!-- 💬 WAITING ROOM -->
-  <section id="waitingRoom" class="page hidden">
-    <h2>Gather your tribe 🪶</h2>
-    <p class="scene-tagline">“Someone’s already side-eyeing the scoreboard.”</p>
-    <div id="room-code-display-game" class="info"></div>
-    <div id="players-count"></div>
-    <ul id="playerList"></ul>
-    <button id="begin-game-btn" class="vibrant-btn hidden">Begin Game</button>
-  </section>
-
-  <!-- ❓ Q&A PHASE -->
-  <section id="qa-phase" class="page hidden">
-    <h2>Q&A Time 🎭</h2>
-    <p class="scene-tagline">“Think fast! The tribe is watching your vibe.”</p>
-    <div id="qa-container"></div>
-  </section>
-
-  <!-- ⏳ PRE-GUESS WAITING -->
-  <section id="pre-guess-waiting" class="page hidden">
-    <h2>Waiting for the tribe... ⏳</h2>
-    <p class="scene-tagline">“Breathe in. Judgement approaches.”</p>
-    <p id="waiting-status">Hang tight while everyone finishes their Q&A’s!</p>
-
-    <!-- 🧭 Host-only control -->
-    <button id="begin-guessing-btn" class="vibrant-btn hidden">
-      Begin Guessing Phase 🎯
-    </button>
-  </section>
-
-  <!-- 🔮 GUESSING PHASE -->
-  <section id="guessing-phase" class="page hidden">
-    <h2>Guessing Phase 🔮</h2>
-    <p class="scene-tagline">“Now’s your chance to expose how well you really know them.”</p>
-    <div id="guess-container" class="qa-container"></div>
-    <button id="next-target-btn" class="primary-btn host-only hidden">Next Player ➡️</button>
-  </section>
-
-  <!-- 🏆 SCOREBOARD -->
-  <section id="scoreboard" class="page hidden">
-    <h2>Scoreboard 🏆</h2>
-    <p class="scene-tagline">“Bragging rights loading... please wait 🤓”</p>
-    <div id="scoreboard-container"></div>
-    <ul id="roundScoresList" class="score-list"></ul>
-    <p class="waiting-msg">(Waiting for others to finish...)</p>
-  </section>
-
+  <script src="firebase-config.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
-
-
