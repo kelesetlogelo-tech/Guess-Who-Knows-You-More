@@ -361,7 +361,8 @@ function transitionToPhase(phaseId) {
     next.classList.add("active");
     updateBackgroundForPhase(phaseId);
    }
-}
+});
+
 
 
 
