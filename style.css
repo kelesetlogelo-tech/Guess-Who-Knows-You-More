@@ -103,6 +103,13 @@ input {
   outline: none;
 }
 
+.room-code {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #ffeb3b;
+  margin-top: 10px;
+}
+
 /* ===== SCENE TAGLINES ===== */
 .scene-tagline {
   font-style: italic;
@@ -128,3 +135,4 @@ footer {
   opacity: 1;
   transition: opacity 0.8s ease-in;
 }
+
