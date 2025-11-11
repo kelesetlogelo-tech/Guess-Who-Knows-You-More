@@ -46,7 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     $("room-code-display-game").textContent = "Room Code: " + code;
     $("players-count").textContent = `Players joined: 1 / ${count}`;
-    showSection("waitingRoom");
+    transitionToPhase("waitingRoom");
 
     subscribeToGame(code);
   }
@@ -116,7 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // === Q&A PHASE ===
   function showQA(data) {
-    showSection("qaPhase");
+    transitionToPhase("qaPhase");
     const container = $("qa-questions");
     container.innerHTML = "";
     const questions = [
@@ -202,7 +202,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // === GUESSING PHASE ===
   function showGuessing(data) {
-    showSection("guessingPhase");
+    transitionToPhase("guessingPhase");
     const container = $("guessing-content");
     container.innerHTML = `<p>Guess who gave which answers!</p>`;
     if (isHost) {
@@ -212,7 +212,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // === SCOREBOARD PHASE ===
   function showScoreboard(data) {
-    showSection("scoreboardPhase");
+    transitionToPhase("scoreboardPhase");
     const container = $("scoreboard");
     const players = data.players || {};
 
@@ -230,7 +230,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // === REVEAL PHASE ===
   function showRevealPhase(data) {
-    showSection("revealPhase");
+    transitionToPhase("revealPhase");
     const container = $("revealPhase");
     const players = data.players || {};
     const sorted = Object.entries(players)
@@ -307,9 +307,52 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => canvas.remove(), 10000);
   }
 
+  /* ===== DYNAMIC BACKGROUND GRADIENTS ===== */
+function updateBackgroundForPhase(phase) {
+  const body = document.body;
+  body.className = ""; // reset all classes first
+  body.classList.add(`${phase}-phase`);
+}
+
+/* ===== PHASE TRANSITION HANDLER ===== */
+function transitionToPhase(phaseId) {
+  const current = document.querySelector(".page.active");
+  const next = document.getElementById(phaseId);
+  if (!next) return;
+
+  // Fade out current section
+  if (current) {
+    current.classList.add("fade-out");
+    setTimeout(() => {
+      current.classList.remove("active", "fade-out");
+      current.classList.add("hidden");
+
+      // Fade in new section
+      next.classList.remove("hidden");
+      next.classList.add("active", "fade-in");
+      setTimeout(() => next.classList.remove("fade-in"), 800);
+
+      // Update background gradient
+      updateBackgroundForPhase(phaseId);
+    }, 600);
+  } else {
+    // First load case
+    next.classList.remove("hidden");
+    next.classList.add("active");
+    updateBackgroundForPhase(phaseId);
+  }
+}
+
+
+// Similarly:
+// transitionToPhase("qa-phase");
+// transitionToPhase("scoreboard");
+// transitionToPhase("reveal-phase");
+
   // === EVENT BINDINGS ===
   $("createRoomBtn")?.addEventListener("click", createRoom);
   $("joinRoomBtn")?.addEventListener("click", joinRoom);
 });
+
 
 
