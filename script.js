@@ -48,7 +48,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     $("room-code-display-game").textContent = "Room Code: " + code;
-    $("players-count").textContent = `Players joined: 1 / ${count}`;
+    $("playerCount").textContent = `Players joined: 1 / ${count}`;
     transitionToPhase("waitingRoom");
 
     subscribeToGame(code);
@@ -358,6 +358,7 @@ function transitionToPhase(phaseId) {
   $("createRoomBtn")?.addEventListener("click", createRoom);
   $("joinRoomBtn")?.addEventListener("click", joinRoom);
 });
+
 
 
 
