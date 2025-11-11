@@ -342,7 +342,6 @@ function transitionToPhase(phaseId) {
   }
 }
 
-
 // Similarly:
 // transitionToPhase("qa-phase");
 // transitionToPhase("scoreboard");
@@ -351,17 +350,4 @@ function transitionToPhase(phaseId) {
   // === EVENT BINDINGS ===
   $("createRoomBtn")?.addEventListener("click", createRoom);
   $("joinRoomBtn")?.addEventListener("click", joinRoom);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+});
