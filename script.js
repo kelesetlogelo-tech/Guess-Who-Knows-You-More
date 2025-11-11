@@ -3,6 +3,9 @@ console.log("script.js loaded");
 document.addEventListener("DOMContentLoaded", () => {
   console.log("DOM fully loaded");
 
+  // 👇 Show the home page on load
+  const firstPage = document.querySelector(".page");
+  if (firstPage) firstPage.classList.add("active");
   const $ = (id) => document.getElementById(id);
 
   function showSection(id) {
@@ -308,4 +311,5 @@ document.addEventListener("DOMContentLoaded", () => {
   $("createRoomBtn")?.addEventListener("click", createRoom);
   $("joinRoomBtn")?.addEventListener("click", joinRoom);
 });
+
 
