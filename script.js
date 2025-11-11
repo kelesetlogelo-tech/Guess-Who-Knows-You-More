@@ -1,27 +1,18 @@
-// script.js — cleaned, defensive, and fixed
+// script.js — cleaned, no fade transitions
 console.log("script.js loaded");
-
-/*
-  NOTE: this file is intentionally defensive:
-  - checks DOM queries before using them
-  - tolerates both "qa-phase" and "qaPhase" naming
-  - keeps Firebase reads/writes guarded
-*/
 
 const $ = id => document.getElementById(id);
 
-// Helper: find a section element for a phase, tolerant of naming
+// Helper: find a section element for a phase
 function findSectionForPhase(phase) {
   const candidates = [
-    // common naming permutations
     phase,
     phase.replace("-", ""),
     phase.replace("-", "_"),
-    (phase + "Phase"),
+    phase + "Phase",
     phase.replace("-", "") + "Phase",
     phase + "-phase",
     phase.replace("-", "") + "-phase",
-    // explicit known mappings
     ...(phase === "pre-guess" ? ["pre-guess-waiting", "preGuessPhase"] : []),
   ];
   for (const id of candidates) {
@@ -31,40 +22,15 @@ function findSectionForPhase(phase) {
   return null;
 }
 
-// show/hide page sections (safe)
-function showSection(id) {
-  document.querySelectorAll("section.page").forEach(s => s.classList.add("hidden"));
-  const el = document.getElementById(id);
-  if (el) el.classList.remove("hidden");
-}
-
-// safe transition that uses section ids recognized above
+// Simple show/hide of sections — no transitions
 function transitionToPhase(phaseName) {
-  // find the DOM section for the phase
+  document.querySelectorAll("section.page").forEach(s => s.classList.add("hidden"));
   const target = findSectionForPhase(phaseName);
-  const current = document.querySelector("section.page:not(.hidden)");
-  if (current) {
-    current.classList.add("fade-out");
-    setTimeout(() => {
-      current.classList.add("hidden");
-      current.classList.remove("fade-out", "active");
-      if (target) {
-        target.classList.remove("hidden");
-        target.classList.add("active", "fade-in");
-        setTimeout(() => target.classList.remove("fade-in"), 600);
-      }
-      updateBackgroundForPhase(phaseName);
-    }, 450);
-  } else {
-    if (target) {
-      target.classList.remove("hidden");
-      target.classList.add("active");
-    }
-    updateBackgroundForPhase(phaseName);
-  }
+  if (target) target.classList.remove("hidden");
+  updateBackgroundForPhase(phaseName);
 }
 
-// background update (phase-class on body)
+// Update background gradient for each phase
 function updateBackgroundForPhase(phase) {
   document.body.className = document.body.className
     .split(" ")
@@ -81,7 +47,7 @@ let isHost = false;
 window.currentPhase = window.currentPhase || null;
 window.qaStarted = window.qaStarted || false;
 
-// Default questions (kept from your list)
+// Default questions
 const questions = [
   { id: 'q1', text: "If I were a sound effect, I'd be:", options: ['Ka-ching!', 'Dramatic gasp', 'Boing!', 'Evil laugh'] },
   { id: 'q2', text: "If I were a weather forecast, I'd be:", options: ['100% chill', 'Partly dramatic with a chance of chaos!', 'Heatwave vibes', 'Sudden tornado of opinions'] },
@@ -95,35 +61,33 @@ const questions = [
   { id: 'q10', text: "If I were a type of chair, I’d be…", options: ['A Phala Phala sofa','A creaky antique that screams when you sit','One of those folding chairs that attack your fingers','A throne made of regrets and snack crumbs'] }
 ];
 
-// Safe DOM-ready wiring
+// DOM ready setup
 document.addEventListener("DOMContentLoaded", () => {
   console.log("DOM fully loaded");
 
-  // Hook create/join buttons if present (supporting multiple possible IDs)
   const createBtn = $("createRoomBtn") || $("create-room-btn") || $("createRoom");
   const joinBtn = $("joinRoomBtn") || $("join-room-btn") || $("joinRoom");
   if (createBtn) createBtn.addEventListener("click", createRoom);
   if (joinBtn) joinBtn.addEventListener("click", joinRoom);
 
-  // host begin-game if exists
   const beginBtn = $("begin-game-btn") || $("beginGameBtn");
   if (beginBtn) beginBtn.addEventListener("click", () => {
     if (gameRef) gameRef.child("phase").set("qa");
   });
 
-  // host begin-guessing control (in pre-guess)
   const beginGuessingBtn = $("begin-guessing-btn") || $("beginGuessingBtn");
   if (beginGuessingBtn) beginGuessingBtn.addEventListener("click", () => {
     if (isHost && gameRef) gameRef.update({ phase: "guessing" });
   });
 });
 
-// ===== createRoom / joinRoom =====
+// ===== Firebase game logic =====
 async function createRoom() {
   const nameEl = $("hostName") || $("host-name");
   const countEl = $("playerCount") || $("player-count");
   const name = nameEl ? nameEl.value.trim() : "";
   const count = countEl ? parseInt(countEl.value.trim(), 10) : NaN;
+
   if (!name || !count || isNaN(count) || count < 2) {
     alert("Enter your name and number of players (min 2).");
     return;
@@ -146,10 +110,8 @@ async function createRoom() {
     players: { [name]: { score: 0, ready: false } }
   });
 
-  // save some helpful local metadata
   try { localStorage.setItem("roomCode", code); localStorage.setItem("isHost", "true"); } catch(e){}
 
-  // UI
   const roomCodeEl = $("room-code-display-game") || $("roomCodeDisplay");
   const playersCountEl = $("players-count") || $("playersCount");
   if (roomCodeEl) roomCodeEl.textContent = "Room Code: " + code;
@@ -186,43 +148,28 @@ async function joinRoom() {
   console.log("✅ Joined room:", code);
 }
 
-// ===== subscribeToGame (centralized listener) =====
+// ===== subscribeToGame =====
 function subscribeToGame(code) {
   if (!window.db) return;
   const ref = window.db.ref("rooms/" + code);
   gameRef = ref;
 
-  // detach previous to avoid duplicates
-  try { ref.off(); } catch (e) { /* ignore */ }
+  try { ref.off(); } catch (e) {}
 
   ref.on("value", snapshot => {
     const data = snapshot.val();
     if (!data) return;
 
-    // update UI and check readiness
-    try {
-      updateRoomUI(data, code);
-    } catch (err) {
-      console.error("updateRoomUI error:", err);
-    }
+    try { updateRoomUI(data, code); } catch (err) { console.error(err); }
+    try { checkAllPlayersReadyListener(snapshot); } catch (err) { console.error(err); }
 
-    try {
-      checkAllPlayersReadyListener(snapshot);
-    } catch (err) {
-      console.error("checkAllPlayersReadyListener error:", err);
-    }
-
-    // phase: scoreboard or reveal hooks (if needed)
     const phase = data.phase;
-    if (phase === "scoreboard") {
-      showScoreboard(data);
-    } else if (phase === "reveal") {
-      showRevealPhase(data);
-    }
+    if (phase === "scoreboard") showScoreboard(data);
+    else if (phase === "reveal") showRevealPhase(data);
   });
 }
 
-// ===== updateRoomUI (defensive) =====
+// ===== updateRoomUI =====
 function updateRoomUI(data, code) {
   if (!data) return;
   const phase = data.phase || "waiting";
@@ -230,9 +177,6 @@ function updateRoomUI(data, code) {
   const numPlayers = Object.keys(players).length;
   const total = data.numPlayers || 0;
 
-  console.log("🧩 updateRoomUI called for phase:", phase, "players:", Object.keys(players));
-
-  // safe updates
   const roomCodeEl = $("room-code-display-game") || $("roomCodeDisplay");
   const countEl = $("players-count") || $("playersCount");
   if (roomCodeEl) roomCodeEl.textContent = "Room Code: " + code;
@@ -241,73 +185,28 @@ function updateRoomUI(data, code) {
   const playerListEl = $("players-list") || $("playerList") || $("playersList");
   if (playerListEl) {
     playerListEl.innerHTML = Object.keys(players).map(p => {
-      const ready = players[p] && players[p].ready ? " ✅" : "";
-      const score = players[p] && typeof players[p].score !== "undefined" ? ` (${players[p].score})` : "";
+      const ready = players[p]?.ready ? " ✅" : "";
+      const score = players[p]?.score !== undefined ? ` (${players[p].score})` : "";
       return `<li>${p}${ready}${score}</li>`;
     }).join("");
   }
 
-  // ensure we render the correct phase screen (use transition helper)
   switch (phase) {
-    case "waiting":
-      transitionToPhase("waiting");
-      break;
-    case "qa":
-      transitionToPhase("qa");
-      // start QA only once per client
-      if (!window.qaStarted) startQA();
-      break;
-    case "pre-guess":
-      transitionToPhase("pre-guess");
-      break;
-    case "guessing":
-      transitionToPhase("guessing");
-      startGuessing();
-      break;
-    case "scoreboard":
-      transitionToPhase("scoreboard");
-      break;
-    case "reveal":
-      transitionToPhase("reveal");
-      break;
-    default:
-      transitionToPhase("waiting");
+    case "waiting": transitionToPhase("waiting"); break;
+    case "qa": transitionToPhase("qa"); if (!window.qaStarted) startQA(); break;
+    case "pre-guess": transitionToPhase("pre-guess"); break;
+    case "guessing": transitionToPhase("guessing"); startGuessing(); break;
+    case "scoreboard": transitionToPhase("scoreboard"); break;
+    case "reveal": transitionToPhase("reveal"); break;
   }
 }
 
-// ===== readiness checker used by the host to reveal begin-guessing UI =====
-function checkAllPlayersReadyListener(snapshot) {
-  const data = snapshot.val() || {};
-  const players = data.players || {};
-  const phase = data.phase;
-  if (!isHost) return;
-
-  const beginGuessingBtn = $("begin-guessing-btn") || $("beginGuessingBtn");
-  const waitingStatus = $("waiting-status") || $("waitingStatus");
-  const allReady = Object.values(players).every(p => p && p.ready);
-
-  if (phase === "pre-guess") {
-    if (allReady) {
-      if (beginGuessingBtn) beginGuessingBtn.classList.remove("hidden");
-      if (waitingStatus) waitingStatus.textContent = "Everyone’s done! Begin guessing 🎉";
-    } else {
-      if (beginGuessingBtn) beginGuessingBtn.classList.add("hidden");
-      if (waitingStatus) waitingStatus.textContent = "Waiting for all players to finish Q&A...";
-    }
-  } else if (phase === "qa" && allReady) {
-    // Move to pre-guess automatically if everyone finished during QA
-    gameRef.update({ phase: "pre-guess" }).then(() => {
-      console.log("✅ All players ready — moved to pre-guess");
-    }).catch(e => console.warn("Couldn't advance to pre-guess:", e));
-  }
-}
-
-// ===== Q&A (client-side) =====
+// ===== Q&A =====
 let currentQuestion = 0;
 let answers = {};
 
 function startQA() {
-  if (!gameRef) return console.warn("startQA: no gameRef");
+  if (!gameRef) return;
   window.qaStarted = true;
   currentQuestion = 0;
   answers = {};
@@ -317,162 +216,65 @@ function startQA() {
 
 function renderQuestion() {
   const container = $("qa-questions") || $("qa-container") || $("qa-questions-container");
-  if (!container) {
-    console.warn("renderQuestion: #qa-questions missing");
-    return;
-  }
+  if (!container) return;
+
   container.innerHTML = "";
-
   const q = questions[currentQuestion];
-  if (!q) {
-    // finished locally: save answers and mark ready
-    saveAnswersAndMarkReady();
-    return;
-  }
+  if (!q) return saveAnswersAndMarkReady();
 
-  // question counter
   const counter = document.createElement("div");
   counter.className = "question-counter";
   counter.textContent = `Question ${currentQuestion + 1} of ${questions.length}`;
   container.appendChild(counter);
 
-  // tile
   const tile = document.createElement("div");
-  tile.className = "qa-tile active";
+  tile.className = "qa-tile";
   tile.innerHTML = `
     <h3 class="question-text">${q.text}</h3>
     <div class="options-grid">
-      ${q.options.map((opt, idx) => `<button class="option-btn" data-idx="${idx}">${opt}</button>`).join("")}
-    </div>
-  `;
+      ${q.options.map(opt => `<button class="option-btn">${opt}</button>`).join("")}
+    </div>`;
   container.appendChild(tile);
 
   tile.querySelectorAll(".option-btn").forEach(btn => {
     btn.addEventListener("click", async () => {
       const chosen = btn.textContent;
       answers[q.id] = chosen;
-      // save per-question to DB to be safe
       if (gameRef && playerId) {
-        try {
-          await gameRef.child(`players/${playerId}/answers/${q.id}`).set({ optionText: chosen, ts: Date.now() });
-        } catch (e) {
-          console.warn("Failed to write answer:", e);
-        }
+        await gameRef.child(`players/${playerId}/answers/${q.id}`).set({ optionText: chosen, ts: Date.now() });
       }
-      tile.classList.add("slide-out");
-      setTimeout(() => {
-        currentQuestion++;
-        renderQuestion();
-      }, 350);
+      currentQuestion++;
+      renderQuestion();
     });
   });
 }
 
 async function saveAnswersAndMarkReady() {
   if (!gameRef || !playerId) return;
-  try {
-    // answers already saved per-question — mark ready
-    await gameRef.child(`players/${playerId}/ready`).set(true);
-    transitionToPhase("pre-guess");
-  } catch (e) {
-    console.warn("saveAnswersAndMarkReady error:", e);
-  }
+  await gameRef.child(`players/${playerId}/ready`).set(true);
+  transitionToPhase("pre-guess");
 }
 
-// ===== GUESSING (simple round loop) =====
-async function startGuessing() {
-  if (!gameRef) return;
-  console.log("startGuessing invoked");
-  // we rely on subscribeToGame to call updateRoomUI and transitionToPhase("guessing")
-  // Additional setup can be placed here if needed.
-  // For complex round-driven guessing, you'd install another listener specifically for guessing rounds.
-}
-
-// ===== SCOREBOARD & REVEAL =====
+// ===== SCOREBOARD =====
 function showScoreboard(data) {
   transitionToPhase("scoreboard");
   const container = $("scoreboard") || $("scoreboard-container");
   if (!container) return;
   const players = data.players || {};
-  let html = `<ul class="score-list">`;
-  Object.entries(players).forEach(([name, p]) => {
-    html += `<li>${name}: <strong>${p.score || 0}</strong> pts ${p.ready ? "✅" : ""}</li>`;
-  });
-  html += `</ul>`;
-  container.innerHTML = html;
-  // reveal control for host
-  const revealBtn = $("revealWinnerBtn") || $("reveal-winner-btn");
-  if (revealBtn) revealBtn.classList.toggle("hidden", !isHost);
-  if (revealBtn) revealBtn.onclick = () => gameRef.update({ phase: "reveal" });
+  container.innerHTML = Object.entries(players)
+    .map(([n, p]) => `<li>${n}: <strong>${p.score || 0}</strong> pts</li>`).join("");
 }
 
 function showRevealPhase(data) {
   transitionToPhase("reveal");
-  const container = $("revealPhase") || $("reveal") || $("scoreboard");
+  const container = $("revealPhase") || $("reveal");
   if (!container) return;
-
   const players = data.players || {};
-  const sorted = Object.entries(players).map(([name, o]) => ({ name, score: o.score || 0 })).sort((a, b) => b.score - a.score);
+  const sorted = Object.entries(players)
+    .map(([n, o]) => ({ name: n, score: o.score || 0 }))
+    .sort((a, b) => b.score - a.score);
   const winner = sorted[0]?.name || "Someone";
-  const highScore = sorted[0]?.score || 0;
-  // fire confetti
-  launchConfetti();
-
-  let html = `<div class="reveal-phase fade-in"><h1>🎉 ${winner} wins!</h1><h3>${highScore} pts</h3><ul>`;
-  sorted.forEach(p => html += `<li>${p.name}: ${p.score}</li>`);
-  html += `</ul><button class="vibrant-btn" onclick="location.reload()">Play Again</button></div>`;
-  container.innerHTML = html;
+  container.innerHTML = `<h1>🎉 ${winner} wins!</h1>`;
 }
-
-// ===== Confetti (safe) =====
-function launchConfetti() {
-  try {
-    const canvas = document.createElement("canvas");
-    canvas.id = "confetti-canvas";
-    Object.assign(canvas.style, { position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", pointerEvents: "none", zIndex: 9999 });
-    document.body.appendChild(canvas);
-    const ctx = canvas.getContext("2d");
-    // adapt canvas pixel size
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    const pieces = Array.from({ length: 120 }, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * -canvas.height,
-      size: Math.random() * 8 + 4,
-      color: `hsl(${Math.random() * 360}, 80%, 60%)`,
-      speed: Math.random() * 4 + 2,
-      rot: Math.random() * 360
-    }));
-
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      pieces.forEach(p => {
-        ctx.fillStyle = p.color;
-        ctx.fillRect(p.x, p.y, p.size, p.size);
-        p.y += p.speed;
-        p.x += Math.sin(p.y / 20);
-        if (p.y > canvas.height) {
-          p.y = -10 - Math.random() * 100;
-          p.x = Math.random() * canvas.width;
-        }
-      });
-      requestAnimationFrame(draw);
-    }
-    draw();
-    setTimeout(() => canvas.remove(), 10000);
-  } catch (e) {
-    console.warn("Confetti failed:", e);
-  }
-}
-
-// Expose a minimal debug helper so you can call from console
-window._gameDebug = {
-  subscribeToGame,
-  createRoom,
-  joinRoom,
-  gameRef,
-  setHost: () => isHost = true
-};
 
 console.log("✅ script.js loaded and ready");
