@@ -360,8 +360,9 @@ function transitionToPhase(phaseId) {
     next.classList.remove("hidden");
     next.classList.add("active");
     updateBackgroundForPhase(phaseId);
-   }
-});
+  }
+
+
 
 
 
