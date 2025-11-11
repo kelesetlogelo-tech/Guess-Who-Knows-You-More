@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
   $("joinRoomBtn").onclick = joinRoom;
 
   });
-}
+
   let gameRef = null;
   let playerId = null;
   let isHost = false;
@@ -333,4 +333,5 @@ function transitionToPhase(phaseId) {
    }
   }
 });
+
 
