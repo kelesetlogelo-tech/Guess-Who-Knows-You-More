@@ -5,28 +5,25 @@ const $ = id => document.getElementById(id);
 
 // Helper: find a section element for a phase
 function findSectionForPhase(phase) {
-  const candidates = [
-    phase,
-    phase.replace("-", ""),
-    phase.replace("-", "_"),
-    phase + "Phase",
-    phase.replace("-", "") + "Phase",
-    phase + "-phase",
-    phase.replace("-", "") + "-phase",
-    ...(phase === "pre-guess" ? ["pre-guess-waiting", "preGuessPhase"] : []),
-  ];
-  for (const id of candidates) {
-    const el = document.getElementById(id);
-    if (el) return el;
+  const normalized = phase.replace(/[-_]/g, "").toLowerCase();
+  const allSections = document.querySelectorAll("section.page");
+  for (const s of allSections) {
+    const idNorm = s.id.replace(/[-_]/g, "").toLowerCase();
+    if (idNorm.includes(normalized) || normalized.includes(idNorm)) return s;
   }
   return null;
 }
 
 // Simple show/hide of sections — no transitions
 function transitionToPhase(phaseName) {
+  console.log("Switching phase:", phaseName);
   document.querySelectorAll("section.page").forEach(s => s.classList.add("hidden"));
   const target = findSectionForPhase(phaseName);
-  if (target) target.classList.remove("hidden");
+  if (!target) {
+    console.error("❌ No section found for phase:", phaseName);
+    return;
+  }
+  target.classList.remove("hidden");
   updateBackgroundForPhase(phaseName);
 }
 
@@ -277,4 +274,7 @@ function showRevealPhase(data) {
   container.innerHTML = `<h1>🎉 ${winner} wins!</h1>`;
 }
 
-console.log("✅ script.js loaded and ready");
+console.log("%c✅ Game script loaded and phase system ready!", "color:#fff;background:linear-gradient(90deg,#f0c,#ff0);padding:4px 8px;border-radius:4px");
+
+
+
