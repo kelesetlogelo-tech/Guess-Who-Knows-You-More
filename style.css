@@ -15,8 +15,7 @@ html, body {
 
 /* ===== CONTAINERS ===== */
 .page {
-  display: none;
-  opacity: 0;
+  display: block;
   transform: translateY(10px);
   transition: opacity 0.5s ease, transform 0.5s ease;
   text-align: center;
@@ -33,9 +32,8 @@ html, body {
   transform:translateY(0);
 }
 
-.hidden {
-  display: none !important;
-}
+.hidden { display: none !important; }
+.page { display: block; }
 
 .container {
   max-width: 400px;
@@ -152,6 +150,7 @@ body.scoreboardPhase-phase {
 body.revealPhase-phase {
   background: linear-gradient(135deg, #ff6a00, #ee0979);
 }
+
 
 
 
