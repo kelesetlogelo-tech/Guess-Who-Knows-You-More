@@ -3,95 +3,139 @@ console.log("script.js loaded");
 document.addEventListener("DOMContentLoaded", () => {
   console.log("DOM fully loaded");
 
-  const $ = id => document.getElementById(id);
-  function showSection(id) {
-    document.querySelectorAll("section.page").forEach(s => s.classList.add("hidden"));
-    const el = document.getElementById(id);
-    if (el) el.classList.remove("hidden");
+  const createRoomBtn = document.getElementById("createRoomBtn");
+  const joinRoomBtn = document.getElementById("joinRoomBtn");
+  const beginGameBtn = document.getElementById("begin-game-btn");
+
+  const hostNameInput = document.getElementById("hostName");
+  const playerCountInput = document.getElementById("playerCount");
+  const playerNameInput = document.getElementById("playerName");
+  const roomCodeInput = document.getElementById("roomCode");
+
+  const roomCodeDisplay = document.getElementById("room-code-display-game");
+  const playersList = document.getElementById("players-list");
+  const playersCount = document.getElementById("players-count");
+
+  // Firebase
+  const db = window.db;
+  if (!db) {
+    console.error("❌ Firebase not initialized — window.db missing");
+    return;
   }
 
-  let gameRef = null;
-  let playerId = null;
-  let isHost = false;
-  let currentTargetIndex = 0;
-
-  window.currentPhase = window.currentPhase || null;
-  window.qaStarted = window.qaStarted || false;
-
-  // ===== CREATE ROOM =====
-  async function createRoom() {
-    const name = $("hostName").value?.trim();
-    const count = parseInt($("playerCount").value?.trim(), 10);
-    if (!name || !count || isNaN(count) || count < 2) {
-      alert("Enter your name and number of players (min 2).");
-      return;
-    }
-
+  // === Utility ===
+  function generateRoomCode() {
     const code = Math.random().toString(36).substring(2, 7).toUpperCase();
-    playerId = name;
-    isHost = true;
+    console.log("Generated Room Code:", code);
+    return code;
+  }
 
-    if (!window.db) {
-      alert("Database not ready. Please refresh.");
+  function transitionToPhase(phase) {
+    console.log(`🌈 Transitioning to: ${phase}`);
+    document.querySelectorAll("section.page").forEach((sec) => sec.classList.add("hidden"));
+    const target = document.getElementById(phase);
+    if (target) {
+      target.classList.remove("hidden");
+      updateBackgroundForPhase(phase);
+    } else {
+      console.warn(`⚠️ No section found for phase ID: ${phase}`);
+    }
+  }
+
+  function updateBackgroundForPhase(phase) {
+    document.body.className = ""; // reset
+    document.body.classList.add(`${phase}-phase`);
+  }
+
+  // === CREATE ROOM ===
+  createRoomBtn.addEventListener("click", async () => {
+    const hostName = hostNameInput.value.trim();
+    const maxPlayers = parseInt(playerCountInput.value.trim());
+
+    if (!hostName || !maxPlayers) {
+      alert("Please enter your name and number of players.");
       return;
     }
 
-    gameRef = window.db.ref("rooms/" + code);
-    await gameRef.set({
-      host: name,
-      numPlayers: count,
-      phase: "waiting",
-      players: { [name]: { score: 0, ready: false } }
+    const roomCode = generateRoomCode();
+    const roomRef = db.ref(`rooms/${roomCode}`);
+
+    await roomRef.set({
+      host: hostName,
+      maxPlayers,
+      phase: "waitingRoom",
+      players: {
+        [hostName]: { name: hostName, score: 0 }
+      },
     });
 
-    $("room-code-display-game").textContent = "Room Code: " + code;
-    $("players-count").textContent = `Players joined: 1 / ${count}`;
-    showSection("waitingRoom");
+    console.log("✅ Room created:", roomCode);
 
-    subscribeToGame(code);
-  }
+    // Show waiting room AFTER data is set
+    transitionToPhase("waitingRoom");
 
-  // ===== JOIN ROOM =====
-  async function joinRoom() {
-    const name = $("playerName").value?.trim();
-    const code = $("roomCode").value?.trim().toUpperCase();
-    if (!name || !code) return alert("Enter name and room code");
+    // Display code
+    roomCodeDisplay.textContent = `Room Code: ${roomCode}`;
 
-    playerId = name;
-    isHost = false;
-
-    if (!window.db) return alert("Database not ready. Please refresh.");
-    gameRef = window.db.ref("rooms/" + code);
-
-    const snap = await gameRef.once("value");
-    if (!snap.exists()) return alert("Room not found.");
-
-    await gameRef.child("players/" + name).set({ score: 0, ready: false });
-    showSection("waitingRoom");
-    subscribeToGame(code);
-  }
-
-  // ===== MARK PLAYER READY =====
-  function markPlayerReady() {
-    if (!gameRef || !playerId) return;
-    gameRef.child(`players/${playerId}/ready`).set(true);
-    showSection("pre-guess-waiting");
-    if (isHost) setTimeout(() => checkAllPlayersReady(gameRef.key), 800);
-  }
-
-  function checkAllPlayersReady(code) {
-    const ref = window.db.ref("rooms/" + code + "/players");
-    ref.once("value").then(snap => {
-      const players = snap.val() || {};
-      const allReady = Object.values(players).every(p => p.ready);
-      if (allReady) {
-        window.db.ref("rooms/" + code).update({
-          phase: "pre-guess",
-          guessingIndex: 0
-        });
-      }
+    // Live update player list
+    roomRef.child("players").on("value", (snapshot) => {
+      const players = snapshot.val() || {};
+      renderPlayerList(players, maxPlayers);
     });
+
+    // Reveal Begin Game button for host
+    beginGameBtn.classList.remove("hidden");
+  });
+
+  // === JOIN ROOM ===
+  joinRoomBtn.addEventListener("click", async () => {
+    const playerName = playerNameInput.value.trim();
+    const roomCode = roomCodeInput.value.trim().toUpperCase();
+
+    if (!playerName || !roomCode) {
+      alert("Please enter your name and room code.");
+      return;
+    }
+
+    const roomRef = db.ref(`rooms/${roomCode}`);
+    const snapshot = await roomRef.get();
+
+    if (!snapshot.exists()) {
+      alert("Room not found!");
+      return;
+    }
+
+    await roomRef.child(`players/${playerName}`).set({ name: playerName, score: 0 });
+
+    console.log(`✅ ${playerName} joined room ${roomCode}`);
+
+    transitionToPhase("waitingRoom");
+    roomCodeDisplay.textContent = `Room Code: ${roomCode}`;
+
+    // Listen for updates
+    roomRef.child("players").on("value", (snapshot) => {
+      const players = snapshot.val() || {};
+      renderPlayerList(players, snapshot.val().maxPlayers);
+    });
+  });
+
+  // === BEGIN GAME ===
+  beginGameBtn.addEventListener("click", () => {
+    console.log("Game starting — transitioning to Q&A phase...");
+    transitionToPhase("qaPhase");
+  });
+
+  function renderPlayerList(players, maxPlayers) {
+    playersList.innerHTML = "";
+    const playerArray = Object.values(players);
+    playerArray.forEach((p) => {
+      const li = document.createElement("li");
+      li.textContent = p.name;
+      playersList.appendChild(li);
+    });
+    playersCount.textContent = `Players: ${playerArray.length}/${maxPlayers}`;
   }
+});
 
   // ===== SUBSCRIBE TO GAME =====
   function subscribeToGame(code) {
@@ -385,3 +429,4 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => confettiCanvas.remove(), 10000);
   }
 });
+
