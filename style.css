@@ -1,252 +1,163 @@
-/* ===== GLOBAL BASE ===== */
-body {
+/* ===== GENERAL RESET ===== */
+* {
+  box-sizing: border-box;
   margin: 0;
+  padding: 0;
   font-family: "Poppins", sans-serif;
-  color: #fff;
-  text-align: center;
-  overflow-x: hidden;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
   transition: background 1s ease-in-out;
+  color: #fff;
 }
 
-h1, h2, h3 {
-  margin: 0.5em 0;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-}
-
-/* ===== PAGE LAYOUT ===== */
+/* ===== CONTAINERS ===== */
 .page {
   display: none;
-  min-height: 100vh;
-  padding: 2em;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.8s ease-in-out;
+  text-align: center;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  padding: 2rem;
 }
 
-.page.active {
+.page.active,
+.page:not(.hidden) {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  opacity: 1;
-  pointer-events: auto;
+  gap: 1rem;
 }
 
 .hidden {
   display: none !important;
 }
 
-/* ===== GRADIENT BACKGROUNDS ===== */
-body.landing-phase {
-  background: linear-gradient(135deg, #ff00a0, #ffe600);
-}
-
-body.waiting-phase {
-  background: linear-gradient(135deg, #ff7b47, #ffb57a);
-}
-
-body.qa-phase {
-  background: linear-gradient(135deg, #ff9e2c, #ffd54f);
-}
-
-body.guessing-phase {
-  background: linear-gradient(135deg, #00bfa6, #00e5ff);
-}
-
-body.scoreboard-phase {
-  background: linear-gradient(135deg, #8e2de2, #a667f2);
-}
-
-body.reveal-phase {
-  background: linear-gradient(135deg, #ff4ecb, #d88eff);
-}
-
-/* ===== CONTAINER ===== */
 .container {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 24px;
-  padding: 2em;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
-  display: inline-block;
-  margin: auto;
+  max-width: 400px;
+  width: 100%;
+  margin: 0 auto;
+  text-align: center;
 }
 
-/* ===== BUTTONS ===== */
-button, .vibrant-btn {
-  background: linear-gradient(135deg, #ff0099, #ffe600);
-  border: none;
-  border-radius: 999px;
-  color: #fff;
-  padding: 0.8em 2em;
-  font-size: 1.1em;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(255, 0, 100, 0.3);
+/* ===== TYPOGRAPHY ===== */
+h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
 }
 
-button:hover, .vibrant-btn:hover {
-  transform: scale(1.08);
-  box-shadow: 0 6px 25px rgba(255, 255, 255, 0.6);
+h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+h3 {
+  margin-bottom: 0.5rem;
+  font-weight: 500;
 }
 
 /* ===== INPUTS ===== */
-input {
+.input-block {
+  background: rgba(255, 255, 255, 0.15);
+  padding: 1.2rem;
+  border-radius: 1rem;
+  backdrop-filter: blur(6px);
+}
+
+.input-block input {
+  width: 100%;
+  margin: 0.4rem 0;
+  padding: 0.7rem;
   border: none;
-  border-radius: 999px;
-  padding: 0.8em 1em;
-  margin: 0.5em;
-  width: 80%;
-  max-width: 300px;
-  font-size: 1em;
-  background: rgba(255, 255, 255, 0.9);
-  color: #333;
+  border-radius: 0.5rem;
   outline: none;
+  font-size: 1rem;
 }
 
-.room-code {
-  font-size: 1.2em;
+/* ===== BUTTONS ===== */
+.vibrant-btn {
+  background: linear-gradient(135deg, #ff00cc, #ffff00);
+  color: #000;
+  border: none;
+  padding: 0.7rem 1.5rem;
+  border-radius: 2rem;
   font-weight: bold;
-  color: #ffeb3b;
-  margin-top: 10px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s, opacity 0.2s;
 }
 
-/* ===== SCENE TAGLINES ===== */
-.scene-tagline {
-  font-style: italic;
-  font-size: 1.1em;
+.vibrant-btn:hover {
+  transform: scale(1.05);
   opacity: 0.9;
-  margin-bottom: 1.5em;
+}
+
+/* ===== DIVIDER ===== */
+.divider {
+  margin: 1.5rem 0;
+  font-weight: bold;
+  opacity: 0.8;
+}
+
+/* ===== WAITING ROOM ===== */
+#playerList {
+  list-style: none;
+  margin-top: 1rem;
+}
+
+#playerList li {
+  background: rgba(255, 255, 255, 0.2);
+  margin: 0.3rem auto;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  max-width: 200px;
 }
 
 /* ===== FOOTER ===== */
 footer {
-  margin-top: 2em;
-  font-size: 0.9em;
-  opacity: 0.9;
-}
-
-/* ===== FADE TRANSITIONS ===== */
-.fade-out {
-  opacity: 0;
-  transition: opacity 0.6s ease-out;
-}
-
-.fade-in {
-  opacity: 1;
-  transition: opacity 0.8s ease-in;
-}
-
-/* ===========================================================
-   🌈 PHASE-SPECIFIC BACKGROUND GRADIENTS
-   These work with updateBackgroundForPhase(phaseId)
-   =========================================================== */
-
-body {
-  transition: background 1.2s ease, color 0.6s ease;
-  color: #fff;
-}
-
-/* === LANDING (CREATE / JOIN) === */
-body.landing-phase {
-  background: linear-gradient(135deg, #ff00cc 0%, #ffcc00 100%);
-}
-
-/* === WAITING ROOM === */
-body.waitingRoom-phase {
-  background: linear-gradient(135deg, #ff6a00 0%, #ee0979 100%);
-}
-
-/* === Q&A PHASE === */
-body.qaPhase-phase {
-  background: linear-gradient(135deg, #7928ca 0%, #ff0080 100%);
-}
-
-/* === GUESSING PHASE === */
-body.guessingPhase-phase {
-  background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
-}
-
-/* === SCOREBOARD === */
-body.scoreboardPhase-phase {
-  background: linear-gradient(135deg, #ff512f 0%, #dd2476 100%);
-}
-
-/* === REVEAL PHASE === */
-body.revealPhase-phase {
-  background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%);
-}
-
-/* ===========================================================
-   🎛️ GENERAL ELEMENT STYLES THAT COMPLEMENT THE GRADIENTS
-   =========================================================== */
-
-.vibrant-btn {
-  background: rgba(255, 255, 255, 0.15);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  color: #fff;
-  padding: 0.6em 1.2em;
-  border-radius: 10px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.vibrant-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.05);
-}
-
-input, 
-input[type="text"], 
-input[type="number"] {
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: #fff;
-  padding: 0.6em;
-  border-radius: 8px;
+  position: absolute;
+  bottom: 1rem;
   width: 100%;
-  box-sizing: border-box;
-  font-size: 1rem;
-}
-
-input::placeholder {
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.hidden {
-  display: none !important;
-}
-
-.page {
-  transition: opacity 0.6s ease;
-}
-
-.page.active {
-  opacity: 1;
-}
-
-.page.fade-out {
-  opacity: 0;
-}
-
-.page.fade-in {
-  opacity: 1;
-}
-
-/* Center content */
-.container {
-  max-width: 600px;
-  margin: 3em auto;
-  text-align: center;
-}
-
-h1, h2, h3 {
-  text-shadow: 1px 1px 4px rgba(0,0,0,0.4);
-}
-
-footer {
-  margin-top: 2em;
+  font-size: 0.9rem;
   opacity: 0.8;
-  font-size: 0.9em;
 }
 
+/* ===== BACKGROUND PHASES (MUST MATCH script.js) ===== */
+body.landing-phase {
+  background: linear-gradient(135deg, #ff00cc, #ffff00);
+}
+
+body.waitingRoom-phase {
+  background: linear-gradient(135deg, #ff7e5f, #feb47b);
+}
+
+body.qaPhase-phase {
+  background: linear-gradient(135deg, #6a11cb, #2575fc);
+}
+
+body.guessingPhase-phase {
+  background: linear-gradient(135deg, #f7971e, #ffd200);
+}
+
+body.scoreboardPhase-phase {
+  background: linear-gradient(135deg, #11998e, #38ef7d);
+}
+
+body.revealPhase-phase {
+  background: linear-gradient(135deg, #ff6a00, #ee0979);
+}
+
+/* ===== TRANSITIONS ===== */
+.page {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.page:not(.hidden) {
+  opacity: 1;
+  transform: translateY(0);
+}
