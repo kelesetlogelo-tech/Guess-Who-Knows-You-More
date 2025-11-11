@@ -79,7 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const next = document.getElementById(id);
   next.classList.remove("hidden", "fade-out");
   next.classList.add("fade-in", "active");
-}
+});
     subscribeToGame(code);
   }
 
@@ -355,6 +355,7 @@ function transitionToPhase(phaseId) {
   $("createRoomBtn")?.addEventListener("click", createRoom);
   $("joinRoomBtn")?.addEventListener("click", joinRoom);
 });
+
 
 
 
