@@ -12,9 +12,10 @@ document.addEventListener("DOMContentLoaded", () => {
   $("joinRoomBtn").onclick = joinRoom;
 
   function showSection(id) {
-    document.querySelectorAll("section.page").forEach((s) => s.classList.add("hidden"));
-    const el = document.getElementById(id);
-    if (el) el.classList.remove("hidden");
+      document.querySelectorAll("section.page").forEach(s => {
+        s.classList.remove("active");
+        s.classList.add("fade-out");
+        setTimeout(() => s.classList.add("hidden"), 400);
   }
 
   let gameRef = null;
@@ -72,11 +73,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!snap.exists()) return alert("Room not found.");
 
     await gameRef.child("players/" + name).set({ score: 0, ready: false });
-    function showSection(id) {
-      document.querySelectorAll("section.page").forEach(s => {
-        s.classList.remove("active");
-        s.classList.add("fade-out");
-        setTimeout(() => s.classList.add("hidden"), 400);
+    
   });
 
   const next = document.getElementById(id);
@@ -358,6 +355,7 @@ function transitionToPhase(phaseId) {
   $("createRoomBtn")?.addEventListener("click", createRoom);
   $("joinRoomBtn")?.addEventListener("click", joinRoom);
 });
+
 
 
 
