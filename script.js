@@ -1,97 +1,36 @@
-// ================================
-//  If I Were... Game Script (fixed)
-// ================================
-console.log("script.js loaded");
+console.log("✅ script.js loaded");
 
 const $ = id => document.getElementById(id);
-
-// === Find section for given phase ===
-function findSectionForPhase(phase) {
-  const normalized = phase.replace(/[-_]/g, "").toLowerCase();
-  const allSections = document.querySelectorAll("section.page");
-  for (const s of allSections) {
-    const idNorm = s.id.replace(/[-_]/g, "").toLowerCase();
-    if (idNorm.includes(normalized) || normalized.includes(idNorm)) return s;
-  }
-  return null;
-}
-
-// === Show/hide sections ===
-function transitionToPhase(phaseName) {
-  console.log("🌈 Switching phase:", phaseName);
-  document.querySelectorAll("section.page").forEach(s => s.classList.add("hidden"));
-  const target = findSectionForPhase(phaseName);
-  if (!target) {
-    console.error("❌ No section found for phase:", phaseName);
-    return;
-  }
-  target.classList.remove("hidden");
-  updateBackgroundForPhase(phaseName);
-}
-
-// === Update body gradient per phase ===
-function updateBackgroundForPhase(phase) {
-  document.body.className = document.body.className
-    .split(" ")
-    .filter(c => !c.endsWith("-phase"))
-    .join(" ")
-    .trim();
-  if (phase) document.body.classList.add(`${phase}-phase`);
-}
-
-// === Global Vars ===
 let gameRef = null;
 let playerId = null;
 let isHost = false;
-window.currentPhase = window.currentPhase || null;
-window.qaStarted = window.qaStarted || false;
 
-// === Default Questions ===
-const questions = [
-  { id: 'q1', text: "If I were a sound effect, I'd be:", options: ['Ka-ching!', 'Dramatic gasp', 'Boing!', 'Evil laugh'] },
-  { id: 'q2', text: "If I were a weather forecast, I'd be:", options: ['100% chill', 'Partly dramatic with a chance of chaos!', 'Heatwave vibes', 'Sudden tornado of opinions'] },
-  { id: 'q3', text: "If I were a breakfast cereal, I'd be:", options: ['Jungle Oats', 'WeetBix', 'Rice Krispies', 'MorVite', 'That weird healthy one no-one eats'] },
-  { id: 'q4', text: "If I were a bedtime excuse, I'd be...", options: ['I need water','There\'s a spider in my room','I can\'t sleep without Pillow','There are shadows outside my window','Just one more episode'] },
-  { id: 'q5', text: "If I were a villain in a movie, I'd be...", options: ['Scarlet Overkill','Grinch','Thanos','A mosquito in your room at night','Darth Vader'] },
-  { id: 'q6', text: "If I were a kitchen appliance, I'd be...", options: ['A blender on high speed with no lid','A toaster that only pops when no one’s looking','Microwave that screams when it’s done','A fridge that judges your snack choices'] },
-  { id: 'q7', text: "If I were a dance move, I'd be...", options: ['The awkward shuffle at weddings','Kwasakwasa, Ba-baah!','The “I thought no one was watching” move','The knee-pop followed by a regretful sit-down'] },
-  { id: 'q8', text: "If I were a text message, I'd be...", options: ['A typo-ridden voice-to-text disaster','A three-hour late “LOL”','A group chat gif spammer','A mysterious “K.” with no context'] },
-  { id: 'q9', text: "If I were a warning label, I'd be...", options: ['Caution: May spontaneously break into song','Contents may cause uncontrollable giggles','Qaphela: Gevaar/Ingozi','Warning: Will talk your ear off about random facts','May contain traces of impulsive decisions'] },
-  { id: 'q10', text: "If I were a type of chair, I’d be…", options: ['A Phala Phala sofa','A creaky antique that screams when you sit','One of those folding chairs that attack your fingers','A throne made of regrets and snack crumbs'] }
-];
+function showPage(id) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  const el = $(id);
+  if (el) el.classList.add("active");
+}
 
-// === DOM Ready ===
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("DOM fully loaded ✅");
+  console.log("DOM ready");
 
-  const createBtn = $("createRoomBtn");
-  const joinBtn = $("joinRoomBtn");
-  const beginBtn = $("begin-game-btn");
-
-  if (createBtn) createBtn.addEventListener("click", createRoom);
-  if (joinBtn) joinBtn.addEventListener("click", joinRoom);
-  if (beginBtn) beginBtn.addEventListener("click", () => {
-    if (gameRef) gameRef.child("phase").set("qa");
-  });
+  $("createRoomBtn").onclick = createRoom;
+  $("joinRoomBtn").onclick = joinRoom;
+  $("beginGameBtn").onclick = () => {
+    if (isHost && gameRef) gameRef.child("phase").set("qa");
+  };
 });
 
-// === Create Room ===
 async function createRoom() {
-  const name = ($("hostName")?.value || "").trim();
-  const count = parseInt(($("playerCount")?.value || "").trim(), 10);
-  if (!name || isNaN(count) || count < 2) {
-    alert("Enter your name and number of players (min 2).");
-    return;
-  }
+  const name = $("hostName").value.trim();
+  const count = parseInt($("playerCount").value.trim(), 10);
+  if (!name || isNaN(count) || count < 2) return alert("Enter name + number of players");
 
   const code = Math.random().toString(36).substring(2, 7).toUpperCase();
   playerId = name;
   isHost = true;
 
-  if (!window.db) {
-    alert("Database not ready. Please refresh.");
-    return;
-  }
+  if (!window.db) return alert("Database not ready");
 
   gameRef = window.db.ref("rooms/" + code);
   await gameRef.set({
@@ -101,176 +40,71 @@ async function createRoom() {
     players: { [name]: { score: 0, ready: false } }
   });
 
-  try { localStorage.setItem("roomCode", code); localStorage.setItem("isHost", "true"); } catch(e){}
+  localStorage.setItem("roomCode", code);
+  localStorage.setItem("isHost", "true");
 
-  transitionToPhase("waiting");
-  updateWaitingRoomUI(name, code, 1, count);
-  subscribeToGame(code);
-  console.log("✅ Room created with code:", code);
+  $("roomCodeDisplay").textContent = "Room Code: " + code;
+  showPage("waiting");
+
+  subscribeToRoom(code);
+  console.log("✅ Room created:", code);
 }
 
-// === Join Room ===
 async function joinRoom() {
-  const name = ($("playerName")?.value || "").trim();
-  const code = ($("roomCode")?.value || "").trim().toUpperCase();
-
+  const name = $("playerName").value.trim();
+  const code = $("roomCode").value.trim().toUpperCase();
   if (!name || !code) return alert("Enter name and room code");
 
   playerId = name;
   isHost = false;
 
-  if (!window.db) return alert("Database not ready. Please refresh.");
+  if (!window.db) return alert("Database not ready");
   gameRef = window.db.ref("rooms/" + code);
 
   const snap = await gameRef.once("value");
-  if (!snap.exists()) return alert("Room not found.");
+  if (!snap.exists()) return alert("Room not found");
 
   await gameRef.child("players/" + name).set({ score: 0, ready: false });
 
-  try { localStorage.setItem("roomCode", code); localStorage.setItem("isHost", "false"); } catch(e){}
+  localStorage.setItem("roomCode", code);
+  localStorage.setItem("isHost", "false");
 
-  transitionToPhase("waiting");
-  subscribeToGame(code);
+  $("roomCodeDisplay").textContent = "Room Code: " + code;
+  showPage("waiting");
+
+  subscribeToRoom(code);
   console.log("✅ Joined room:", code);
 }
 
-// === Subscribe to Game ===
-function subscribeToGame(code) {
-  if (!window.db) return;
+function subscribeToRoom(code) {
   const ref = window.db.ref("rooms/" + code);
-  gameRef = ref;
-
-  try { ref.off(); } catch (e) {}
-
-  ref.on("value", snapshot => {
-    const data = snapshot.val();
+  ref.on("value", snap => {
+    const data = snap.val();
     if (!data) return;
-    try { updateRoomUI(data, code); } catch (err) { console.error("updateRoomUI error:", err); }
-
-    const phase = data.phase;
-    switch (phase) {
-      case "qa": if (!window.qaStarted) startQA(); break;
-      case "guessing": startGuessing(); break;
-      case "scoreboard": showScoreboard(data); break;
-      case "reveal": showRevealPhase(data); break;
-    }
+    updateWaitingRoom(data);
+    if (data.phase === "qa") startQA();
   });
 }
 
-// === Update Room UI ===
-function updateRoomUI(data, code) {
-  if (!data) return;
-  const phase = data.phase || "waiting";
-  const players = data.players || {};
-  const numPlayers = Object.keys(players).length;
-  const total = data.numPlayers || 0;
+function updateWaitingRoom(data) {
+  const list = $("playerList");
+  const btn = $("beginGameBtn");
+  if (!list) return;
 
-  if (phase === "waiting") updateWaitingRoomUI(null, code, numPlayers, total);
-  transitionToPhase(phase);
-}
+  list.innerHTML = Object.keys(data.players || {})
+    .map(p => `<li>${p}</li>`)
+    .join("");
 
-function updateWaitingRoomUI(hostName, code, joined, total) {
-  const roomCodeEl = $("room-code-display-game");
-  const playersCountEl = $("players-count");
-  const playerListEl = $("playerList");
-
-  if (roomCodeEl) roomCodeEl.textContent = "Room Code: " + code;
-  if (playersCountEl) playersCountEl.textContent = `Players joined: ${joined} / ${total}`;
-  if (playerListEl) {
-    playerListEl.innerHTML = `<li>${hostName || playerId} (host)</li>`;
+  // Only host sees the "Begin Game" button
+  if (isHost && Object.keys(data.players).length >= data.numPlayers) {
+    btn.classList.remove("hidden");
+  } else {
+    btn.classList.add("hidden");
   }
 }
 
-// === Q&A ===
-let currentQuestion = 0;
-let answers = {};
-
 function startQA() {
-  if (!gameRef) return;
-  window.qaStarted = true;
-  currentQuestion = 0;
-  answers = {};
-  transitionToPhase("qa");
-  renderQuestion();
+  showPage("qa");
+  const container = $("qaContainer");
+  container.innerHTML = "<p>Question time! (This is just a placeholder)</p>";
 }
-
-function renderQuestion() {
-  const container = $("qa-container");
-  if (!container) return;
-
-  container.innerHTML = "";
-  const q = questions[currentQuestion];
-  if (!q) return saveAnswersAndMarkReady();
-
-  const counter = document.createElement("div");
-  counter.className = "question-counter";
-  counter.textContent = `Question ${currentQuestion + 1} of ${questions.length}`;
-  container.appendChild(counter);
-
-  const tile = document.createElement("div");
-  tile.className = "qa-tile";
-  tile.innerHTML = `
-    <h3 class="question-text">${q.text}</h3>
-    <div class="options-grid">
-      ${q.options.map(opt => `<button class="option-btn">${opt}</button>`).join("")}
-    </div>`;
-  container.appendChild(tile);
-
-  tile.querySelectorAll(".option-btn").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      const chosen = btn.textContent;
-      answers[q.id] = chosen;
-      if (gameRef && playerId) {
-        await gameRef.child(`players/${playerId}/answers/${q.id}`).set({ optionText: chosen, ts: Date.now() });
-      }
-      currentQuestion++;
-      renderQuestion();
-    });
-  });
-}
-
-async function saveAnswersAndMarkReady() {
-  if (!gameRef || !playerId) return;
-  await gameRef.child(`players/${playerId}/ready`).set(true);
-  transitionToPhase("guessing");
-}
-
-// === Scoreboard ===
-function showScoreboard(data) {
-  transitionToPhase("scoreboard");
-  const container = $("scoreboard-container");
-  if (!container) return;
-  const players = data.players || {};
-  container.innerHTML = Object.entries(players)
-    .map(([n, p]) => `<li>${n}: <strong>${p.score || 0}</strong> pts</li>`)
-    .join("");
-}
-
-// === Reveal ===
-function showRevealPhase(data) {
-  transitionToPhase("reveal");
-  const container = $("reveal-container");
-  if (!container) return;
-  const players = data.players || {};
-  const sorted = Object.entries(players)
-    .map(([n, o]) => ({ name: n, score: o.score || 0 }))
-    .sort((a, b) => b.score - a.score);
-  const winner = sorted[0]?.name || "Someone";
-  container.innerHTML = `<h1>🎉 ${winner} wins!</h1>`;
-}
-
-// 🔍 DEBUG LOGS — trace all phase transitions and DOM updates
-window.addEventListener("error", e => console.error("⚠️ JS ERROR:", e.message, e.filename, e.lineno));
-window.addEventListener("unhandledrejection", e => console.error("⚠️ PROMISE ERROR:", e.reason));
-
-const originalTransition = transitionToPhase;
-transitionToPhase = function (phase) {
-  console.log("🌀 TRANSITION DEBUG: Attempting to switch to", phase);
-  const sec = document.querySelectorAll("section.page");
-  console.log("Found sections:", Array.from(sec).map(s => s.id));
-  originalTransition(phase);
-  console.log("✅ After transition:", phase);
-};
-
-console.log("%c✅ Game script ready!", "color:#fff;background:linear-gradient(90deg,#ff00cc,#ffdd00);padding:4px 8px;border-radius:4px");
-
