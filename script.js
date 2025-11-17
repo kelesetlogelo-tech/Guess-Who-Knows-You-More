@@ -287,4 +287,8 @@ function showRevealPhase(data) {
   container.innerHTML = `<h1>🎉 ${winner} wins!</h1>`;
 }
 
+function checkAllPlayersReadyListener(roomCode) {
+  console.warn("⚠️ checkAllPlayersReadyListener is not implemented yet.");
+}
 console.log("✅ Game script ready!");
+
