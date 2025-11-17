@@ -3,8 +3,8 @@
 // -----------------------------
 
 // This file assumes Firebase SDK scripts are loaded first in index.html:
-// <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-// <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 // Initialize Firebase
 try {
@@ -30,5 +30,6 @@ const firebaseConfig = {
 } catch (err) {
   console.error("🔥 Firebase init error (check config):", err);
 }
+
 
 
