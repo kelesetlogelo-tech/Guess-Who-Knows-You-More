@@ -171,8 +171,7 @@ function subscribeToGame(code) {
     if (!data) return;
 
     try { updateRoomUI(data, code); } catch (err) { console.error(err); }
-    try { checkAllPlayersReadyListener(snapshot); } catch (err) { console.error(err); }
-
+  
     const phase = data.phase;
     if (phase === "scoreboard") showScoreboard(data);
     else if (phase === "reveal") showRevealPhase(data);
@@ -286,9 +285,6 @@ function showRevealPhase(data) {
   const winner = sorted[0]?.name || "Someone";
   container.innerHTML = `<h1>🎉 ${winner} wins!</h1>`;
 }
-
-function checkAllPlayersReadyListener(roomCode) {
-  console.warn("⚠️ checkAllPlayersReadyListener is not implemented yet.");
-}
 console.log("✅ Game script ready!");
+
 
