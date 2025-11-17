@@ -151,6 +151,38 @@ body.revealPhase-phase {
   background: linear-gradient(135deg, #ff6a00, #ee0979);
 }
 
+/* ---- FORCE PAGE VISIBILITY (debug override) ---- */
+.page {
+  display: none;
+}
+
+.page.active {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Phase-specific background placeholders (safe defaults) */
+.waiting-phase {
+  background: #faf7ff;
+}
+.qa-phase {
+  background: #fff7f3;
+}
+.guessing-phase {
+  background: #f3fff6;
+}
+.scoreboard-phase {
+  background: #f7fbff;
+}
+.reveal-phase {
+  background: #fffaf0;
+}
+
 
 
 
