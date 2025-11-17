@@ -28,7 +28,7 @@ function transitionToPhase(phaseName) {
   const allSections = Array.from(document.querySelectorAll("section.page"));
   console.log("Found sections:", allSections.map(s => s.id));
 
-  allSections.forEach(s => s.classList.add("hidden"));
+  allSections.forEach(s => s.classList.add("active"));
   const target = findSectionForPhase(phaseName);
   if (target) {
     target.classList.remove("hidden");
@@ -182,6 +182,8 @@ function subscribeToGame(code) {
 function updateRoomUI(data, code) {
   if (!data) return;
   const phase = data.phase || "waiting";
+  showPage("waiting");
+
   const players = data.players || {};
   const numPlayers = Object.keys(players).length;
   const total = data.numPlayers || 0;
@@ -286,5 +288,6 @@ function showRevealPhase(data) {
   container.innerHTML = `<h1>🎉 ${winner} wins!</h1>`;
 }
 console.log("✅ Game script ready!");
+
 
 
