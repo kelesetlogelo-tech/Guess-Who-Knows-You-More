@@ -22,6 +22,24 @@ function findSectionForPhase(phase) {
   return null;
 }
 
+function showPage(pageId) {
+  console.log("showPage CALLED with:", pageId);
+
+  document.querySelectorAll(".page").forEach(p => {
+    p.classList.add("hidden");
+  });
+
+  const target = document.getElementById(pageId);
+  console.log("Target page element:", target);
+
+  if (!target) {
+    console.error("❌ Page NOT found:", pageId);
+    return;
+  }
+
+  target.classList.remove("hidden");
+}
+
 // Simple show/hide of sections
 function transitionToPhase(phaseName) {
   console.log("🌀 TRANSITION DEBUG: Attempting to switch to", phaseName);
@@ -182,8 +200,6 @@ function subscribeToGame(code) {
 function updateRoomUI(data, code) {
   if (!data) return;
   const phase = data.phase || "waiting";
-  showPage("waiting");
-
   const players = data.players || {};
   const numPlayers = Object.keys(players).length;
   const total = data.numPlayers || 0;
@@ -288,6 +304,7 @@ function showRevealPhase(data) {
   container.innerHTML = `<h1>🎉 ${winner} wins!</h1>`;
 }
 console.log("✅ Game script ready!");
+
 
 
 
