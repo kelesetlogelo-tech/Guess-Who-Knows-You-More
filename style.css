@@ -33,7 +33,6 @@ html, body {
 }
 
 .hidden { display: none !important; }
-.page { display: block; }
 
 .container {
   max-width: 400px;
@@ -169,24 +168,9 @@ body.revealPhase-phase {
 
 .hidden {
   display: none !important;
+  opacity: 0 !important;
 }
 
-/* Phase-specific background placeholders (safe defaults) */
-.waiting-phase {
-  background: #faf7ff;
-}
-.qa-phase {
-  background: #fff7f3;
-}
-.guessing-phase {
-  background: #f3fff6;
-}
-.scoreboard-phase {
-  background: #f7fbff;
-}
-.reveal-phase {
-  background: #fffaf0;
-}
 
 
 
