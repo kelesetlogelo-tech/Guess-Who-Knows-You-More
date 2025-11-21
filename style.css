@@ -1,5 +1,5 @@
 /* ===== GENERAL RESET ===== */
-* {
+{
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -14,9 +14,13 @@ html, body {
 }
 
 /* ===== CONTAINERS ===== */
+/* ===== PAGE VISIBILITY SYSTEM ===== */
+
+/* All pages hidden by default */
 .page {
-  display: block;
+  display: none;
   transform: translateY(10px);
+  opacity: 0;
   transition: opacity 0.5s ease, transform 0.5s ease;
   text-align: center;
   justify-content: center;
@@ -25,14 +29,17 @@ html, body {
   padding: 2rem;
 }
 
-.page.active,
-.page.visible {
-  display: flex;
+/* Script removes .hidden to show a section */
+.page:not(.hidden) {
+  display: flex;      /* restores flex layout */
   opacity: 1;
-  transform:translateY(0);
+  transform: translateY(0);
 }
 
-.hidden { display: none !important; }
+/* Explicit hidden class */
+.hidden {
+  display: none !important;
+}
 
 .container {
   max-width: 400px;
@@ -150,26 +157,18 @@ body.revealPhase-phase {
   background: linear-gradient(135deg, #ff6a00, #ee0979);
 }
 
-/* ---- FORCE PAGE VISIBILITY (debug override) ---- */
-/* Correct visibility rules */
 .page {
-  display: none;                 /* hidden by default */
-  opacity: 0;
-  transition: opacity 0.4s ease;
+  display: none;
 }
 
-.page.active {
-  display: flex !important;      /* restore proper layout */
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  opacity: 1 !important;
+.page.hidden {
+  display: none;
 }
 
-.hidden {
-  display: none !important;
-  opacity: 0 !important;
+.page:not(.hidden) {
+  display: block;
 }
+
 
 
 
