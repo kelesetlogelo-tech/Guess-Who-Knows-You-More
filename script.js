@@ -23,21 +23,20 @@ function findSectionForPhase(phase) {
 }
 
 function showPage(pageId) {
-  console.log("showPage CALLED with:", pageId);
+  console.log("showPage:", pageId);
 
-  document.querySelectorAll(".page").forEach(p => {
-    p.classList.add("hidden");
-  });
+  // Hide all pages
+  document.querySelectorAll(".page").forEach(p => p.classList.add("hidden"));
 
-  const target = document.getElementById(pageId);
-  console.log("Target page element:", target);
-
-  if (!target) {
-    console.error("❌ Page NOT found:", pageId);
+  // Show target page
+  const page = document.getElementById(pageId);
+  if (!page) {
+    console.error("❌ Cannot show page — ID not found:", pageId);
     return;
   }
 
-  target.classList.remove("hidden");
+  page.classList.remove("hidden");
+  page.classList.add("active");
 }
 
 // Simple show/hide of sections
@@ -46,12 +45,11 @@ function transitionToPhase(phaseName) {
   const allSections = Array.from(document.querySelectorAll("section.page"));
   console.log("Found sections:", allSections.map(s => s.id));
 
-  allSections.forEach(s => s.classList.add("active"));
   const target = findSectionForPhase(phaseName);
   if (target) {
-    target.classList.remove("hidden");
+    showPage(target.id);
     console.log("🌈 Switching phase:", phaseName);
-  } else {
+} else {
     console.warn("⚠️ No section found for phase:", phaseName);
   }
   updateBackgroundForPhase(phaseName);
@@ -304,6 +302,7 @@ function showRevealPhase(data) {
   container.innerHTML = `<h1>🎉 ${winner} wins!</h1>`;
 }
 console.log("✅ Game script ready!");
+
 
 
 
