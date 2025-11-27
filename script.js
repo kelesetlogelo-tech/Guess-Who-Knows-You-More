@@ -138,9 +138,18 @@ async function createRoom() {
 
   try { localStorage.setItem("roomCode", code); localStorage.setItem("isHost", "true"); } catch(e){}
 
-  const roomCodeEl = $("room-code-display-game") || $("roomCodeDisplay");
+  const roomCodeEl =
+    $("room-code-display-game") ||
+    $("roomCodeDisplay") ||
+    document.querySelector("[data-room-code]"); // fallback
+
+  if (roomCodeEl) {
+  roomCodeEl.textContent = "Room Code: " + code;
+  } else {
+  console.warn("⚠️ No UI element found for room code.");
+}
+  
   const playersCountEl = $("players-count") || $("playersCount");
-  if (roomCodeEl) roomCodeEl.textContent = "Room Code: " + code;
   if (playersCountEl) playersCountEl.textContent = `Players joined: 1 / ${count}`;
 
   transitionToPhase("waiting");
@@ -302,6 +311,7 @@ function showRevealPhase(data) {
   container.innerHTML = `<h1>🎉 ${winner} wins!</h1>`;
 }
 console.log("✅ Game script ready!");
+
 
 
 
