@@ -37,7 +37,9 @@
   <section id="waiting" class="page hidden">
     <h2>Gather your tribe 🪶</h2>
     <p class="scene-tagline">“Someone’s already side-eyeing the scoreboard.”</p>
-    <div id="room-code-display-game" class="info"></div>
+    <div id="room-code-display-game" class="info" onclick="navigator.clipboard.writeText(this.textContent)">
+  Room Code: -----
+</div>
     <p id="players-count" class="info"></p>
     <ul id="players-list"></ul>
     <button id="begin-game-btn" class="vibrant-btn hidden">Begin Game</button>
@@ -90,6 +92,7 @@
   <script defer src="script.js"></script>
 </body>
 </html>
+
 
 
 
