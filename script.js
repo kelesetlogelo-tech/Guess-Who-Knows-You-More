@@ -41,19 +41,23 @@ function showPage(pageId) {
 
 // Simple show/hide of sections
 function transitionToPhase(phaseName) {
-  console.log("🌀 TRANSITION DEBUG: Attempting to switch to", phaseName);
-  const allSections = Array.from(document.querySelectorAll("section.page"));
-  console.log("Found sections:", allSections.map(s => s.id));
+  console.log("🌈 Switching phase:", phaseName);
 
+  // Hide all pages
+  document.querySelectorAll(".page").forEach(p => {
+    p.classList.add("hidden");
+  });
+
+  // Show target page
   const target = findSectionForPhase(phaseName);
-  if (target) {
-    showPage(target.id);
-    console.log("🌈 Switching phase:", phaseName);
-} else {
-    console.warn("⚠️ No section found for phase:", phaseName);
+  if (!target) {
+    console.error("❌ No section found for phase:", phaseName);
+    return;
   }
+
+  target.classList.remove("hidden");
+
   updateBackgroundForPhase(phaseName);
-  console.log("✅ After transition:", phaseName);
 }
 
 // Update background gradient for each phase
@@ -314,6 +318,7 @@ function showRevealPhase(data) {
   container.innerHTML = `<h1>🎉 ${winner} wins!</h1>`;
 }
 console.log("✅ Game script ready!");
+
 
 
 
