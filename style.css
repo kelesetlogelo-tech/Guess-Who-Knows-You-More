@@ -1,5 +1,5 @@
 /* ===== GENERAL RESET ===== */
-{
+* {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -110,12 +110,12 @@ h3 {
 }
 
 /* ===== WAITING ROOM ===== */
-#playerList {
+#players-list {
   list-style: none;
   margin-top: 1rem;
 }
 
-#playerList li {
+#players-list li {
   background: rgba(255, 255, 255, 0.2);
   margin: 0.3rem auto;
   padding: 0.5rem 1rem;
@@ -137,7 +137,7 @@ body.landing-phase {
   background: linear-gradient(135deg, #ff00cc, #ffff00);
 }
 
-body.waitingRoom-phase {
+body.waiting-phase {
   background: linear-gradient(135deg, #ff7e5f, #feb47b);
 }
 
@@ -157,14 +157,9 @@ body.revealPhase-phase {
   background: linear-gradient(135deg, #ff6a00, #ee0979);
 }
 
-.hidden {
-  display: none !important;
-}
 
-.page {
-  display: block;
-  height: 100vh;
-}
+
+
 
 
 
