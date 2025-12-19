@@ -136,7 +136,8 @@ async function createRoom() {
     players: { [name]: { score: 0, ready: false } }
   });
 
-  try { localStorage.setItem("roomCode", code); localStorage.setItem("isHost", "true"); } catch(e){}
+  try { localStorage.setItem("roomCode", code); 
+        localStorage.setItem("isHost", "true");
 
   const roomCodeEl =
     $("room-code-display-game") ||
@@ -150,7 +151,9 @@ async function createRoom() {
 }
   
   const playersCountEl = $("players-count") || $("playersCount");
-  if (playersCountEl) playersCountEl.textContent = `Players joined: 1 / ${count}`;
+  if (playersCountEl) {
+    playersCountEl.textContent = `Players joined: 1 / ${count}`;
+  }
 
   transitionToPhase("waiting");
   subscribeToGame(code);
@@ -311,6 +314,7 @@ function showRevealPhase(data) {
   container.innerHTML = `<h1>🎉 ${winner} wins!</h1>`;
 }
 console.log("✅ Game script ready!");
+
 
 
 
