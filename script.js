@@ -140,8 +140,11 @@ async function createRoom() {
     players: { [name]: { score: 0, ready: false } }
   });
 
-  try { localStorage.setItem("roomCode", code); 
-        localStorage.setItem("isHost", "true");
+  try { 
+  localStorage.setItem("roomCode", code); 
+  localStorage.setItem("isHost", "true"); 
+} catch(e) {}
+
 
   const roomCodeEl =
     $("room-code-display-game") ||
@@ -318,6 +321,7 @@ function showRevealPhase(data) {
   container.innerHTML = `<h1>🎉 ${winner} wins!</h1>`;
 }
 console.log("✅ Game script ready!");
+
 
 
 
