@@ -157,17 +157,17 @@ body.revealPhase-phase {
   background: linear-gradient(135deg, #ff6a00, #ee0979);
 }
 
+.hidden {
+  display: none !important;
+}
+
 .page {
-  display: none;
-}
-
-.page.hidden {
-  display: none;
-}
-
-.page:not(.hidden) {
   display: block;
+  height: 100vh;
 }
+
+
+
 
 
 
